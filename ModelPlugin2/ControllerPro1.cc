@@ -24,10 +24,10 @@ namespace gazebo
 					// Initialize the whole system
 					SystemInitialization(_parent);
 					// Testing codes
-					this->JointWR->SetVelocity(0,0);
-					this->JointWL->SetVelocity(0,0);
-					math::Angle AngleInterested(0.5235987);
-					this->JointCB->SetAngle(0,AngleInterested);
+					// this->JointWR->SetVelocity(0,0);
+					// this->JointWL->SetVelocity(0,0);
+					// math::Angle AngleInterested(0.5235987);
+					// this->JointCB->SetAngle(0,AngleInterested);
 					// Event register, which will make the function be executed in each iteration
 					this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController1::OnSystemRunning, this, _1));
 				}
@@ -41,12 +41,12 @@ namespace gazebo
 					this->JointCB = model->GetJoint("Center_hinge");
 					// Setting the model states
 					// Setting the maximium torque of the two wheels
-					this->JointWR->SetMaxForce(0,1000);
-					this->JointWL->SetMaxForce(0,1000);
+					// this->JointWR->SetMaxForce(0,1000);
+					// this->JointWL->SetMaxForce(0,1000);
 					// Setting the maximium torque of the front wheel
-					this->JointWF->SetMaxForce(0,1000);
+					// this->JointWF->SetMaxForce(0,1000);
 					// Setting the maximium torque of the body bending joint
-					this->JointCB->SetMaxForce(0,1000);
+					// this->JointCB->SetMaxForce(0,1000);
 					// Set the angle of the hinge in the center to zero
 					math::Angle InitialAngle(0);
 					this->JointCB->SetAngle(0, InitialAngle);
@@ -56,17 +56,34 @@ namespace gazebo
 				{
 					double AngleValue;
 					double force;
-					force = JointCB->GetForce(0);
-					cout<<"The Angle of the bending:"<<force<<endl;
-					AngleValue = this->RevolutionSpeedCal(JointWR,0);
-					cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
+					// force = JointCB->GetForce(0);
+					force = this->JointCB->GetMaxForce(0);
+					cout<<"The Maximium Force of the Joint:"<<force<<endl;
+					// AngleValue = this->RevolutionSpeedCal(JointWR,0);
+					// cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
 
 				}
 		// The unit of the angle is radian
-		// In the future, this function should be defined as virtual
-		public: void SetJointAngle(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired)
+		// This function will only be used in simulation
+		private: void SetJointAngle(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired)
 				{
 					CurrentJoint->SetAngle(RotAxis, AngleDesired);
+				}
+		// This function is used to replace "SetJointAngle" when actually control the joint
+		// This function will drive the joint to the desire angle according to the speed specified
+		// The speed is the percentage of the maximum speed in the simulation
+		// The speed in the real worl depends on the external torque that actually applies on the joint
+		private: void JointAngleControl(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1)
+				{
+
+				}
+		// This function will return the angle of the specified joint
+		// This function will be set to virtual in the future
+		public: math::Angle GetJointAngle(physics::JointPtr CurrentJoint, int RotAxis)
+				{
+					math::Angle CurrentJointAngle;
+					CurrentJointAngle = CurrentJoint->GetAngle(RotAxis);
+					return CurrentJointAngle;
 				}
 		// This function will set the rotation rate of the joint
 		// The unit of this speed is rad/s
@@ -87,6 +104,15 @@ namespace gazebo
 					//cout<<"ResSpeedRef = "<<ResSpeedRef<<" rad/s"<<endl;
 
 					return ResSpeedRef;
+				}
+		// Get the coordinates and direction of the current model
+		// Need to be virtual in the furture
+		public: math::Pose GetModelCentralCoor(void)
+				{
+					math::Pose ModelPosition;
+					physics::ModelState CurrentModelState(model);
+					ModelPosition = CurrentModelState.GetPose();
+					return ModelPosition;
 				}
 		// This function is an old version function of RevolutionSpeedCal()
 		// Which has the same functionality as RevolutionSpeedCal()
@@ -117,6 +143,8 @@ namespace gazebo
 				}
 		// Angle calculation base on the two points
 		// This angle is in the static global frame
+		// This function can be used when the robot is on the ground
+		// And aim to move to another point on the ground
 		private: math::Angle AngleCalculation2Points(math::Vector2d StartPoint, math::Vector2d EndPoint)
 				{
 					double displacementX, displacementY, angleC;
