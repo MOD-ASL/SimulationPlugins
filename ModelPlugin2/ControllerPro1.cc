@@ -10,12 +10,23 @@ using namespace std;
 
 namespace gazebo
 {
-	class ModelController1 : public ModelPlugin
+	struct JointPlus
 	{
-		public: ModelController1() : ModelPlugin(),DefaultKPID(0.01,0,0)
+		physics::JointPtr JointX;
+		math::Angle JointAngleNow;
+		math::Angle JointAngleDesire;
+		bool Need2BeSet;
+
+	 	double JointErrorHis;
+	 	double JointErrorAccu;
+	};
+	class ModelController : public ModelPlugin
+	{
+		public: ModelController() : ModelPlugin(),JointAngleKPID(1,0,0)
 				{
 					// Initialize variables
 					WheelRadius =  0.045275;
+					MaxiRotationRate = 2.4086;
 					// A hint of model been initialized
 					printf("Model Initiated\n");
 				}
@@ -24,12 +35,12 @@ namespace gazebo
 					// Initialize the whole system
 					SystemInitialization(_parent);
 					// Testing codes
-					// this->JointWR->SetVelocity(0,0);
-					// this->JointWL->SetVelocity(0,0);
+					this->JointWR->SetVelocity(0,0);
+					this->JointWL->SetVelocity(0,0);
 					// math::Angle AngleInterested(0.5235987);
 					// this->JointCB->SetAngle(0,AngleInterested);
 					// Event register, which will make the function be executed in each iteration
-					this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController1::OnSystemRunning, this, _1));
+					this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController::OnSystemRunning, this, _1));
 				}
 		private: void SystemInitialization(physics::ModelPtr parentModel)
 				{
@@ -39,14 +50,30 @@ namespace gazebo
 					this->JointWL = model->GetJoint("Left_wheel_hinge");
 					this->JointWF = model->GetJoint("Front_wheel_hinge");
 					this->JointCB = model->GetJoint("Center_hinge");
+					JointWRP.JointX = JointWR;
+					JointWRP.Need2BeSet = false;
+					JointWRP.JointErrorHis = 0;
+					JointWRP.JointErrorAccu = 0;
+					JointWLP.JointX = JointWL;
+					JointWLP.Need2BeSet = false;
+					JointWLP.JointErrorHis = 0;
+					JointWLP.JointErrorAccu = 0;
+					JointWFP.JointX = JointWF;
+					JointWFP.Need2BeSet = false;
+					JointWFP.JointErrorHis = 0;
+					JointWFP.JointErrorAccu = 0;
+					JointCBP.JointX = JointCB;
+					JointCBP.Need2BeSet = false;
+					JointCBP.JointErrorHis = 0;
+					JointCBP.JointErrorAccu = 0;
 					// Setting the model states
 					// Setting the maximium torque of the two wheels
-					// this->JointWR->SetMaxForce(0,1000);
-					// this->JointWL->SetMaxForce(0,1000);
+					this->JointWR->SetMaxForce(0,JointWR->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
+					this->JointWL->SetMaxForce(0,JointWL->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
 					// Setting the maximium torque of the front wheel
-					// this->JointWF->SetMaxForce(0,1000);
+					this->JointWF->SetMaxForce(0,JointWF->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
 					// Setting the maximium torque of the body bending joint
-					// this->JointCB->SetMaxForce(0,1000);
+					this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
 					// Set the angle of the hinge in the center to zero
 					math::Angle InitialAngle(0);
 					this->JointCB->SetAngle(0, InitialAngle);
@@ -56,26 +83,55 @@ namespace gazebo
 				{
 					double AngleValue;
 					double force;
+					math::Pose CurrentPosition;
+					math::Angle AngleNeed2Be(0.78539);
 					// force = JointCB->GetForce(0);
 					force = this->JointCB->GetMaxForce(0);
-					cout<<"The Maximium Force of the Joint:"<<force<<endl;
-					// AngleValue = this->RevolutionSpeedCal(JointWR,0);
+					// force = JointCB->GetSDF()->GetElement("max_force")->GetValueDouble();
+					// cout<<"The Maximium Force of the Joint:"<<force<<endl;
+					AngleValue = this->RevolutionSpeedCal(JointWR,0);
 					// cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
-
+					CurrentPosition = GetModelCentralCoor();
+					// cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
+					cout<<"The direction of the robot is: ["<<CurrentPosition.rot.GetRoll()<<","<<CurrentPosition.rot.GetPitch()<<","<<CurrentPosition.rot.GetYaw()<<"];"<<endl;
+					//=========== Basic Controllers Need to Be Executed In Each Iteration ===========
+					// JointAngleControl();
+					JointPIDController(JointCBP,0,AngleNeed2Be);
+					//===============================================================================
 				}
 		// The unit of the angle is radian
 		// This function will only be used in simulation
-		private: void SetJointAngle(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired)
+		private: void SetJointAngleForce(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired)
 				{
 					CurrentJoint->SetAngle(RotAxis, AngleDesired);
 				}
+		// private: void SetJointAngle(JointPlus &CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1)
+		// 		{
+
+		// 		}
 		// This function is used to replace "SetJointAngle" when actually control the joint
 		// This function will drive the joint to the desire angle according to the speed specified
-		// The speed is the percentage of the maximum speed in the simulation
+		// The speed is the percentage of the maximum speed in the simulation, [0, 1]
 		// The speed in the real worl depends on the external torque that actually applies on the joint
-		private: void JointAngleControl(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1)
-				{
+		// private: void JointAngleControl(void)
+		// 		{
 
+		// 		}
+		private: void JointPIDController(JointPlus &CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1)
+				{
+					double AngleError, AngleDiffError;
+					double SwingSpeed;
+					AngleError = (AngleDesired - CurrentJoint.JointAngleNow).Radian();
+					AngleDiffError = AngleError - CurrentJoint.JointErrorHis;
+					CurrentJoint.JointErrorAccu += AngleError;
+					SwingSpeed = JointAngleKPID.x*AngleError + JointAngleKPID.y*CurrentJoint.JointErrorAccu + JointAngleKPID.z*AngleDiffError;
+					if (abs(SwingSpeed)> MaxiRotationRate*DesireSpeed)
+					{
+						SwingSpeed = SwingSpeed>0?MaxiRotationRate*DesireSpeed:(-MaxiRotationRate*DesireSpeed);
+					}
+					SetJointSpeed(CurrentJoint.JointX,RotAxis,SwingSpeed);
+
+					CurrentJoint.JointErrorHis = AngleError;
 				}
 		// This function will return the angle of the specified joint
 		// This function will be set to virtual in the future
@@ -181,10 +237,16 @@ namespace gazebo
 		private: physics::JointPtr JointWL;
 		private: physics::JointPtr JointWF;
 		private: physics::JointPtr JointCB;
+		private: JointPlus JointWRP;
+		private: JointPlus JointWLP;
+		private: JointPlus JointWFP;
+		private: JointPlus JointCBP;
 		// The event that will be refreshed in every iteration of the simulation
 		private: event::ConnectionPtr updateConnection;
-		// Default PID controller
-		public:  math::Vector3 DefaultKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
+		// Default Joint Angle PID controller parameter
+		public:  math::Vector3 JointAngleKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
+		// Maximium rotation rate of each joint
+		public:  double MaxiRotationRate;
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
 		private: double WheelRadius;
@@ -192,5 +254,5 @@ namespace gazebo
 		//####################################################################
 	};
 
-	GZ_REGISTER_MODEL_PLUGIN(ModelController1)
+	GZ_REGISTER_MODEL_PLUGIN(ModelController)
 }
