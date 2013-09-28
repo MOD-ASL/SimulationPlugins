@@ -15,18 +15,26 @@ namespace gazebo
 		physics::JointPtr JointX;
 		math::Angle JointAngleNow;
 		math::Angle JointAngleDesire;
+		// Whether the angle of the joint needs to be set
 		bool Need2BeSet;
 
+		// Joint Properties
+		double MaximiumForce;
+		double MaximiumRotRate;
+
+		// Variables need to be use to control the joint
 	 	double JointErrorHis;
 	 	double JointErrorAccu;
 	};
 	class ModelController : public ModelPlugin
 	{
-		public: ModelController() : ModelPlugin(),JointAngleKPID(1,0,0)
+		public: ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),ModelAngleKPID(1,0,0)
 				{
 					// Initialize variables
 					WheelRadius =  0.045275;
 					MaxiRotationRate = 2.4086;
+					AccelerationRate = 8;
+					PlanarMotionStopThreshold = 0.02;
 					// A hint of model been initialized
 					printf("Model Initiated\n");
 				}
@@ -75,7 +83,7 @@ namespace gazebo
 					// Setting the maximium torque of the body bending joint
 					this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
 					// Set the angle of the hinge in the center to zero
-					math::Angle InitialAngle(0);
+					math::Angle InitialAngle(0.3);
 					this->JointCB->SetAngle(0, InitialAngle);
 				}
 		// Testing function
@@ -84,7 +92,7 @@ namespace gazebo
 					double AngleValue;
 					double force;
 					math::Pose CurrentPosition;
-					math::Angle AngleNeed2Be(0.78539);
+					math::Angle AngleNeed2Be(5.49778);  //0.78539, 2.3562, 3.9270, 5.49778
 					// force = JointCB->GetForce(0);
 					force = this->JointCB->GetMaxForce(0);
 					// force = JointCB->GetSDF()->GetElement("max_force")->GetValueDouble();
@@ -92,11 +100,27 @@ namespace gazebo
 					AngleValue = this->RevolutionSpeedCal(JointWR,0);
 					// cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
 					CurrentPosition = GetModelCentralCoor();
-					// cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
+					cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
 					cout<<"The direction of the robot is: ["<<CurrentPosition.rot.GetRoll()<<","<<CurrentPosition.rot.GetPitch()<<","<<CurrentPosition.rot.GetYaw()<<"];"<<endl;
+					// cout<<"The direction of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
 					//=========== Basic Controllers Need to Be Executed In Each Iteration ===========
 					// JointAngleControl();
-					JointPIDController(JointCBP,0,AngleNeed2Be);
+					JointWFP.JointAngleNow = GetJointAngle(JointWF,0);
+					JointPIDController(JointWFP,0,AngleNeed2Be);
+					// math::Vector2d CurrentSpeed;
+					// CurrentSpeed.x = 2;
+					// CurrentSpeed.y = 2;
+					// AnglePIDController(AngleNeed2Be, CurrentPosition.rot.GetYaw(), CurrentSpeed);
+					math::Vector2d endPointTest;
+					endPointTest.Set(4,4);
+					// math::Vector2d startPointTest;
+					// startPointTest.x = CurrentPosition.pos.x;
+					// startPointTest.y = CurrentPosition.pos.y;
+					// math::Angle desireAngle = AngleCalculation2Points(startPointTest, endPointTest);
+					// cout<<"Calculated angle: " << desireAngle.Degree() << "," << desireAngle.Radian()<<endl;
+					// AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
+
+					Move2Point(endPointTest,AngleNeed2Be);
 					//===============================================================================
 				}
 		// The unit of the angle is radian
@@ -113,18 +137,20 @@ namespace gazebo
 		// This function will drive the joint to the desire angle according to the speed specified
 		// The speed is the percentage of the maximum speed in the simulation, [0, 1]
 		// The speed in the real worl depends on the external torque that actually applies on the joint
-		// private: void JointAngleControl(void)
-		// 		{
+		private: void JointAngleControl(void)
+				{
 
-		// 		}
+				}
 		private: void JointPIDController(JointPlus &CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1)
 				{
 					double AngleError, AngleDiffError;
 					double SwingSpeed;
 					AngleError = (AngleDesired - CurrentJoint.JointAngleNow).Radian();
+					// cout<<"AngleError:"<<AngleError<<endl;
 					AngleDiffError = AngleError - CurrentJoint.JointErrorHis;
 					CurrentJoint.JointErrorAccu += AngleError;
 					SwingSpeed = JointAngleKPID.x*AngleError + JointAngleKPID.y*CurrentJoint.JointErrorAccu + JointAngleKPID.z*AngleDiffError;
+					// cout<<"SwingSpeed:"<<SwingSpeed<<endl;
 					if (abs(SwingSpeed)> MaxiRotationRate*DesireSpeed)
 					{
 						SwingSpeed = SwingSpeed>0?MaxiRotationRate*DesireSpeed:(-MaxiRotationRate*DesireSpeed);
@@ -205,17 +231,91 @@ namespace gazebo
 				{
 					double displacementX, displacementY, angleC;
 					displacementX = EndPoint.x - StartPoint.x;
-					displacementY = EndPoint.y - EndPoint.y;
+					displacementY = EndPoint.y - StartPoint.y;
+					cout<<"direction vector is [ " << displacementX << "," <<displacementY<<"]"<<endl;
 					angleC = atan2(displacementY,displacementX);
-					math::Angle ReturnAngle(angleC);
+					math::Angle ReturnAngle(angleC+PI/2);
 					return ReturnAngle;
 				}
 		// Angle PID Controller
 		// DesiredAngleis in the static global frame
 		// CurrentSpeed is the rotation rate of the wheel
+		// This function can only be used when the robot drive on the ground plane
 		private: void AnglePIDController(math::Angle DesiredAngle, math::Angle CurrentAngle, math::Vector2d CurrentSpeed)
 				{
+					double AngleError, AngleErrorDiff, DiffSpeedControl;
+					static double AngleErrorHis = 0;
+					static double AngleErrorAcu = 0;
+					double LeftWheelSpeed, RightWheelSpeed;
 
+					while (abs(DesiredAngle.Degree()) > 180)
+					{
+						double DegreeAngle;
+						DegreeAngle = DesiredAngle.Degree()>0?DesiredAngle.Degree()-360:DesiredAngle.Degree()+360;
+						DesiredAngle.SetFromDegree(DegreeAngle);
+					}
+					// cout<<"Desired Angle is "<< DesiredAngle.Degree()<<endl;
+
+					if (abs((DesiredAngle-CurrentAngle).Degree())>180)
+					{
+						AngleError = (DesiredAngle-CurrentAngle).Degree()>0?(DesiredAngle-CurrentAngle).Radian()-2*PI:(DesiredAngle-CurrentAngle).Radian()+2*PI;
+					}else{
+						AngleError = (DesiredAngle-CurrentAngle).Radian();
+					}
+					AngleErrorAcu += AngleError;
+					AngleErrorDiff = AngleError - AngleErrorHis;
+					DiffSpeedControl = ModelAngleKPID.x*AngleError + ModelAngleKPID.y*AngleErrorAcu + ModelAngleKPID.z*AngleErrorDiff;
+					LeftWheelSpeed = CurrentSpeed.x - DiffSpeedControl;
+					RightWheelSpeed = CurrentSpeed.y + DiffSpeedControl;
+
+					// Maximium speed checking
+					// if (abs(RightWheelSpeed)>JointWRP.MaximiumRotRate)
+					// {
+					// 	RightWheelSpeed = RightWheelSpeed>0?JointWRP.MaximiumRotRate:-JointWRP.MaximiumRotRate;
+					// 	LeftWheelSpeed = RightWheelSpeed - 2*DiffSpeedControl;
+					// 	if (abs(LeftWheelSpeed)>JointWLP.MaximiumRotRate)
+					// 	{
+					// 		LeftWheelSpeed = LeftWheelSpeed>0?JointWLP.MaximiumRotRate:-JointWLP.MaximiumRotRate;
+					// 	}
+					// }
+					// if (abs(LeftWheelSpeed)>JointWLP.MaximiumRotRate)
+					// {
+					// 	LeftWheelSpeed = LeftWheelSpeed>0?JointWLP.MaximiumRotRate:-JointWLP.MaximiumRotRate;
+					// 	RightWheelSpeed = LeftWheelSpeed + 2*DiffSpeedControl;
+					// 	if (abs(RightWheelSpeed)>JointWRP.MaximiumRotRate)
+					// 	{
+					// 		RightWheelSpeed = RightWheelSpeed>0?JointWRP.MaximiumRotRate:-JointWRP.MaximiumRotRate;
+					// 	}
+					// }
+
+					SetJointSpeed(JointWR, 0, RightWheelSpeed);
+					SetJointSpeed(JointWL, 0, LeftWheelSpeed);
+					AngleErrorHis = AngleError;
+				}
+		private: void Move2Point(math::Vector2d DesiredPoint, math::Angle DesiredOrientation)
+				{
+					math::Pose CurrentPosition;
+					math::Vector2d startPoint;
+					math::Vector2d CurrentSpeed;
+					CurrentPosition = GetModelCentralCoor();
+					startPoint.x = CurrentPosition.pos.x;
+					startPoint.y = CurrentPosition.pos.y;
+					math::Angle desireAngle = AngleCalculation2Points(startPoint, DesiredPoint);
+					double CurrentDistance = startPoint.Distance(DesiredPoint);
+					if (CurrentDistance > PlanarMotionStopThreshold)
+					{
+						CurrentSpeed.x = AccelerationRate*CurrentDistance;
+						if (CurrentSpeed.x > MaxiRotationRate)
+						{
+							CurrentSpeed.x = MaxiRotationRate;
+						}
+						CurrentSpeed.y = CurrentSpeed.x;
+						AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
+					}else{
+						CurrentSpeed.x = 0;
+						CurrentSpeed.y = 0;
+						AnglePIDController(DesiredOrientation, CurrentPosition.rot.GetYaw(), CurrentSpeed);
+					}
 				}
 		// A complementary filter
 		// The default coefficient of the filter is 0.9
@@ -245,8 +345,12 @@ namespace gazebo
 		private: event::ConnectionPtr updateConnection;
 		// Default Joint Angle PID controller parameter
 		public:  math::Vector3 JointAngleKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
+		// Default Joint Angle PID controller parameter
+		public:  math::Vector3 ModelAngleKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
 		// Maximium rotation rate of each joint
 		public:  double MaxiRotationRate;
+		public:  double AccelerationRate;
+		public:  double PlanarMotionStopThreshold;
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
 		private: double WheelRadius;
