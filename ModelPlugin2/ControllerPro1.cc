@@ -10,6 +10,7 @@ using namespace std;
 
 namespace gazebo
 {
+	typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
 	struct JointPlus
 	{
 		physics::JointPtr JointX;
@@ -40,6 +41,10 @@ namespace gazebo
 				}
 		public: void Load (physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 				{
+					gazebo::transport::NodePtr node(new gazebo::transport::Node());
+  					node->Init();
+  					this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
+  					// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
 					// Initialize the whole system
 					SystemInitialization(_parent);
 					// Testing codes
@@ -50,6 +55,13 @@ namespace gazebo
 					// Event register, which will make the function be executed in each iteration
 					this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController::OnSystemRunning, this, _1));
 				}
+				//########################################################
+		public: void welcomInfoProcessor(GzStringPtr &msg)
+				{
+					cout<<"Message Recieved"<<endl;
+					cout<<"Message: "<<msg->data()<<endl;
+				}
+				//########################################################
 		private: void SystemInitialization(physics::ModelPtr parentModel)
 				{
 					// Get all the pointers point to right objects
@@ -100,8 +112,8 @@ namespace gazebo
 					AngleValue = this->RevolutionSpeedCal(JointWR,0);
 					// cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
 					CurrentPosition = GetModelCentralCoor();
-					cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
-					cout<<"The direction of the robot is: ["<<CurrentPosition.rot.GetRoll()<<","<<CurrentPosition.rot.GetPitch()<<","<<CurrentPosition.rot.GetYaw()<<"];"<<endl;
+					// cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
+					// cout<<"The direction of the robot is: ["<<CurrentPosition.rot.GetRoll()<<","<<CurrentPosition.rot.GetPitch()<<","<<CurrentPosition.rot.GetYaw()<<"];"<<endl;
 					// cout<<"The direction of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
 					//=========== Basic Controllers Need to Be Executed In Each Iteration ===========
 					// JointAngleControl();
@@ -112,7 +124,7 @@ namespace gazebo
 					// CurrentSpeed.y = 2;
 					// AnglePIDController(AngleNeed2Be, CurrentPosition.rot.GetYaw(), CurrentSpeed);
 					math::Vector2d endPointTest;
-					endPointTest.Set(4,4);
+					endPointTest.Set(1,1);
 					// math::Vector2d startPointTest;
 					// startPointTest.x = CurrentPosition.pos.x;
 					// startPointTest.y = CurrentPosition.pos.y;
@@ -232,7 +244,7 @@ namespace gazebo
 					double displacementX, displacementY, angleC;
 					displacementX = EndPoint.x - StartPoint.x;
 					displacementY = EndPoint.y - StartPoint.y;
-					cout<<"direction vector is [ " << displacementX << "," <<displacementY<<"]"<<endl;
+					// cout<<"direction vector is [ " << displacementX << "," <<displacementY<<"]"<<endl;
 					angleC = atan2(displacementY,displacementX);
 					math::Angle ReturnAngle(angleC+PI/2);
 					return ReturnAngle;
@@ -351,6 +363,8 @@ namespace gazebo
 		public:  double MaxiRotationRate;
 		public:  double AccelerationRate;
 		public:  double PlanarMotionStopThreshold;
+
+		private: transport::SubscriberPtr sub;
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
 		private: double WheelRadius;
