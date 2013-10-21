@@ -36,17 +36,25 @@ namespace gazebo
 					MaxiRotationRate = 2.4086;
 					AccelerationRate = 8;
 					PlanarMotionStopThreshold = 0.02;
+					Driving2Angle.SetFromRadian(5.49778);
+					Driving2Point.Set(1,1);
+					Location.Set(1,1,0.05);
+					Rotmat.SetFromAxis(0,0,1,5.49778);
+					Need2BeSet = 0;
+					isModel3  = 0;
 					// A hint of model been initialized
 					printf("Model Initiated\n");
 				}
 		public: void Load (physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 				{
+					// Initialize the whole system
+					SystemInitialization(_parent);
+					
 					gazebo::transport::NodePtr node(new gazebo::transport::Node());
   					node->Init();
   					this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
   					// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
-					// Initialize the whole system
-					SystemInitialization(_parent);
+					
 					// Testing codes
 					this->JointWR->SetVelocity(0,0);
 					this->JointWL->SetVelocity(0,0);
@@ -60,6 +68,17 @@ namespace gazebo
 				{
 					cout<<"Message Recieved"<<endl;
 					cout<<"Message: "<<msg->data()<<endl;
+					string InfoReceived = msg->data();
+					if(InfoReceived.find('3') != string::npos)
+					{
+						Driving2Angle.SetFromRadian(2.3561945);
+						Driving2Point.Set(0.935,0.935);
+						Location.Set(0.929,0.929,0.05);
+						Rotmat.SetFromAxis(0,0,1,2.35619);
+						Need2BeSet = 0;
+
+						isModel3  = 1;
+					}
 				}
 				//########################################################
 		private: void SystemInitialization(physics::ModelPtr parentModel)
@@ -95,7 +114,7 @@ namespace gazebo
 					// Setting the maximium torque of the body bending joint
 					this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
 					// Set the angle of the hinge in the center to zero
-					math::Angle InitialAngle(0.3);
+					math::Angle InitialAngle(0.05);
 					this->JointCB->SetAngle(0, InitialAngle);
 				}
 		// Testing function
@@ -132,7 +151,30 @@ namespace gazebo
 					// cout<<"Calculated angle: " << desireAngle.Degree() << "," << desireAngle.Radian()<<endl;
 					// AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
 
-					Move2Point(endPointTest,AngleNeed2Be);
+					// Move2Point(endPointTest,AngleNeed2Be);
+					// Move2Point(Driving2Point,Driving2Angle);
+					math::Pose DesiredPos(Location,Rotmat);
+					if (Need2BeSet==0)
+					{
+						this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
+						Need2BeSet += 1;
+					}else{
+						if(isModel3 == 1)
+						{
+							this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
+						 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
+						 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
+						 	math::Vector3 axis(0,1,0);
+						 	this->DynamicJoint->SetAxis(0, axis);
+						 	isModel3 += 1;
+						}
+						if (isModel3 >=2)
+						{
+							SetJointSpeed(JointCB, 0, 0.05);
+						}
+						 
+					}
+					// this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
 					//===============================================================================
 				}
 		// The unit of the angle is radian
@@ -368,6 +410,13 @@ namespace gazebo
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
 		private: double WheelRadius;
+		private: math::Angle Driving2Angle;
+		private: math::Vector2d Driving2Point;
+		private: math::Vector3 Location;
+		private: math::Quaternion Rotmat;
+		private: int Need2BeSet;
+		private: physics::JointPtr DynamicJoint;
+		private: int isModel3;
 
 		//####################################################################
 	};

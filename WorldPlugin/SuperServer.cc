@@ -12,6 +12,12 @@ using namespace std;
 
 namespace gazebo
 {
+  string Int2String(int number) //
+  {
+     stringstream ss; //create a stringstream
+     ss << number;    //add number to the stream
+     return ss.str(); //return a string with the contents of the stream
+  }
   class ControlCenter : public WorldPlugin
   {
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
@@ -37,10 +43,16 @@ namespace gazebo
     private: void addEntity2World(std::string & _info)
     {
       msgs::GzString welcomeMsg;
-      welcomeMsg.set_data("Model");
+      string CurrentMessage;
+
       int modelnumber = this->currentWorld->GetModelCount();
       cout<<"Number of models: "<<modelnumber<<endl;
       cout<<"Default information: "<<_info<<endl;
+
+      CurrentMessage = "Model";
+      CurrentMessage += Int2String(modelnumber);
+      welcomeMsg.set_data(CurrentMessage);
+
       statePub->Publish(welcomeMsg);
     }
     private: physics::WorldPtr currentWorld;
