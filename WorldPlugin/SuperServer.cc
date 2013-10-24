@@ -20,6 +20,11 @@ namespace gazebo
   }
   class ControlCenter : public WorldPlugin
   {
+    public: ControlCenter()
+    {
+      numOfModules = 0;
+      infoCounter = 0;
+    }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
     {
       this->currentWorld = _parent;
@@ -39,25 +44,76 @@ namespace gazebo
       // msgs::Set(physicsMsg.mutable_gravity(), math::Vector3(0.01, 0, 0.1));
       // statePub->Publish(stateMsg);
       this->addEntityConnection = event::Events::ConnectAddEntity(boost::bind(&ControlCenter::addEntity2World, this, _1));
+      this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ControlCenter::OnSystemRunning, this, _1));
     }
     private: void addEntity2World(std::string & _info)
     {
+      
+      transport::NodePtr node(new transport::Node());
+      node->Init();
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // Welcome message generation each time a new model has been added
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       msgs::GzString welcomeMsg;
       string CurrentMessage;
 
       int modelnumber = this->currentWorld->GetModelCount();
+      numOfModules = modelnumber-1;
       cout<<"Number of models: "<<modelnumber<<endl;
       cout<<"Default information: "<<_info<<endl;
-
+      this->statePub = node->Advertise<msgs::GzString>("~/Welcome");
       CurrentMessage = "Model";
       CurrentMessage += Int2String(modelnumber);
       welcomeMsg.set_data(CurrentMessage);
 
       statePub->Publish(welcomeMsg);
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // Dynamic publisher generation
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      string NewPubNAme = "~/";
+      NewPubNAme += _info;
+      NewPubNAme += "_world";
+      transport::PublisherPtr newWorldPub = node->Advertise<msgs::Pose>(NewPubNAme);
+      WorldPublisher.push_back(newWorldPub);
+
+
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function will be called in the every iteration of the simulation
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
+    {
+      // if (infoCounter<=2)
+      // {
+      //   math::Vector3 Location;
+      //   math::Quaternion Rotmat;
+      //   Location.Set(0.929,0.929,0.05);
+      //   Rotmat.SetFromAxis(0,0,1,2.35619);
+      //   math::Pose PoseInfo(Location,Rotmat);
+      //   WorldPublisher.at(numOfModules-1)->Publish(gazebo::msgs::Convert(PoseInfo));
+      //   infoCounter++;
+      // }
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function is used to check the distance between each robot
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void ready4Connection(void)
+    {
+
     }
     private: physics::WorldPtr currentWorld;
     private: event::ConnectionPtr addEntityConnection;
     private: transport::PublisherPtr statePub;
+    private: vector<transport::PublisherPtr> WorldPublisher;
+    // The pointer vector for all the models in the world
+    private: vector<physics::ModelPtr> modelGroup;
+    // The event that will be refreshed in every iteration of the simulation
+    private: event::ConnectionPtr updateConnection;
+    //+++++++++ testing ++++++++++++++++++++++++++++
+    private: int infoCounter;
+    private: int numOfModules;
   };
 
   // Register this plugin with the simulator

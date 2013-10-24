@@ -11,6 +11,7 @@ using namespace std;
 namespace gazebo
 {
 	typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
+	typedef const boost::shared_ptr<const msgs::Pose> PosePtr;
 	struct JointPlus
 	{
 		physics::JointPtr JointX;
@@ -38,7 +39,9 @@ namespace gazebo
 					PlanarMotionStopThreshold = 0.02;
 					Driving2Angle.SetFromRadian(5.49778);
 					Driving2Point.Set(1,1);
+					// Location is test variable for dynamic joint generation
 					Location.Set(1,1,0.05);
+					// Rotmat is test variable for dynamic joint generation
 					Rotmat.SetFromAxis(0,0,1,5.49778);
 					Need2BeSet = 0;
 					isModel3  = 0;
@@ -49,12 +52,12 @@ namespace gazebo
 				{
 					// Initialize the whole system
 					SystemInitialization(_parent);
-					
+					// ************************************************************************************
 					gazebo::transport::NodePtr node(new gazebo::transport::Node());
   					node->Init();
   					this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
   					// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
-					
+					//***************************************************************************************
 					// Testing codes
 					this->JointWR->SetVelocity(0,0);
 					this->JointWL->SetVelocity(0,0);
@@ -72,7 +75,7 @@ namespace gazebo
 					if(InfoReceived.find('3') != string::npos)
 					{
 						Driving2Angle.SetFromRadian(2.3561945);
-						Driving2Point.Set(0.935,0.935);
+						Driving2Point.Set(1,1);
 						Location.Set(0.929,0.929,0.05);
 						Rotmat.SetFromAxis(0,0,1,2.35619);
 						Need2BeSet = 0;
@@ -116,6 +119,26 @@ namespace gazebo
 					// Set the angle of the hinge in the center to zero
 					math::Angle InitialAngle(0.05);
 					this->JointCB->SetAngle(0, InitialAngle);
+
+					
+					// physics::ModelState CurrentModelState(model);
+					// string TopicName = "~/";
+					// TopicName += CurrentModelState.GetName();
+					// TopicName += "_world";
+					// gazebo::transport::NodePtr node(new gazebo::transport::Node());
+  			// 		node->Init();
+  			// 		this->PositionSub = node->Subscribe(TopicName,&ModelController::PositionDecoding, this);
+				}
+		// Position Command Decoding Function
+		private: void PositionDecoding(PosePtr &msg)
+				{
+					// Location = msg->position();
+					// Rotmat = msg->orientation();
+					math::Pose tmpPose = gazebo::msgs::Convert(*msg);
+					Location = tmpPose.pos;
+					Rotmat = tmpPose.rot;
+					Need2BeSet = 0;
+					cout<<"Geting Location: "<< Location.x<<","<<Location.y<<","<<Location.z<<endl;
 				}
 		// Testing function
 		private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
@@ -124,6 +147,7 @@ namespace gazebo
 					double force;
 					math::Pose CurrentPosition;
 					math::Angle AngleNeed2Be(5.49778);  //0.78539, 2.3562, 3.9270, 5.49778
+					// math::Angle AngleNeed2Be2(0);
 					// force = JointCB->GetForce(0);
 					force = this->JointCB->GetMaxForce(0);
 					// force = JointCB->GetSDF()->GetElement("max_force")->GetValueDouble();
@@ -143,7 +167,7 @@ namespace gazebo
 					// CurrentSpeed.y = 2;
 					// AnglePIDController(AngleNeed2Be, CurrentPosition.rot.GetYaw(), CurrentSpeed);
 					math::Vector2d endPointTest;
-					endPointTest.Set(1,1);
+					endPointTest.Set(0,0);
 					// math::Vector2d startPointTest;
 					// startPointTest.x = CurrentPosition.pos.x;
 					// startPointTest.y = CurrentPosition.pos.y;
@@ -153,24 +177,32 @@ namespace gazebo
 
 					// Move2Point(endPointTest,AngleNeed2Be);
 					// Move2Point(Driving2Point,Driving2Angle);
-					math::Pose DesiredPos(Location,Rotmat);
+					// math::Pose DesiredPos(Location,Rotmat);
 					if (Need2BeSet==0)
 					{
+						math::Pose DesiredPos(Location,Rotmat);
 						this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
 						Need2BeSet += 1;
 					}else{
+						if (isModel3 == 0)
+						{
+						// 	Move2Point(endPointTest,AngleNeed2Be);
+						// 	SetJointSpeed(JointCB, 0, 0.05);
+						}
 						if(isModel3 == 1)
 						{
-							this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
-						 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
-						 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
-						 	math::Vector3 axis(0,1,0);
-						 	this->DynamicJoint->SetAxis(0, axis);
-						 	isModel3 += 1;
+							// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
+						 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
+						 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
+						 // 	math::Vector3 axis(0,1,0);
+						 // 	this->DynamicJoint->SetAxis(0, axis);
+						 // 	isModel3 += 1;
 						}
 						if (isModel3 >=2)
 						{
-							SetJointSpeed(JointCB, 0, 0.05);
+							// SetJointSpeed(JointCB, 0, 0.05);
+							// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
+							// Move2Point(endPointTest,AngleNeed2Be);
 						}
 						 
 					}
@@ -407,6 +439,7 @@ namespace gazebo
 		public:  double PlanarMotionStopThreshold;
 
 		private: transport::SubscriberPtr sub;
+		private: transport::SubscriberPtr PositionSub;
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
 		private: double WheelRadius;
