@@ -1,6 +1,7 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Filename:  ContactSensor.cc
 // Author:  Edward Cui
+// Contact: cyk1990995@gmail.com
 // Last updated:  10/24/2013
 // Description: This sensor pluginin is used to populate message when
 //              two models are close enough to connect, this messgae 
@@ -45,11 +46,11 @@ void ContactSensor::Load(sensors::SensorPtr _sensor, sdf::ElementPtr /*_sdf*/)
   } 
 
   // Connect to the sensor update event.
-  // this->updateConnection = this->parentSensor->ConnectUpdated(
-  //     boost::bind(&ContactSensor::OnUpdate, this));
+  this->updateConnection = this->parentSensor->ConnectUpdated(
+      boost::bind(&ContactSensor::OnUpdate, this));
 
   // Make sure the parent sensor is active.
-  // this->parentSensor->SetActive(true);
+  this->parentSensor->SetActive(true);
 
   //+++++++++++++ Generate a sensor topic with name of sensor's name
   // and its parent name +++++++++++++++++++++++++++++++++++++++++++
@@ -63,8 +64,10 @@ void ContactSensor::Load(sensors::SensorPtr _sensor, sdf::ElementPtr /*_sdf*/)
 
   // Initialize the node with the model name
   node->Init(ParentModelName);
-  string TopicNAme = "~/" + parentSensor->GetParentName() + "::" + parentSensor->GetName();
-  this->CollisionPub = node->Advertise<msgs::GzString>(TopicNAme);
+  cout<<"Sensor: node name is '"<<ParentModelName<<"'"<<endl;
+  string TopicName = "~/" + parentSensor->GetParentName() + "::" + parentSensor->GetName();
+  this->CollisionPub = node->Advertise<msgs::GzString>(TopicName);
+  cout<<"Sensor: node topic is '"<<TopicName<<"'"<<endl;
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 }
 
@@ -80,14 +83,15 @@ void ContactSensor::OnUpdate()
   {
     if (contacts.contact(i).collision1().find("ground_plane")==string::npos && contacts.contact(i).collision2().find("ground_plane")==string::npos)
     {
-      std::cout << "Collision between[" << contacts.contact(i).collision1()
-              << "] and [" << contacts.contact(i).collision2() << "]\n";
+      // std::cout << "Collision between[" << contacts.contact(i).collision1()
+      //         << "] and [" << contacts.contact(i).collision2() << "]\n";
 
       //+++++++++++++++ Publish the topic to model +++++++++++++++++++++++++++++++++++++++
       msgs::GzString CollisionMessage;
       string CollisionMsgs = contacts.contact(i).collision1() + "," + contacts.contact(i).collision2();
       CollisionMessage.set_data(CollisionMsgs);
       CollisionPub->Publish(CollisionMessage);
+      // cout<<"Topic Published"<<endl;
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       //+++++++++++++++ Showing the position of the contact points +++++++++++++++++++++++
