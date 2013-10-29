@@ -7,9 +7,10 @@
 #include "gazebo/msgs/msgs.hh"
 #include <string>
 #include <iostream>
+#include <cmath>
 #include "collision_message_plus.pb.h"
 
-#define PI 3.141598
+#define PI 3.1411593
 
 using namespace std;
 
@@ -126,17 +127,37 @@ namespace gazebo
         {
           physics::LinkPtr Link1, Link2;
           math::Vector3 axis;
-          if (msg->collision1().substr(msg->collision1().find("::")+2,msg->collision1().rfind("::")).compare("FrontWheel")==0)
+          if (msg->collision1().substr(msg->collision1().find("::")+2,msg->collision1().rfind("::")-msg->collision1().find("::")-2).compare("FrontWheel")==0)
           {
+            cout<<"World: Set the axis of the joint done!"<<endl;
             axis.Set(0,1,0);
           }
 
-          math::Vector3 ZDirectionOffset(0,0,0.005);
+          math::Vector3 ZDirectionOffset(0,0,0.008);
           math::Vector3 newCenterPoint = 0.5*(ContactLinkPos.pos + PendingRequestPos.at(i).pos)+ZDirectionOffset;
-          math::Vector3 newPositionOfLink1 = newCenterPoint + 0.051*ContactLinkPos.rot.GetYAxis();
-          math::Vector3 newPositionOfLink2 = newCenterPoint - 0.051*ContactLinkPos.rot.GetYAxis();
+          math::Vector3 newPositionOfLink1 = newCenterPoint + 0.0495*ContactLinkPos.rot.GetYAxis();
+          math::Vector3 newPositionOfLink2 = newCenterPoint - 0.0495*ContactLinkPos.rot.GetYAxis();
           math::Quaternion newDirectionofLink1 = ContactLinkPos.rot;
-          math::Quaternion newDirectionofLink2(-ContactLinkPos.rot.GetRoll(), PendingRequestPos.at(i).rot.GetPitch(),-(PI-ContactLinkPos.rot.GetYaw()));
+          cout<<"World: 'newDirectionofLink1' Z axis [ "<<newDirectionofLink1.GetZAxis().x<<", "<<newDirectionofLink1.GetZAxis().y<<", "<<newDirectionofLink1.GetZAxis().z<<"]"<<endl;
+          cout<<"World: 'newDirectionofLink1' 'Yaw' is : "<<newDirectionofLink1.GetYaw()<<endl;
+          cout<<"World: 'newDirectionofLink1' Y axis [ "<<newDirectionofLink1.GetYAxis().x<<", "<<newDirectionofLink1.GetYAxis().y<<", "<<newDirectionofLink1.GetYAxis().z<<"]"<<endl;
+          cout<<"World: 'newDirectionofLink1' 'Pitch' is : "<<newDirectionofLink1.GetPitch()<<endl;
+          // cout<<"World: 'referenceQuaternion' Y axis [ "<<referenceQuaternion.GetYAxis().x<<", "<<referenceQuaternion.GetYAxis().y<<", "<<referenceQuaternion.GetYAxis().z<<"]"<<endl;
+          // cout<<"World: 'referenceQuaternion' 'Pitch' is : "<<referenceQuaternion.GetPitch()<<endl;
+          cout<<"World: 'PendingRequestPos' Z axis [ "<<PendingRequestPos.at(i).rot.GetZAxis().x<<", "<<PendingRequestPos.at(i).rot.GetZAxis().y<<", "<<PendingRequestPos.at(i).rot.GetZAxis().z<<"]"<<endl;
+          cout<<"World: 'PendingRequestPos' 'Yaw' is : "<<PendingRequestPos.at(i).rot.GetYaw()<<endl;
+          math::Vector3 newZAxis = PendingRequestPos.at(i).rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PendingRequestPos.at(i).rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
+          newZAxis = newZAxis.Normalize();
+          double AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis()));
+          math::Quaternion FirstRotationOfLink2(0,0,PI);
+          math::Quaternion SecondRotationOfLink2(0, AngleBetweenZAxes ,0);
+
+          // math::Quaternion newDirectionofLink2(newZAxis, PI+newDirectionofLink1.GetYaw());
+          math::Quaternion newDirectionofLink2 = newDirectionofLink1*FirstRotationOfLink2*SecondRotationOfLink2;
+          cout<<"World: 'FirstRotationOfLink2' Y axis [ "<<FirstRotationOfLink2.GetYAxis().x<<", "<<FirstRotationOfLink2.GetYAxis().y<<", "<<FirstRotationOfLink2.GetYAxis().z<<"]"<<endl;
+          cout<<"World: 'FirstRotationOfLink2' 'Pitch' is : "<<FirstRotationOfLink2.GetPitch()<<endl;
+          cout<<"World: 'newDirectionofLink2' Y axis [ "<<newDirectionofLink2.GetYAxis().x<<", "<<newDirectionofLink2.GetYAxis().y<<", "<<newDirectionofLink2.GetYAxis().z<<"]"<<endl;
+          cout<<"World: 'newDirectionofLink2' 'Pitch' is : "<<newDirectionofLink2.GetPitch()<<endl;
 
           cout<<"World: Need to be set position ["<<newPositionOfLink1.x<<", "<<newPositionOfLink1.y<<", "<<newPositionOfLink1.z<<"]"<<endl;
           // cout<<"World: Model name is : "<<msg->collision1().substr(0,msg->collision1().find("::"))<<" and link name is : "<<msg->collision1().substr(msg->collision1().find("::")+2,msg->collision1().rfind("::")-msg->collision1().find("::")-2)<<endl;
@@ -153,11 +174,15 @@ namespace gazebo
           physics::JointPtr DynamicJoint;
           DynamicJoint = currentWorld->GetPhysicsEngine()->CreateJoint("revolute",  currentWorld->GetModel(msg->collision1().substr(0,msg->collision1().find("::"))));
           DynamicJoint->Attach(Link1, Link2);
-          DynamicJoint->Load(Link1, Link2, math::Pose(math::Vector3(0,-0.005,0),math::Quaternion()));
+          DynamicJoint->Load(Link1, Link2, math::Pose(math::Vector3(0,-0.00,0),math::Quaternion()));
           DynamicJoint->SetAxis(0, axis);
+          cout<<"World: The parent of the new joint is '"<<DynamicJoint->GetParent()->GetName()<<"'"<<endl; 
+          cout<<"World: The children of the new joint is '"<<DynamicJoint->GetChild()->GetName()<<"'"<<endl; 
           // DynamicJoint->SetAngle(1,math::Angle(0));
-          DynamicJoint->SetHighStop(1,math::Angle(0.01));
-          DynamicJoint->SetLowStop(1,math::Angle(-0.01));
+          // DynamicJoint->SetHighStop(1,math::Angle(0.01));
+          // DynamicJoint->SetLowStop(1,math::Angle(-0.01));
+          math::Angle AngleNeed2Be(0.49778);
+          DynamicJoint->SetAngle(0, AngleNeed2Be);
           DynamicConnections.push_back(DynamicJoint);
           cout<< "World: Dynamic joint has been generated."<<endl;
 

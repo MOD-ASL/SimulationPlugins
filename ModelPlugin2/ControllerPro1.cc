@@ -80,6 +80,10 @@ namespace gazebo
 						Driving2Point.Set(1,1);
 						Location.Set(0.929,0.929,0.05);
 						Rotmat.SetFromAxis(0,0,1,2.35619);
+
+						math::Angle AngleInterested(0.5235987);
+						this->JointWF->SetAngle(0,AngleInterested);
+
 						Need2BeSet = 0;
 
 						isModel3  = 1;
@@ -121,6 +125,8 @@ namespace gazebo
 					// Set the angle of the hinge in the center to zero
 					math::Angle InitialAngle(0.05);
 					this->JointCB->SetAngle(0, InitialAngle);
+					// math::Angle AngleNeed2Be(0.49778);
+					// this->JointCB->SetAngle(0, AngleNeed2Be);
 
 					
 					// physics::ModelState CurrentModelState(model);
@@ -219,39 +225,39 @@ namespace gazebo
 					// AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
 
 					// Move2Point(endPointTest,AngleNeed2Be);
-					Move2Point(Driving2Point,Driving2Angle);
+					// Move2Point(Driving2Point,Driving2Angle);
 					// math::Pose DesiredPos(Location,Rotmat);
-					// if (Need2BeSet==0)
-					// {
-					// 	math::Pose DesiredPos(Location,Rotmat);
-					// 	this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
-					// 	Need2BeSet += 1;
-					// }else{
-					// 	if (isModel3 == 0)
-					// 	{
-					// 	// 	Move2Point(endPointTest,AngleNeed2Be);
-					// 	// 	SetJointSpeed(JointCB, 0, 0.05);
-					// 	}
-					// 	if(isModel3 == 1)
-					// 	{
-					// 		// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
-					// 	 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
-					// 	 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
-					// 	 // 	math::Vector3 axis(0,1,0);
-					// 	 // 	this->DynamicJoint->SetAxis(0, axis);
-					// 	 	isModel3 += 1;
-					// 	}
-					// 	if (isModel3 >=2)
-					// 	{
-					// 		// SetJointSpeed(JointCB, 0, 0.05);
-					// 		// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
-					// 		// Move2Point(endPointTest,AngleNeed2Be);
-					// 	}
-					// 	// cout<<"Model: The position of the Link: [ "<<model->GetLink("FrontWheel")->GetWorldPose().pos.x<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.y<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.z<<"]"<<endl;
-					// 	// cout<<"Model: The y axis vector: ["<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().x<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().y<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().z<<"]"<<endl;
-					// 	// cout<<"Model: Euler angles are: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().z<<"]"<<endl;
-					// 	// cout<<"Model: The Quaternion values: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.z<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.w<<"]"<<endl;
-					// }
+					if (Need2BeSet==0)
+					{
+						math::Pose DesiredPos(Location,Rotmat);
+						this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
+						Need2BeSet += 1;
+					}else{
+						if (isModel3 == 0)
+						{
+						// 	Move2Point(endPointTest,AngleNeed2Be);
+						// 	SetJointSpeed(JointCB, 0, 0.05);
+						}
+						if(isModel3 == 1)
+						{
+							// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
+						 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
+						 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
+						 // 	math::Vector3 axis(0,1,0);
+						 // 	this->DynamicJoint->SetAxis(0, axis);
+						 	isModel3 += 1;
+						}
+						if (isModel3 >=2)
+						{
+							// SetJointSpeed(JointCB, 0, 0.05);
+							// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
+							// Move2Point(endPointTest,AngleNeed2Be);
+						}
+						// cout<<"Model: The position of the Link: [ "<<model->GetLink("FrontWheel")->GetWorldPose().pos.x<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.y<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.z<<"]"<<endl;
+						// cout<<"Model: The y axis vector: ["<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().x<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().y<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().z<<"]"<<endl;
+						// cout<<"Model: Euler angles are: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().z<<"]"<<endl;
+						// cout<<"Model: The Quaternion values: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.z<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.w<<"]"<<endl;
+					}
 					// this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
 					//===============================================================================
 				}
