@@ -64,10 +64,10 @@ void ContactSensor::Load(sensors::SensorPtr _sensor, sdf::ElementPtr /*_sdf*/)
 
   // Initialize the node with the model name
   node->Init(ParentModelName);
-  cout<<"Sensor: node name is '"<<ParentModelName<<"'"<<endl;
+  // cout<<"Sensor: node name is '"<<ParentModelName<<"'"<<endl;
   string TopicName = "~/" + parentSensor->GetParentName() + "::" + parentSensor->GetName();
   this->CollisionPub = node->Advertise<msgs::GzString>(TopicName);
-  cout<<"Sensor: node topic is '"<<TopicName<<"'"<<endl;
+  // cout<<"Sensor: node topic is '"<<TopicName<<"'"<<endl;
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 }
 

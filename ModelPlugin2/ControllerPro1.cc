@@ -79,7 +79,7 @@ namespace gazebo
 						Driving2Angle.SetFromRadian(2.3561945);
 						Driving2Point.Set(1,1);
 						Location.Set(0.929,0.929,0.05);
-						Rotmat.SetFromAxis(0,0,1,2.35619);
+						Rotmat.SetFromAxis(0,0,1,2.3561945);
 
 						math::Angle AngleInterested(0.5235987);
 						this->JointWF->SetAngle(0,AngleInterested);
@@ -146,7 +146,14 @@ namespace gazebo
 					cout<<"Mode: node name is '"<<model->GetName()<<"'"<<endl;
 					string TopicName = "~/" + model->GetName() + "::FrontWheel::front_contact";
 					cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
-					this->LinkCollisonSub = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
+					this->LinkCollisonSub[0] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
+					TopicName = "~/" + model->GetName() + "::UHolderBody::UHolder_contact";
+					cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
+					this->LinkCollisonSub[1] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
+					TopicName = "~/" + model->GetName() + "::LeftWheel::LeftWheel_contact";
+					this->LinkCollisonSub[2] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
+					TopicName = "~/" + model->GetName() + "::RightWheel::RightWheel_contact";
+					this->LinkCollisonSub[3] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
 
 					string ColPubName = "~/"+model->GetName()+"_Collision";
 					CollisionInfoToServer = node1->Advertise<collision_message_plus::msgs::CollisionMessage>(ColPubName);
@@ -162,8 +169,10 @@ namespace gazebo
 					collision_message_plus::msgs::CollisionMessage CollisionMsgsPush;
 
 					string LinkName;
+					// cout<<"Model: Information came from model: "<<model->GetName()<<endl;
 					if(Collison1.substr(0,Collison1.find("::")).compare(model->GetName())==0)
 					{
+						// cout<<"Model: Collision 1 position "
 						CollisionMsgsPush.set_collision1(Collison1);
 						CollisionMsgsPush.set_collision2(Collison2);
 						LinkName = Collison1.substr((model->GetName()).length()+2,Collison1.find(":",(model->GetName()).length()+2)-2-(model->GetName()).length());
@@ -225,39 +234,39 @@ namespace gazebo
 					// AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
 
 					// Move2Point(endPointTest,AngleNeed2Be);
-					// Move2Point(Driving2Point,Driving2Angle);
+					Move2Point(Driving2Point,Driving2Angle);
 					// math::Pose DesiredPos(Location,Rotmat);
-					if (Need2BeSet==0)
-					{
-						math::Pose DesiredPos(Location,Rotmat);
-						this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
-						Need2BeSet += 1;
-					}else{
-						if (isModel3 == 0)
-						{
-						// 	Move2Point(endPointTest,AngleNeed2Be);
-						// 	SetJointSpeed(JointCB, 0, 0.05);
-						}
-						if(isModel3 == 1)
-						{
-							// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
-						 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
-						 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
-						 // 	math::Vector3 axis(0,1,0);
-						 // 	this->DynamicJoint->SetAxis(0, axis);
-						 	isModel3 += 1;
-						}
-						if (isModel3 >=2)
-						{
-							// SetJointSpeed(JointCB, 0, 0.05);
-							// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
-							// Move2Point(endPointTest,AngleNeed2Be);
-						}
-						// cout<<"Model: The position of the Link: [ "<<model->GetLink("FrontWheel")->GetWorldPose().pos.x<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.y<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.z<<"]"<<endl;
-						// cout<<"Model: The y axis vector: ["<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().x<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().y<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().z<<"]"<<endl;
-						// cout<<"Model: Euler angles are: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().z<<"]"<<endl;
-						// cout<<"Model: The Quaternion values: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.z<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.w<<"]"<<endl;
-					}
+					// if (Need2BeSet==0)
+					// {
+					// 	math::Pose DesiredPos(Location,Rotmat);
+					// 	this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
+					// 	Need2BeSet += 1;
+					// }else{
+					// 	if (isModel3 == 0)
+					// 	{
+					// 	// 	Move2Point(endPointTest,AngleNeed2Be);
+					// 	// 	SetJointSpeed(JointCB, 0, 0.05);
+					// 	}
+					// 	if(isModel3 == 1)
+					// 	{
+					// 		// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
+					// 	 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
+					// 	 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
+					// 	 // 	math::Vector3 axis(0,1,0);
+					// 	 // 	this->DynamicJoint->SetAxis(0, axis);
+					// 	 	isModel3 += 1;
+					// 	}
+					// 	if (isModel3 >=2)
+					// 	{
+					// 		// SetJointSpeed(JointCB, 0, 0.05);
+					// 		// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
+					// 		// Move2Point(endPointTest,AngleNeed2Be);
+					// 	}
+					// 	// cout<<"Model: The position of the Link: [ "<<model->GetLink("FrontWheel")->GetWorldPose().pos.x<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.y<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.z<<"]"<<endl;
+					// 	// cout<<"Model: The y axis vector: ["<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().x<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().y<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().z<<"]"<<endl;
+					// 	// cout<<"Model: Euler angles are: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().z<<"]"<<endl;
+					// 	// cout<<"Model: The Quaternion values: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.z<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.w<<"]"<<endl;
+					// }
 					// this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
 					//===============================================================================
 				}
@@ -492,7 +501,7 @@ namespace gazebo
 
 		private: transport::SubscriberPtr sub;
 		private: transport::SubscriberPtr PositionSub;
-		private: transport::SubscriberPtr LinkCollisonSub;
+		private: transport::SubscriberPtr LinkCollisonSub[4];
 		private: transport::PublisherPtr CollisionInfoToServer;
 		//################# Variables for testing ############################
 		// In the future version, this radius value will be eliminate
