@@ -15,5 +15,5 @@ link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/msgs)
 add_subdirectory(msgs)
 
 add_library(ControllerPro1 SHARED ControllerPro1.cc)
-target_link_libraries(ControllerPro1 collision_message_plus ${GAZEBO_libraries} ${Boost_LIBRARIES})
-add_dependencies(ControllerPro1 collision_message_plus)
+target_link_libraries(ControllerPro1 collision_message_plus command_message ${GAZEBO_libraries} ${Boost_LIBRARIES})
+add_dependencies(ControllerPro1 collision_message_plus command_message)

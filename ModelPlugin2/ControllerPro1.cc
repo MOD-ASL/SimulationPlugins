@@ -4,8 +4,10 @@
 #include <gazebo/common/common.hh>
 #include <iostream>
 #include <cmath>
-
+// Libraries for meesages needed to use to communicate between bplugins
 #include "collision_message_plus.pb.h"
+#include "command_message.pb.h"
+
 using namespace std;
 
 #define PI 3.1415926 
@@ -14,6 +16,7 @@ namespace gazebo
 {
 	typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
 	typedef const boost::shared_ptr<const msgs::Pose> PosePtr;
+	typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr;
 	struct JointPlus
 	{
 		physics::JointPtr JointX;
@@ -71,8 +74,8 @@ namespace gazebo
 				//########################################################
 		public: void welcomInfoProcessor(GzStringPtr &msg)
 				{
-					cout<<"Message Recieved"<<endl;
-					cout<<"Message: "<<msg->data()<<endl;
+					// cout<<"Message Recieved"<<endl;
+					// cout<<"Message: "<<msg->data()<<endl;
 					string InfoReceived = msg->data();
 					if(InfoReceived.find('3') != string::npos)
 					{
@@ -130,12 +133,10 @@ namespace gazebo
 
 					
 					// physics::ModelState CurrentModelState(model);
-					// string TopicName = "~/";
-					// TopicName += CurrentModelState.GetName();
-					// TopicName += "_world";
-					// gazebo::transport::NodePtr node(new gazebo::transport::Node());
-  			// 		node->Init();
-  			// 		this->PositionSub = node->Subscribe(TopicName,&ModelController::PositionDecoding, this);
+					string TopicName = "~/" + model->GetName() + "_world";
+					gazebo::transport::NodePtr node(new gazebo::transport::Node());
+  				node->Init(model->GetName());
+  				this->CommandSub = node->Subscribe(TopicName,&ModelController::CommandDecoding, this);
 					CollisionPubAndSubInitialization();
 				}
 		private: void CollisionPubAndSubInitialization(void)
@@ -143,12 +144,12 @@ namespace gazebo
 					gazebo::transport::NodePtr node1(new gazebo::transport::Node());
 					// Initialize the node with the model name
 					node1->Init(model->GetName());
-					cout<<"Mode: node name is '"<<model->GetName()<<"'"<<endl;
+					// cout<<"Mode: node name is '"<<model->GetName()<<"'"<<endl;
 					string TopicName = "~/" + model->GetName() + "::FrontWheel::front_contact";
-					cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
+					// cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
 					this->LinkCollisonSub[0] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
 					TopicName = "~/" + model->GetName() + "::UHolderBody::UHolder_contact";
-					cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
+					// cout<<"Mode: node topic is '"<<TopicName<<"'"<<endl;
 					this->LinkCollisonSub[1] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
 					TopicName = "~/" + model->GetName() + "::LeftWheel::LeftWheel_contact";
 					this->LinkCollisonSub[2] = node1->Subscribe(TopicName,&ModelController::CollisionReceiverProcessor,this);
@@ -187,17 +188,28 @@ namespace gazebo
 
 					CollisionInfoToServer->Publish(CollisionMsgsPush);
 				}
-		// Position Command Decoding Function
-		private: void PositionDecoding(PosePtr &msg)
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function will be called when the model receive a command from SuperServer
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		private: void CommandDecoding(CommandMessagePtr &msg)
 				{
-					// Location = msg->position();
-					// Rotmat = msg->orientation();
-					math::Pose tmpPose = gazebo::msgs::Convert(*msg);
-					Location = tmpPose.pos;
-					Rotmat = tmpPose.rot;
-					Need2BeSet = 0;
-					cout<<"Geting Location: "<< Location.x<<","<<Location.y<<","<<Location.z<<endl;
+					int commandType = msg->messagetype();
+					switch(commandType)
+					{
+						case 1:{NameOfConnectedModels.push_back(msg->whichmodelconnectedto());}break;
+					}
 				}
+		// Position Command Decoding Function
+		// private: void PositionDecoding(PosePtr &msg)
+		// 		{
+		// 			// Location = msg->position();
+		// 			// Rotmat = msg->orientation();
+		// 			math::Pose tmpPose = gazebo::msgs::Convert(*msg);
+		// 			Location = tmpPose.pos;
+		// 			Rotmat = tmpPose.rot;
+		// 			Need2BeSet = 0;
+		// 			cout<<"Geting Location: "<< Location.x<<","<<Location.y<<","<<Location.z<<endl;
+		// 		}
 		// Testing function
 		private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
 				{
@@ -494,13 +506,15 @@ namespace gazebo
 		public:  math::Vector3 JointAngleKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
 		// Default Joint Angle PID controller parameter
 		public:  math::Vector3 ModelAngleKPID;	// First digit is Kp, second digit is Ki and third digit is Kd
+		// Vector that contains all the names of connected models
+		private: vector<string> NameOfConnectedModels;
 		// Maximium rotation rate of each joint
 		public:  double MaxiRotationRate;
 		public:  double AccelerationRate;
 		public:  double PlanarMotionStopThreshold;
 
 		private: transport::SubscriberPtr sub;
-		private: transport::SubscriberPtr PositionSub;
+		private: transport::SubscriberPtr CommandSub;
 		private: transport::SubscriberPtr LinkCollisonSub[4];
 		private: transport::PublisherPtr CollisionInfoToServer;
 		//################# Variables for testing ############################

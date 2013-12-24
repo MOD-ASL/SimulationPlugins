@@ -83,9 +83,6 @@ void ContactSensor::OnUpdate()
   {
     if (contacts.contact(i).collision1().find("ground_plane")==string::npos && contacts.contact(i).collision2().find("ground_plane")==string::npos)
     {
-      // std::cout << "Collision between[" << contacts.contact(i).collision1()
-      //         << "] and [" << contacts.contact(i).collision2() << "]\n";
-
       //+++++++++++++++ Publish the topic to model +++++++++++++++++++++++++++++++++++++++
       msgs::GzString CollisionMessage;
       string CollisionMsgs = contacts.contact(i).collision1() + "," + contacts.contact(i).collision2();

@@ -8,11 +8,13 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+// Libraries for meesages needed to use to communicate between bplugins
 #include "collision_message_plus.pb.h"
+#include "command_message.pb.h"
 
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
-#define VALIDCONNECTIONDISLOWER 0.0910
+#define VALIDCONNECTIONDISLOWER 0.095
 
 using namespace std;
 
@@ -87,10 +89,8 @@ namespace gazebo
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       transport::NodePtr node1(new transport::Node());
       node1->Init(_info);
-      string NewPubName = "~/";
-      NewPubName += _info;
-      NewPubName += "_world";
-      transport::PublisherPtr newWorldPub = node1->Advertise<msgs::Pose>(NewPubName);
+      string NewPubName = "~/" + _info + "_world";
+      transport::PublisherPtr newWorldPub = node1->Advertise<command_message::msgs::CommandMessage>(NewPubName);
       WorldPublisher.push_back(newWorldPub);
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -453,6 +453,7 @@ namespace gazebo
           DynamicConnections.push_back(DynamicJoint);
           // cout<< "World: Dynamic joint has been generated."<<endl;
 
+          // After finishing the connection
           existConnections.push_back(nameString1);
           existConnectedPair.push_back(ModelOfModels1);
           int InOneOfTheGroup = 0;
@@ -460,43 +461,55 @@ namespace gazebo
           {
             if (existConnectionGroups.at(m).find(ModelOfCollision1) != string::npos)
             {
-              int InOtherGroup = 0;
-              for (unsigned int j = 0; j < existConnectionGroups.size(); ++j)
+              if (existConnectionGroups.at(m).at(existConnectionGroups.at(m).find(ModelOfCollision1)+ModelOfCollision1.size())==',')
               {
-                if (existConnectionGroups.at(j).find(ModelOfCollision2) != string::npos)
+                int InOtherGroup = 0;
+                for (unsigned int j = 0; j < existConnectionGroups.size(); ++j)
                 {
-                  existConnectionGroups.at(m) += ','+existConnectionGroups.at(j);
-                  existConnectionGroups.erase(existConnectionGroups.begin()+j);
-                  InOtherGroup = 1;
-                  break;
+                  if (existConnectionGroups.at(j).find(ModelOfCollision2) != string::npos)
+                  {
+                    if (existConnectionGroups.at(j).at(existConnectionGroups.at(j).find(ModelOfCollision2)+ModelOfCollision2.size())==',')
+                    {
+                      existConnectionGroups.at(m) += ','+existConnectionGroups.at(j);
+                      existConnectionGroups.erase(existConnectionGroups.begin()+j);
+                      InOtherGroup = 1;
+                      break;
+                    }
+                  }
                 }
+                if (InOtherGroup == 0)
+                {
+                  existConnectionGroups.at(m) += ','+ModelOfCollision2;
+                }
+                InOneOfTheGroup = 1;
+                break;
               }
-              if (InOtherGroup == 0)
-              {
-                existConnectionGroups.at(m) += ','+ModelOfCollision2;
-              }
-              InOneOfTheGroup = 1;
-              break;
             }
             if (existConnectionGroups.at(m).find(ModelOfCollision2) != string::npos)
             {
-              int InOtherGroup = 0;
-              for (unsigned int j = 0; j < existConnectionGroups.size(); ++j)
+              if (existConnectionGroups.at(m).at(existConnectionGroups.at(m).find(ModelOfCollision2)+ModelOfCollision2.size())==',')
               {
-                if (existConnectionGroups.at(j).find(ModelOfCollision1) != string::npos)
+                int InOtherGroup = 0;
+                for (unsigned int j = 0; j < existConnectionGroups.size(); ++j)
                 {
-                  existConnectionGroups.at(m) += ','+existConnectionGroups.at(j);
-                  existConnectionGroups.erase(existConnectionGroups.begin()+j);
-                  InOtherGroup = 1;
-                  break;
+                  if (existConnectionGroups.at(j).find(ModelOfCollision1) != string::npos)
+                  {
+                    if (existConnectionGroups.at(j).at(existConnectionGroups.at(j).find(ModelOfCollision1)+ModelOfCollision1.size())==',')
+                    {
+                      existConnectionGroups.at(m) += ','+existConnectionGroups.at(j);
+                      existConnectionGroups.erase(existConnectionGroups.begin()+j);
+                      InOtherGroup = 1;
+                      break;
+                    }
+                  }
                 }
+                if (InOtherGroup == 0)
+                {
+                  existConnectionGroups.at(m) += ','+ModelOfCollision1;
+                }
+                InOneOfTheGroup = 1;
+                break;
               }
-              if (InOtherGroup == 0)
-              {
-                existConnectionGroups.at(m) += ','+ModelOfCollision1;
-              }
-              InOneOfTheGroup = 1;
-              break;
             }
           }
           if (InOneOfTheGroup==0)
@@ -508,10 +521,40 @@ namespace gazebo
           {
             cout<<"Wprld: One of the connected groups is: "<<existConnectionGroups.at(m)<<endl;
           }
-          // ++++++++++++++++++++++++++++++++++++++++++++
+          // // ++++++++++++++++++++++++++++++++++++++++++++
           // cout<<"World: Connection between models: "
           namesOfPendingRequest.erase(namesOfPendingRequest.begin()+i);
           PendingRequestPos.erase(PendingRequestPos.begin()+i);
+
+          // Publish the connection information to model
+          int InfoPushedCount;
+          for (unsigned int m = 0; m < modelNameGroup.size(); ++m)
+          {
+            if (modelNameGroup.at(m).compare(ModelOfCollision1)==0)
+            {
+              command_message::msgs::CommandMessage ConnectionMessage;
+              ConnectionMessage.set_messagetype(1);
+              ConnectionMessage.set_whichmodelconnectedto(ModelOfCollision2);
+              WorldPublisher.at(m)->Publish(ConnectionMessage);
+              InfoPushedCount++;
+              if (InfoPushedCount==2)
+              {
+                break;
+              }
+            }
+            if (modelNameGroup.at(m).compare(ModelOfCollision2)==0)
+            {
+              command_message::msgs::CommandMessage ConnectionMessage;
+              ConnectionMessage.set_messagetype(1);
+              ConnectionMessage.set_whichmodelconnectedto(ModelOfCollision2);
+              WorldPublisher.at(m)->Publish(ConnectionMessage);
+              InfoPushedCount++;
+              if (InfoPushedCount==2)
+              {
+                break;
+              }
+            }
+          }
 
           FoundPendingOne = 1;
           // cout<<"World: Joint Generated!"<<endl;
