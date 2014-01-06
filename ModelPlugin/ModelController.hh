@@ -158,17 +158,12 @@ namespace gazebo
     public:  double AccelerationRate;
     public:  double PlanarMotionStopThreshold;
 
+    private: double WheelRadius;
+
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+                  Varibles only for testing                      +
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    private: double WheelRadius;
-    private: math::Angle Driving2Angle;
-    private: math::Vector2d Driving2Point;
-    //private: math::Vector3 Location;
-    //private: math::Quaternion Rotmat;
-    private: int Need2BeSet;
-    private: physics::JointPtr DynamicJoint;
-    private: int isModel3;
+    
   };
 }
 #endif

@@ -23,14 +23,7 @@ ModelController::ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),Model
 	MaxiRotationRate = 2.4086;
 	AccelerationRate = 8;
 	PlanarMotionStopThreshold = 0.02;
-	Driving2Angle.SetFromRadian(5.49778);
-	Driving2Point.Set(1,1);
-	// Location is test variable for dynamic joint generation
-	//Location.Set(1,1,0.05);
-	// Rotmat is test variable for dynamic joint generation
-	//Rotmat.SetFromAxis(0,0,1,5.49778);
-	Need2BeSet = 0;
-	isModel3  = 0;
+
 	// A hint of model been initialized
 	printf("Model Initiated\n");
 }
@@ -42,18 +35,13 @@ void ModelController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
 	// Initialize the whole system
 	SystemInitialization(_parent);
-	// ************************************************************************************
+	// Initialize the subscribers
 	gazebo::transport::NodePtr node(new gazebo::transport::Node());
-		node->Init();
-		this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
+	node->Init();
+	this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
 		// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
-	//***************************************************************************************
-	// Testing codes
-	this->JointWR->SetVelocity(0,0);
-	this->JointWL->SetVelocity(0,0);
-	// math::Angle AngleInterested(0.5235987);
-	// this->JointCB->SetAngle(0,AngleInterested);
-	// Event register, which will make the function be executed in each iteration
+	
+	// Bind function which will be executed in each iteration
 	this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController::OnSystemRunning, this, _1));
 }
 
@@ -62,23 +50,8 @@ void ModelController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ModelController::welcomInfoProcessor(GzStringPtr &msg)
 {
-	// cout<<"Message Recieved"<<endl;
-	// cout<<"Message: "<<msg->data()<<endl;
 	string InfoReceived = msg->data();
-	if(InfoReceived.find('3') != string::npos)
-	{
-		Driving2Angle.SetFromRadian(2.3561945);
-		Driving2Point.Set(1,1);
-		//Location.Set(0.929,0.929,0.05);
-		//Rotmat.SetFromAxis(0,0,1,2.3561945);
-
-		math::Angle AngleInterested(0.5235987);
-		this->JointWF->SetAngle(0,AngleInterested);
-
-		Need2BeSet = 0;
-
-		isModel3  = 1;
-	}
+	// Do something useful here
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // This function will be called in function Load() to initialize the model
@@ -135,74 +108,8 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
 {
-	double AngleValue;
-	double force;
-	math::Pose CurrentPosition;
-	math::Angle AngleNeed2Be(5.49778);  //0.78539, 2.3562, 3.9270, 5.49778
-	// math::Angle AngleNeed2Be2(0);
-	// force = JointCB->GetForce(0);
-	force = this->JointCB->GetMaxForce(0);
-	// force = JointCB->GetSDF()->GetElement("max_force")->GetValueDouble();
-	// cout<<"The Maximium Force of the Joint:"<<force<<endl;
-	AngleValue = this->RevolutionSpeedCal(JointWR,0);
-	// cout<<"The real rotation rate is "<<AngleValue<<" rad/s"<<endl;
-	CurrentPosition = GetModelCentralCoor();
-	// cout<<"The Coordinates of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
-	// cout<<"The direction of the robot is: ["<<CurrentPosition.rot.GetRoll()<<","<<CurrentPosition.rot.GetPitch()<<","<<CurrentPosition.rot.GetYaw()<<"];"<<endl;
-	// cout<<"The direction of the robot is: ["<<CurrentPosition.pos.x<<","<<CurrentPosition.pos.y<<","<<CurrentPosition.pos.z<<"];"<<endl;
-	//=========== Basic Controllers Need to Be Executed In Each Iteration ===========
-	// JointAngleControl();
-	JointWFP.JointAngleNow = GetJointAngle(JointWF,0);
-	// JointPIDController(JointWFP,0,AngleNeed2Be);
-	// math::Vector2d CurrentSpeed;
-	// CurrentSpeed.x = 2;
-	// CurrentSpeed.y = 2;
-	// AnglePIDController(AngleNeed2Be, CurrentPosition.rot.GetYaw(), CurrentSpeed);
-	math::Vector2d endPointTest;
-	endPointTest.Set(0,0);
-	// math::Vector2d startPointTest;
-	// startPointTest.x = CurrentPosition.pos.x;
-	// startPointTest.y = CurrentPosition.pos.y;
-	// math::Angle desireAngle = AngleCalculation2Points(startPointTest, endPointTest);
-	// cout<<"Calculated angle: " << desireAngle.Degree() << "," << desireAngle.Radian()<<endl;
-	// AnglePIDController(desireAngle, CurrentPosition.rot.GetYaw(), CurrentSpeed);
+	// Do something useful after simulation begins
 
-	// Move2Point(endPointTest,AngleNeed2Be);
-	Move2Point(Driving2Point,Driving2Angle);
-	// math::Pose DesiredPos(Location,Rotmat);
-	// if (Need2BeSet==0)
-	// {
-	// 	math::Pose DesiredPos(Location,Rotmat);
-	// 	this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
-	// 	Need2BeSet += 1;
-	// }else{
-	// 	if (isModel3 == 0)
-	// 	{
-	// 	// 	Move2Point(endPointTest,AngleNeed2Be);
-	// 	// 	SetJointSpeed(JointCB, 0, 0.05);
-	// 	}
-	// 	if(isModel3 == 1)
-	// 	{
-	// 		// this->DynamicJoint = this->model->GetWorld()->GetPhysicsEngine()->CreateJoint("revolute",  this->model);
-	// 	 // 	this->DynamicJoint->Attach(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"));
-	// 	 // 	this->DynamicJoint->Load(model->GetLink("FrontWheel"), model->GetWorld()->GetModel("SMORES4Neel_0")->GetLink("FrontWheel"), math::Pose(model->GetLink("FrontWheel")->GetWorldPose().pos, math::Quaternion()));
-	// 	 // 	math::Vector3 axis(0,1,0);
-	// 	 // 	this->DynamicJoint->SetAxis(0, axis);
-	// 	 	isModel3 += 1;
-	// 	}
-	// 	if (isModel3 >=2)
-	// 	{
-	// 		// SetJointSpeed(JointCB, 0, 0.05);
-	// 		// JointPIDController(DynamicJoint,0,AngleNeed2Be2);
-	// 		// Move2Point(endPointTest,AngleNeed2Be);
-	// 	}
-	// 	// cout<<"Model: The position of the Link: [ "<<model->GetLink("FrontWheel")->GetWorldPose().pos.x<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.y<<", "<<model->GetLink("FrontWheel")->GetWorldPose().pos.z<<"]"<<endl;
-	// 	// cout<<"Model: The y axis vector: ["<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().x<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().y<<", "<<  model->GetLink("FrontWheel")->GetWorldPose().rot.GetYAxis().z<<"]"<<endl;
-	// 	// cout<<"Model: Euler angles are: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.GetAsEuler().z<<"]"<<endl;
-	// 	// cout<<"Model: The Quaternion values: ["<< model->GetLink("FrontWheel")->GetWorldPose().rot.x<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.y<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.z<<", "<< model->GetLink("FrontWheel")->GetWorldPose().rot.w<<"]"<<endl;
-	// }
-	// this->model->SetLinkWorldPose(DesiredPos,"CircuitHolder");
-	//===============================================================================
 }
 
 //-------------------------------------------------------------------
