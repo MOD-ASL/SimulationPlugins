@@ -15,7 +15,14 @@
 #include "JointPlus.hh"
 
 // Parameters
-#define PI 3.1415926 
+#define PI 3.1415926
+
+using namespace std;
+
+// Useful pointer type declaration
+typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
+typedef const boost::shared_ptr<const msgs::Pose> PosePtr;
+typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr; 
 
 namespace gazebo
 {
@@ -157,8 +164,8 @@ namespace gazebo
     private: double WheelRadius;
     private: math::Angle Driving2Angle;
     private: math::Vector2d Driving2Point;
-    private: math::Vector3 Location;
-    private: math::Quaternion Rotmat;
+    //private: math::Vector3 Location;
+    //private: math::Quaternion Rotmat;
     private: int Need2BeSet;
     private: physics::JointPtr DynamicJoint;
     private: int isModel3;

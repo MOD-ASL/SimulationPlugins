@@ -1,0 +1,26 @@
+package command_message.msgs;
+// import "gz_string.proto";
+import "pose.proto";
+
+message CommandMessage
+{
+	// An indicator of what kind of message is being sent
+	// 0. For accomplished feedback from model
+	// 1. For indicating a connection has been established
+	// 2. For Position Setting
+	// 3. For Joint angle Setting
+	// 4. For direct control command
+	required int32 MessageType = 1;
+	// A string of the model name
+	optional string WhichModelConnectedTo = 2;
+	// A Position that model will drive to 
+	// Or a position that system acquired
+	optional gazebo.msgs.Pose PositionNeedToBe = 3;
+	// The name of the joint that need to be set to a specific angle
+	optional string JointName = 4;
+	// The angle of the joint that need to be set to a specific angle
+	optional double DesiredAngle = 5; 
+	// The Speed of Wheels
+	optional double LeftWheelSpeed = 6;
+	optional double RightWheelSpeed = 7;
+}
