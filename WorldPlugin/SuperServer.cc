@@ -11,6 +11,10 @@
 // Libraries for meesages needed to use to communicate between bplugins
 #include "collision_message_plus.pb.h"
 #include "command_message.pb.h"
+// Libraries for connectivity representation
+// #include "SmoresEdge.hh"
+// #include "SmoresNode.hh"
+#include "SmoresModule.hh"
 
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
