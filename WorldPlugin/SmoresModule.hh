@@ -20,6 +20,21 @@ public:
 		NodeRW.NodeInit(2,0,0,this);
 	}
 	~SmoresModule();
+	// Get the pointer to the node by node ID
+	SmoresNode * GetNode(int node_id)
+	{
+		switch(node_id)
+		{
+			case 0:return &NodeFW;break;
+			case 1:return &NodeLW;break;
+			case 2:return &NodeRW;break;
+			case 3:return &NodeUH;break;
+		} 
+	}
+	int GetNodeAxis(int node_id)
+	{
+		return GetNode(node_id)->GetAxis();
+	}
 
 //++++++++++++++ Here comes model properties +++++++++++++++++++++
 public: string ModuleID;

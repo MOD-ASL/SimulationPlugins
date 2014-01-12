@@ -628,6 +628,66 @@ namespace gazebo
     {
 
     }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // These functions are used to connect or deconnect modules
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // Connect two modules by pointers and node_ID
+    public: void PassiveConnection(SmoresModule *module_1, SmoresModule *module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
+    {
+      SmoresEdge new_connection(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID));
+      ConnectionEdges.push_back(new_connection);
+      module_1->GetNode(node1_ID)->ConnectOnEdge(&ConnectionEdges.back());
+      module_2->GetNode(node2_ID)->ConnectOnEdge(&ConnectionEdges.back());
+    }
+    public: void ActiveConnection(SmoresModule *module_1, SmoresModule *module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
+    {
+      SmoresEdge new_connection(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID));
+      ConnectionEdges.push_back(new_connection);
+      module_1->GetNode(node1_ID)->ConnectOnEdge(&ConnectionEdges.back());
+      module_2->GetNode(node2_ID)->ConnectOnEdge(&ConnectionEdges.back());
+    }
+    // Deconnect two modules on one edge
+    public: void Deconnection(SmoresEdge *aEdge)  // This pointer must point to an element in the vector
+    {
+      aEdge->model_1->Edge = 0;
+      aEdge->model_2->Edge = 0;
+      ConnectionEdges.erase(ConnectionEdges.begin()+aEdge - ConnectionEdges.data());
+    }
+    // Deconnect two module base on one module and one node of that module
+    public: void Deconnection(SmoresModule *aModule, int node_ID)
+    {
+
+    }
+    // Deconnect two module base on one module and one node of that module
+    public: void Deconnection(string moduleName, int node_ID)
+    {
+
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // These functions are utility functions
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    public: int GetNodeIDByName(string node_name)
+    {
+      if (node_name.rfind("FrontWheel")!=string::npos)
+      {
+        return 0;
+      }
+      if (node_name.rfind("LeftWheel")!=string::npos)
+      {
+        return 1;
+      }
+      if (node_name.rfind("RightWheel")!=string::npos)
+      {
+        return 2;
+      }
+      if (node_name.rfind("UHolderBody")!=string::npos)
+      {
+        return 3;
+      }
+      return 4; // When return 4, then there is no match found
+    }
+
+
     private: physics::WorldPtr currentWorld;
     private: event::ConnectionPtr addEntityConnection;
     private: transport::PublisherPtr statePub;
@@ -649,6 +709,8 @@ namespace gazebo
     private: vector<string> existConnectedPair;
     // The event that will be refreshed in every iteration of the simulation
     private: event::ConnectionPtr updateConnection;
+    // The container that has all the edges
+    private: vector<SmoresEdge> ConnectionEdges;
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;
