@@ -1,15 +1,17 @@
 #ifndef _GAZEBO_SMORES_EDGE_HH_
 #define _GAZEBO_SMORES_EDGE_HH_
+#include <boost/shared_ptr.hpp>
 // #include "SmoresNode.hh"
 
 using namespace gazebo;
 
 class  SmoresNode;
+typedef boost::shared_ptr<SmoresNode> SmoresNodePtr;
 
 class SmoresEdge
 {
 public:
-	SmoresEdge(SmoresNode *model_first, SmoresNode *model_second, double length, double angle,int axis1, int axis2)
+	SmoresEdge(SmoresNodePtr model_first, SmoresNodePtr model_second, double length, double angle,int axis1, int axis2)
 	{
 		this->model_1 = model_first;
 		this->model_2 = model_second;
@@ -18,7 +20,11 @@ public:
 		this->Axis_1 = axis1;
 		this->Axis_2 = axis2;
 	}
-	~SmoresEdge();
+	~SmoresEdge()
+	{
+		model_1.reset();
+		model_2.reset();
+	}
 
 //++++++++++++++++ Here comes edge propoerties +++++++++++++++++++
 public: double Distance; 	// Distance along the aligned axis
@@ -28,8 +34,8 @@ public: int Axis_2; 	// Axis of the model_2, 0 for x, 1 for y, 2 for z
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //---------------- Here goes pointers ----------------------------
-	public: SmoresNode *model_1;	// A pointer to the first node on the first module
-	public: SmoresNode *model_2;	// A pointer to the second node on the second module
+	public: SmoresNodePtr model_1;	// A pointer to the first node on the first module
+	public: SmoresNodePtr model_2;	// A pointer to the second node on the second module
 //----------------------------------------------------------------
 };
 #endif

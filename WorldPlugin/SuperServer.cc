@@ -632,30 +632,40 @@ namespace gazebo
     // These functions are used to connect or deconnect modules
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Connect two modules by pointers and node_ID
-    public: void PassiveConnection(SmoresModule *module_1, SmoresModule *module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
+    public: void PassiveConnection(SmoresModulePtr module_1, SmoresModulePtr module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
     {
-      SmoresEdge new_connection(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID));
+      SmoresEdgePtr new_connection(new SmoresEdge(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID)));
       ConnectionEdges.push_back(new_connection);
-      module_1->GetNode(node1_ID)->ConnectOnEdge(&ConnectionEdges.back());
-      module_2->GetNode(node2_ID)->ConnectOnEdge(&ConnectionEdges.back());
+      module_1->GetNode(node1_ID)->ConnectOnEdge(new_connection);
+      module_2->GetNode(node2_ID)->ConnectOnEdge(new_connection);
     }
-    public: void ActiveConnection(SmoresModule *module_1, SmoresModule *module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
+    public: void ActiveConnection(SmoresModulePtr module_1, SmoresModulePtr module_2, int node1_ID, int node2_ID, double node_angle = 0, double node_distance = 0)
     {
-      SmoresEdge new_connection(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID));
+      SmoresEdgePtr new_connection(new SmoresEdge(module_1->GetNode(node1_ID),module_2->GetNode(node2_ID),node_distance,node_angle,module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID)));
       ConnectionEdges.push_back(new_connection);
-      module_1->GetNode(node1_ID)->ConnectOnEdge(&ConnectionEdges.back());
-      module_2->GetNode(node2_ID)->ConnectOnEdge(&ConnectionEdges.back());
+      module_1->GetNode(node1_ID)->ConnectOnEdge(new_connection);
+      module_2->GetNode(node2_ID)->ConnectOnEdge(new_connection);
     }
     // Deconnect two modules on one edge
-    public: void Deconnection(SmoresEdge *aEdge)  // This pointer must point to an element in the vector
+    public: void Deconnection(SmoresEdgePtr aEdge)  // This pointer must point to an element in the vector
     {
-      aEdge->model_1->Edge = 0;
-      aEdge->model_2->Edge = 0;
-      ConnectionEdges.erase(ConnectionEdges.begin()+aEdge - ConnectionEdges.data());
+      aEdge->model_1->Edge.reset();
+      aEdge->model_2->Edge.reset();
+      for (unsigned int i = 0; i < ConnectionEdges.size(); ++i)
+      {
+        if (ConnectionEdges.at(i)==aEdge)
+        {
+          ConnectionEdges.at(i).reset();
+          ConnectionEdges.erase(ConnectionEdges.begin()+i);
+          break;
+        }
+      }
     }
     // Deconnect two module base on one module and one node of that module
-    public: void Deconnection(SmoresModule *aModule, int node_ID)
+    public: void Deconnection(SmoresModulePtr aModule, int node_ID)
     {
+      SmoresEdgePtr aEdge = aModule->GetNode(node_ID)->GetEdge();
+      this->Deconnection(aEdge);
 
     }
     // Deconnect two module base on one module and one node of that module
@@ -710,7 +720,7 @@ namespace gazebo
     // The event that will be refreshed in every iteration of the simulation
     private: event::ConnectionPtr updateConnection;
     // The container that has all the edges
-    private: vector<SmoresEdge> ConnectionEdges;
+    private: vector<SmoresEdgePtr> ConnectionEdges;
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;
