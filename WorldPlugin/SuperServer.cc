@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
-// Libraries for meesages needed to use to communicate between bplugins
+// Libraries for messages needed to use to communicate between plugins
 #include "collision_message_plus.pb.h"
 #include "command_message.pb.h"
 // Libraries for connectivity representation
@@ -37,6 +37,7 @@ namespace gazebo
     {
       numOfModules = 0;
       infoCounter = 0;
+      NeedToSetPtr = false;
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
     {
@@ -62,8 +63,8 @@ namespace gazebo
     private: void addEntity2World(std::string & _info)
     {
 
-      transport::NodePtr node(new transport::Node());
-      node->Init();
+      // transport::NodePtr node(new transport::Node());
+      // node->Init();
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Welcome message generation each time a new model has been added
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -72,21 +73,27 @@ namespace gazebo
 
       int modelnumber = this->currentWorld->GetModelCount();
       numOfModules = modelnumber-1;
-      // cout<<"Number of models: "<<modelnumber<<endl;
+      cout<<"World: Number of models: "<<modelnumber<<endl;
       // cout<<"Default information: "<<_info<<endl;
-      this->statePub = node->Advertise<msgs::GzString>("~/Welcome");
-      CurrentMessage = "Model";
-      CurrentMessage += Int2String(modelnumber);
+      // this->statePub = node->Advertise<msgs::GzString>("~/Welcome");
+      CurrentMessage = "Model"+Int2String(modelnumber);
       welcomeMsg.set_data(CurrentMessage);
 
       statePub->Publish(welcomeMsg);
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      // Store the pointers of model and model names into vectors
+      // Store the pointers of model into vectors
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // modelGroup.push_back(currentWorld->GetModel(_info));
       modelNameGroup.push_back(_info);
+      unsigned int howManyModules = moduleList.size();
+      SmoresModulePtr newModule(new SmoresModule(_info, true, howManyModules));
+      newModule->ManuallyNodeInitial(newModule);
+      NeedToSetPtr = true;
+      moduleList.push_back(newModule);
+      // newModule->ManuallyNodeInitial(newModule);
+      // moduleList.at(howManyModules)->SaySomthing();
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Dynamic publisher generation
@@ -109,16 +116,12 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
-      // if (infoCounter<=2)
-      // {
-      //   math::Vector3 Location;
-      //   math::Quaternion Rotmat;
-      //   Location.Set(0.929,0.929,0.05);
-      //   Rotmat.SetFromAxis(0,0,1,2.35619);
-      //   math::Pose PoseInfo(Location,Rotmat);
-      //   WorldPublisher.at(numOfModules-1)->Publish(gazebo::msgs::Convert(PoseInfo));
-      //   infoCounter++;
-      // }
+      if (NeedToSetPtr)
+      {
+        moduleList.back()->SetModulePtr(currentWorld->GetModel(moduleList.back()->ModuleID));
+        NeedToSetPtr = false;
+        cout<<"World: Pointer has been assigned"<<endl;
+      }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive collision information
@@ -629,6 +632,238 @@ namespace gazebo
 
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // These function are used to physically connect different models by generating dynamic joint
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void ConnectAndDynamicJointGeneration(SmoresModulePtr module_1, SmoresModulePtr module_2, int node1_ID, int node2_ID, SmoresEdgePtr an_edge)
+    {
+      math::Pose ContactLinkPos = module_1->GetLinkPtr(node1_ID)->GetWorldPose();
+      math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node1_ID)->GetWorldPose();
+      physics::LinkPtr Link1, Link2;
+      math::Vector3 axis;
+      math::Vector3 ZDirectionOffset(0,0,0.000);  //0.008
+      // math::Vector3 newCenterPoint = 0.5*(ContactLinkPos.pos + PendingRequestPos.at(i).pos)+ZDirectionOffset;
+      math::Vector3 newPositionOfLink1;
+      math::Vector3 newPositionOfLink2;
+      math::Quaternion newDirectionofLink1;
+      math::Vector3 newZAxis;
+      double AngleBetweenZAxes;
+      math::Quaternion FirstRotationOfLink2;
+      math::Quaternion SecondRotationOfLink2;
+      math::Quaternion newDirectionofLink2;
+      if (node1_ID == 0)
+      {
+        newPositionOfLink1 = ContactLinkPos.pos;
+        newPositionOfLink2 = ContactLinkPos.pos - (0.1+an_edge->Distance)*ContactLinkPos.rot.GetYAxis();
+        newDirectionofLink1 = ContactLinkPos.rot;
+        newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
+        newZAxis = newZAxis.Normalize();
+        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        FirstRotationOfLink2.SetFromEuler(0,0,PI);
+        double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+        if (DirectionReference>0)
+        {
+          SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+        }else{
+          SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+        }
+        if (node2_ID==3)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,0);
+          // cout<<"World: Calibrate angle: "<<AngleBetweenZAxes<<endl;
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==1)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,PI/2);
+          // cout<<"World: Calibrate angle: "<<AngleBetweenZAxes<<endl;
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+          }
+        }
+        if (node2_ID==2)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,PI/2);
+          // cout<<"World: Calibrate angle: "<<AngleBetweenZAxes<<endl;
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+          }
+        }
+        newDirectionofLink2 = newDirectionofLink1*FirstRotationOfLink2*SecondRotationOfLink2;
+        axis.Set(0,1,0);
+      }
+      if (node1_ID == 1)
+      {
+        newPositionOfLink1 = ContactLinkPos.pos;
+        newPositionOfLink2 = ContactLinkPos.pos + (0.1+an_edge->Distance)*ContactLinkPos.rot.GetXAxis();
+        newDirectionofLink1 = ContactLinkPos.rot;
+        newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
+        newZAxis = newZAxis.Normalize();
+        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        FirstRotationOfLink2.SetFromEuler(0,0,PI);
+        double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+        if (DirectionReference>0)
+        {
+          SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+        }else{
+          SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+        }
+        if (node2_ID==0)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI/2);
+          // cout<<"World: Calibrate angle: "<<AngleBetweenZAxes<<endl;
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==3)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,PI/2);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==2)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0 ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0 ,0);
+          }
+        }
+        newDirectionofLink2 = newDirectionofLink1*FirstRotationOfLink2*SecondRotationOfLink2;
+        axis.Set(1,0,0);
+      }
+      if (node1_ID == 2)
+      {
+        newPositionOfLink1 = ContactLinkPos.pos;
+        newPositionOfLink2 = ContactLinkPos.pos + (0.1+an_edge->Distance)*ContactLinkPos.rot.GetXAxis();
+        newDirectionofLink1 = ContactLinkPos.rot;
+        newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
+        newZAxis = newZAxis.Normalize();
+        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        FirstRotationOfLink2.SetFromEuler(0,0,PI);
+        double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+        if (DirectionReference>0)
+        {
+          SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+        }else{
+          SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+        }
+        if (node2_ID==0)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI/2);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==3)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,PI/2);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==1)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0 ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0 ,0);
+          }
+        }
+        newDirectionofLink2 = newDirectionofLink1*FirstRotationOfLink2*SecondRotationOfLink2;
+        axis.Set(1,0,0);
+      }
+      if (node1_ID == 3)
+      {
+        newPositionOfLink1 = ContactLinkPos.pos;
+        newPositionOfLink2 = ContactLinkPos.pos + (0.1+an_edge->Distance)*ContactLinkPos.rot.GetYAxis();
+        newDirectionofLink1 = ContactLinkPos.rot;
+        newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
+        newZAxis = newZAxis.Normalize();
+        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        FirstRotationOfLink2.SetFromEuler(0,0,PI);
+        double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+        if (DirectionReference>0)
+        {
+          SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+        }else{
+          SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+        }
+        if (node2_ID==0)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,0);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(0, AngleBetweenZAxes ,0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
+          }
+        }
+        if (node2_ID==1)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI/2);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+          }
+        }
+        if (node2_ID==2)
+        {
+          FirstRotationOfLink2.SetFromEuler(0,0,-PI/2);
+          DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
+          if (DirectionReference>0)
+          {
+            SecondRotationOfLink2.SetFromEuler(AngleBetweenZAxes, 0, 0);
+          }else{
+            SecondRotationOfLink2.SetFromEuler(-AngleBetweenZAxes, 0, 0);
+          }
+        }
+        newDirectionofLink2 = newDirectionofLink1*FirstRotationOfLink2*SecondRotationOfLink2;
+        axis.Set(0,1,0);
+      }
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are used to connect or deconnect modules
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Connect two modules by pointers and node_ID
@@ -704,7 +939,7 @@ namespace gazebo
     private: vector<transport::PublisherPtr> WorldPublisher;
     private: vector<transport::SubscriberPtr> WorldColSubscriber;
     // The pointer vector for all the models in the world
-    private: vector<physics::ModelPtr> modelGroup;
+    private: vector<SmoresModulePtr> moduleList;
     private: vector<string> modelNameGroup;
     // The vectors that store the pending connection request and information
     private: vector<string> namesOfPendingRequest;
@@ -721,6 +956,8 @@ namespace gazebo
     private: event::ConnectionPtr updateConnection;
     // The container that has all the edges
     private: vector<SmoresEdgePtr> ConnectionEdges;
+    // The indicator of a new model has been added
+    private: bool NeedToSetPtr;
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;

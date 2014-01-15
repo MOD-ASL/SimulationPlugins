@@ -1,8 +1,5 @@
 #ifndef _GAZEBO_SMORES_NODE_HH_
 #define _GAZEBO_SMORES_NODE_HH_
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <list>
 // #include "SmoresModule.hh"
 #include "SmoresEdge.hh"
 
@@ -17,91 +14,26 @@ class SmoresNode
 {
 public:
 	SmoresNode();
-	SmoresNode(int nodeID, int jtype, int jvalue, SmoresModulePtr parent, SmoresEdgePtr edge)
-	{
-		this->NodeID = nodeID;
-		this->JointType = jtype;
-		this->JointValue = jvalue;
-		this->Parent = parent;
-		this->Edge = edge;
-		// Only consider the case of smores revolute joint, need to be changed in the future
-		switch(nodeID){
-			case 0:{this->RelativePosition.Set(0,0,0);break;} // Front wheel
-			case 1:{this->RelativePosition.Set(0.05,0.05,0);break;}	// Left wheel
-			case 2:{this->RelativePosition.Set(-0.05,0.05,0);break;}	// Right wheel
-			case 3:{this->RelativePosition.Set(0,0.05+0.05*cos(jvalue),0.05*sin(jvalue));break;}
-		}
-	}
-	SmoresNode(int nodeID, int jtype, int jvalue, SmoresModulePtr parent)
-	{
-		this->NodeID = nodeID;
-		this->JointType = jtype;
-		this->JointValue = jvalue;
-		this->Parent = parent;
-		this->Edge.reset();
-		switch(nodeID){
-			case 0:{this->RelativePosition.Set(0,0,0);break;} // Front wheel
-			case 1:{this->RelativePosition.Set(0.05,0.05,0);break;}	// Left wheel
-			case 2:{this->RelativePosition.Set(-0.05,0.05,0);break;}	// Right wheel
-			case 3:{this->RelativePosition.Set(0,0.05+0.05*cos(jvalue),0.05*sin(jvalue));break;}
-		}
-	}
-	~SmoresNode()
-	{
-		Parent.reset();
-		Edge.reset();
-	}
-	void NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr parent, SmoresEdgePtr edge)
-	{
-		this->NodeID = nodeID;
-		this->JointType = jtype;
-		this->JointValue = jvalue;
-		this->Parent = parent;
-		this->Edge = edge;
-		// Only consider the case of smores revolute joint, need to be changed in the future
-		switch(nodeID){
-			case 0:{this->RelativePosition.Set(0,0,0);break;} // Front wheel
-			case 1:{this->RelativePosition.Set(0.05,0.05,0);break;}	// Left wheel
-			case 2:{this->RelativePosition.Set(-0.05,0.05,0);break;}	// Right wheel
-			case 3:{this->RelativePosition.Set(0,0.05+0.05*cos(jvalue),0.05*sin(jvalue));break;}
-		}
-	}
-	void NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr parent)
-	{
-		this->NodeID = nodeID;
-		this->JointType = jtype;
-		this->JointValue = jvalue;
-		this->Parent = parent;
-		this->Edge.reset();
-		switch(nodeID){
-			case 0:{this->RelativePosition.Set(0,0,0);break;} // Front wheel
-			case 1:{this->RelativePosition.Set(0.05,0.05,0);break;}	// Left wheel
-			case 2:{this->RelativePosition.Set(-0.05,0.05,0);break;}	// Right wheel
-			case 3:{this->RelativePosition.Set(0,0.05+0.05*cos(jvalue),0.05*sin(jvalue));break;}
-		}
-	}
-	int GetAxis(void)
-	{
-		switch(this->NodeID)
-		{
-			case 0:return 1;break;
-			case 1:return 0;break;
-			case 2:return 0;break;
-			case 3:return 1;break;
-		}
-	}
-	void ConnectOnEdge(SmoresEdgePtr edge)
-	{
-		this->Edge = edge;
-	}
-	void Disconnect(void)
-	{
-		Edge.reset();
-	}
-	SmoresEdgePtr GetEdge(void)
-	{
-		return Edge;
-	}
+
+	SmoresNode(int nodeID, int jtype, int jvalue, SmoresModulePtr parent, SmoresEdgePtr edge);
+
+	SmoresNode(int nodeID, int jtype, int jvalue, SmoresModulePtr parent);
+
+	SmoresNode(int nodeID, int jtype, int jvalue);
+
+	~SmoresNode();
+
+	void NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr parent, SmoresEdgePtr edge);
+
+	void NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr parent);
+
+	int GetAxis(void);
+
+	void ConnectOnEdge(SmoresEdgePtr edge);
+
+	void Disconnect(void);
+
+	SmoresEdgePtr GetEdge(void);
 
 //++++++++++++++++++ Node properties goes here +++++++++++++++++++++++++
 public: int NodeID;			// Node ID specify which node the current node is, 0 is the base node
