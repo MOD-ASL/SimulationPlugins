@@ -60,3 +60,7 @@ The most up to date version of the SMORES simulator is currently in the SMORES5J
 A short video could be found [here](https://www.youtube.com/watch?v=U9dJSMIzxhA)
 
 The Sensor_Testbed model contains the code to include each of the sensors. To run the sensor testbed and view the sensor output, navigate to the model's folder and run "gazebo -u". This is the same as above, only no world description is required. Currently code to include all of the sensors is in the SMORE.sdf description file, but commented out. Uncomment the inclusion code for any of the sensors you wish to test to use these sensors. Any models added in Gazebo after changes are made to the SMORE.sdf file will include those changes.
+
+Known problems of GAZEBO
+----------------------------------------
+1. It doesn't provide a function to delete an entity, this feature probabily wull be supported in the future, which also means we likely cannot delete the dynamic joints cleanly. For more information, please see the link [here](http://answers.gazebosim.org/question/550/how-to-delete-links-from-a-model-gazebo-125/).
