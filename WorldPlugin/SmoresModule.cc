@@ -37,14 +37,15 @@ void SmoresModule::ManuallyNodeInitial(SmoresModulePtr module_ptr)
 // Get the pointer to the node by node ID
 SmoresNodePtr SmoresModule::GetNode(int node_id)
 {
+	SmoresNodePtr NodePoint2;
 	switch(node_id)
 	{
-		case 0:{SmoresNodePtr NodePoint2(&NodeFW);return NodePoint2;break;}
-		case 1:{SmoresNodePtr NodePoint2(&NodeLW);return NodePoint2;break;}
-		case 2:{SmoresNodePtr NodePoint2(&NodeRW);return NodePoint2;break;}
-		case 3:{SmoresNodePtr NodePoint2(&NodeUH);return NodePoint2;break;}
+		case 0:{NodePoint2 = boost::make_shared<SmoresNode>(NodeFW);break;}
+		case 1:{NodePoint2 = boost::make_shared<SmoresNode>(NodeLW);break;}
+		case 2:{NodePoint2 = boost::make_shared<SmoresNode>(NodeRW);break;}
+		case 3:{NodePoint2 = boost::make_shared<SmoresNode>(NodeUH);break;}
 	}
-	// return NodePoint2;
+	return NodePoint2;
 }
 int SmoresModule::GetNodeAxis(int node_id)
 {

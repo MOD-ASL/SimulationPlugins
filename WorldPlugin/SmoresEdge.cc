@@ -13,4 +13,5 @@ SmoresEdge::~SmoresEdge()
 {
 	this->model_1.reset();
 	this->model_2.reset();
+	this->DynamicJointPtr.reset();
 }

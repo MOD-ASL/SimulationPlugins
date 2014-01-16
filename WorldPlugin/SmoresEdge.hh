@@ -1,6 +1,7 @@
 #ifndef _GAZEBO_SMORES_EDGE_HH_
 #define _GAZEBO_SMORES_EDGE_HH_
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 // #include "SmoresNode.hh"
@@ -27,6 +28,7 @@ public: int Axis_2; 	// Axis of the model_2, 0 for x, 1 for y, 2 for z
 //---------------- Here goes pointers ----------------------------
 public: SmoresNodePtr model_1;	// A pointer to the first node on the first module
 public: SmoresNodePtr model_2;	// A pointer to the second node on the second module
+public: physics::JointPtr DynamicJointPtr;
 //----------------------------------------------------------------
 };
 #endif

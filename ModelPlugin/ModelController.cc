@@ -178,7 +178,7 @@ void ModelController::CollisionReceiverProcessor(GzStringPtr &msg)
 //------------------- End Region ----------------------------------
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// This function will be called when recieved an command from world plugin
+// This function will be called when received an command from world plugin
 //            The format of the command might be a gait table
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ModelController::CommandDecoding(CommandMessagePtr &msg)
@@ -186,6 +186,8 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 	int commandType = msg->messagetype();
 	switch(commandType)
 	{
+		// This line may need to be changed
+		// When using the new representation, the old connection management mechanism may be unnecessary
 		case 1:{NameOfConnectedModels.push_back(msg->whichmodelconnectedto());}break;
 	}
 }
