@@ -46,6 +46,11 @@ private:
 	SmoresNode NodeFW;	// The Front Wheel
 	SmoresNode NodeLW;
 	SmoresNode NodeRW;
+
+	SmoresNodePtr NodeUHPtr;
+	SmoresNodePtr NodeFWPtr;
+	SmoresNodePtr NodeLWPtr;
+	SmoresNodePtr NodeRWPtr;
 //---------------------------------------------------------------- 
 };
 
