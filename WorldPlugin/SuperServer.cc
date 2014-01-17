@@ -116,6 +116,14 @@ namespace gazebo
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
       SetThePointerInSmoresModule();
+
+
+      // common::Time world_sim_time = currentWorld->GetSimTime();
+      // if (world_sim_time.sec >= 20 && world_sim_time.sec <= 21)
+      // {
+      //   Deconnection(ConnectionEdges.back());
+      //   cout<<"World: The crush has nothing to do with disconnection"<<endl;
+      // }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive collision information
@@ -163,9 +171,19 @@ namespace gazebo
             PendingRequestPos.at(i) = tmpPose;
           }
           cout<<"World: Now the first model became: "<<ModelOfCollision1<<endl;
-          SmoresModulePtr module_1 = GetModulePtrByName(ModelOfCollision1);
-          SmoresModulePtr module_2 = GetModulePtrByName(ModelOfCollision2);
-          ActiveConnection(module_1, module_2, GetNodeIDByName(LinkOfCollision1), GetNodeIDByName(LinkOfCollision2));
+          if (ModelOfCollision1.compare("SMORES5Jon_0")==0)
+          {
+            SmoresModulePtr module_1 = GetModulePtrByName(ModelOfCollision1);
+            SmoresModulePtr module_2 = GetModulePtrByName(ModelOfCollision2);
+            ActiveConnection(module_1, module_2, GetNodeIDByName(LinkOfCollision1), GetNodeIDByName(LinkOfCollision2));
+          }else{
+            SmoresModulePtr module_1 = GetModulePtrByName(ModelOfCollision2);
+            SmoresModulePtr module_2 = GetModulePtrByName(ModelOfCollision1);
+            ActiveConnection(module_1, module_2, GetNodeIDByName(LinkOfCollision2), GetNodeIDByName(LinkOfCollision1));
+          }
+          // SmoresModulePtr module_1 = GetModulePtrByName(ModelOfCollision1);
+          // SmoresModulePtr module_2 = GetModulePtrByName(ModelOfCollision2);
+          // ActiveConnection(module_1, module_2, GetNodeIDByName(LinkOfCollision1), GetNodeIDByName(LinkOfCollision2));
           // physics::LinkPtr Link1, Link2;
           // math::Vector3 axis;
           // math::Vector3 ZDirectionOffset(0,0,0.000);  //0.008
@@ -636,7 +654,9 @@ namespace gazebo
     private: void ConnectAndDynamicJointGeneration(SmoresModulePtr module_1, SmoresModulePtr module_2, int node1_ID, int node2_ID, SmoresEdgePtr an_edge)
     {
       math::Pose ContactLinkPos = module_1->GetLinkPtr(node1_ID)->GetWorldPose();
-      math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node1_ID)->GetWorldPose();
+      math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node2_ID)->GetWorldPose();
+      cout<<"World: Post position of the module 1: ("<<ContactLinkPos.pos.x<<","<<ContactLinkPos.pos.y<<","<<ContactLinkPos.pos.z<<")"<<endl;
+      cout<<"World: Post position of the module 2: ("<<PosOfTheOtherModel.pos.x<<","<<PosOfTheOtherModel.pos.y<<","<<PosOfTheOtherModel.pos.z<<")"<<endl;
       physics::LinkPtr Link1, Link2;
       math::Vector3 axis;
       math::Vector3 ZDirectionOffset(0,0,0.000);  //0.008
@@ -653,6 +673,8 @@ namespace gazebo
       {
         newPositionOfLink1 = ContactLinkPos.pos;
         newPositionOfLink2 = ContactLinkPos.pos - (0.1+an_edge->Distance)*ContactLinkPos.rot.GetYAxis();
+        cout<<"World: New position of the module 1: ("<<newPositionOfLink1.x<<","<<newPositionOfLink1.y<<","<<newPositionOfLink1.z<<")"<<endl;
+        cout<<"World: New position of the module 2: ("<<newPositionOfLink2.x<<","<<newPositionOfLink2.y<<","<<newPositionOfLink2.z<<")"<<endl;
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
         newZAxis = newZAxis.Normalize();
@@ -705,6 +727,8 @@ namespace gazebo
       {
         newPositionOfLink1 = ContactLinkPos.pos;
         newPositionOfLink2 = ContactLinkPos.pos + (0.1+an_edge->Distance)*ContactLinkPos.rot.GetXAxis();
+        cout<<"World: New position of the module 1: ("<<newPositionOfLink1.x<<","<<newPositionOfLink1.y<<","<<newPositionOfLink1.z<<")"<<endl;
+        cout<<"World: New position of the module 2: ("<<newPositionOfLink2.x<<","<<newPositionOfLink2.y<<","<<newPositionOfLink2.z<<")"<<endl;
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
         newZAxis = newZAxis.Normalize();
@@ -727,6 +751,7 @@ namespace gazebo
           }else{
             SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
           }
+          cout<<"World: Setting appropriate angle in correct mode"<<endl;
         }
         if (node2_ID==3)
         {
@@ -859,7 +884,7 @@ namespace gazebo
       }
       //+++++++++++++++++ This part of the code set the correct position of the models +++++++++++++++++
       Link1 = module_1->GetLinkPtr(node1_ID);
-      Link2 = module_2->GetLinkPtr(node1_ID);
+      Link2 = module_2->GetLinkPtr(node2_ID);
 
       module_1->ModuleObject->SetLinkWorldPose(math::Pose(newPositionOfLink1,newDirectionofLink1),Link1);
       module_2->ModuleObject->SetLinkWorldPose(math::Pose(newPositionOfLink2,newDirectionofLink2),Link2);
@@ -876,7 +901,8 @@ namespace gazebo
       DynamicJoint->SetLowStop(0,math::Angle(-0.01));
       DynamicConnections.push_back(DynamicJoint);
       // This is necessary for easy access of the dynamic joint
-      an_edge->DynamicJointPtr = DynamicJoint;
+      // an_edge->DynamicJointPtr = DynamicJoint;
+      an_edge->DynamicJointPtr = DynamicConnections.back();
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function is used to physically destroy the connection between different modules, which is dynamic joint here
@@ -884,11 +910,14 @@ namespace gazebo
     private: void DynamicJointDestroy(SmoresEdgePtr aEdge)
     {
       aEdge->DynamicJointPtr->Detach();
+      cout<<"World: The crush is not because of dynamic joint detach"<<endl;
       for (unsigned int i = 0; i < DynamicConnections.size(); ++i)
       {
         if (aEdge->DynamicJointPtr==DynamicConnections.at(i))
         {
+          cout<<"World: The crush is before reset"<<endl;
           DynamicConnections.at(i).reset();
+          cout<<"World: The crush is after reset"<<endl;
           DynamicConnections.erase(DynamicConnections.begin()+i);
           break;
         }
@@ -922,6 +951,7 @@ namespace gazebo
       DynamicJointDestroy(aEdge);
       aEdge->model_1->Edge.reset();
       aEdge->model_2->Edge.reset();
+      cout<<"World: The crush is after reset of edge in node"<<endl;
       for (unsigned int i = 0; i < ConnectionEdges.size(); ++i)
       {
         if (ConnectionEdges.at(i)==aEdge)
@@ -972,7 +1002,7 @@ namespace gazebo
       SmoresModulePtr ExistModule;
       for (unsigned int i = 0; i < moduleList.size(); ++i)
       {
-        if (module_name.find(moduleList.at(i)->ModuleID)!=string::npos)
+        if (module_name.compare(moduleList.at(i)->ModuleID)==0)
         {
           ExistModule = moduleList.at(i);
           break;
