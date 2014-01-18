@@ -121,7 +121,6 @@ namespace gazebo
       // Store the pointers of model into vectors
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // modelGroup.push_back(currentWorld->GetModel(_info));
-      modelNameGroup.push_back(_info);
       unsigned int howManyModules = moduleList.size();
       SmoresModulePtr newModule(new SmoresModule(_info, true, howManyModules));
       newModule->ManuallyNodeInitial(newModule);
@@ -206,6 +205,16 @@ namespace gazebo
             }
           }
         }else{
+          // The lighter configuration connects to heavier configuration
+          if (CountModules(Model1Ptr)<CountModules(Model2Ptr))
+          {
+            SmoresModulePtr tmp_module_ptr = Model1Ptr;
+            Model1Ptr = Model2Ptr;
+            Model2Ptr = tmp_module_ptr;
+            int tmp_node = NodeOfModel1;
+            NodeOfModel1 = NodeOfModel2;
+            NodeOfModel2 = tmp_node;
+          }
           //-------- Do the real connection (including generate dynamic joint) ----------------
           ActiveConnection(Model1Ptr,Model2Ptr,NodeOfModel1,NodeOfModel2);
         }
@@ -614,6 +623,38 @@ namespace gazebo
         HavingAConnection = true;
       }
       return HavingAConnection;
+    }
+    // This function is used to count for a configuration, how many modules are there
+    private: unsigned int CountModules(SmoresModulePtr module)
+    {
+      vector<SmoresModulePtr> vector1;
+      vector<SmoresModulePtr> vector2;
+      vector1.push_back(module);
+      unsigned int module_count = 0;
+      while(1)
+      {
+        if (vector1.size()>0)
+        {
+          module_count += vector1.size();
+          for (unsigned int i = 0; i < vector1.size(); ++i)
+          {
+            for (int j = 0; j < 4; ++j)
+            {
+              if(vector1.at(i)->GetNode(j)->Edge)
+              {
+                SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
+                vector2.push_back(ConnectedModule);
+              }
+            }
+          }
+          vector1.clear();
+          vector1 = vector2;
+          vector2.clear();
+        }else{
+          break;
+        }
+      }
+      return module_count;
     }
 
     private: physics::WorldPtr currentWorld;

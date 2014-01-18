@@ -1,38 +1,38 @@
 #include "SmoresModule.hh"
 
 SmoresModule::SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, unsigned int num_ID):
-																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0)
+																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0),NodeUHPtr(&NodeUH),NodeFWPtr(&NodeFW),NodeLWPtr(&NodeLW),NodeRWPtr(&NodeRW)
 {
 	this->ModuleID = mID;
 	this->ModuleType = mtype;
 	this->ModuleObject = modulePtr;
 	this->ModuleNumID = num_ID;
-	this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
-	this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
-	this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
-	this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
+	// this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
+	// this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
+	// this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
+	// this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
 }
 SmoresModule::SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr):
-																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0)
+																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0),NodeUHPtr(&NodeUH),NodeFWPtr(&NodeFW),NodeLWPtr(&NodeLW),NodeRWPtr(&NodeRW)
 {
 	this->ModuleID = mID;
 	this->ModuleType = mtype;
 	this->ModuleObject = modulePtr;
-	this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
-	this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
-	this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
-	this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
+	// this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
+	// this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
+	// this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
+	// this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
 }
 SmoresModule::SmoresModule(string mID, bool mtype, unsigned int num_ID):
-																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0)
+																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0),NodeUHPtr(&NodeUH),NodeFWPtr(&NodeFW),NodeLWPtr(&NodeLW),NodeRWPtr(&NodeRW)
 {
 	this->ModuleID = mID;
 	this->ModuleType = mtype;
 	this->ModuleNumID = num_ID;
-	this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
-	this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
-	this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
-	this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
+	// this->NodeUHPtr = boost::make_shared<SmoresNode>(NodeUH);
+	// this->NodeFWPtr = boost::make_shared<SmoresNode>(NodeFW);
+	// this->NodeLWPtr = boost::make_shared<SmoresNode>(NodeLW);
+	// this->NodeRWPtr = boost::make_shared<SmoresNode>(NodeRW);
 }
 SmoresModule::~SmoresModule()
 {
@@ -45,10 +45,10 @@ SmoresModule::~SmoresModule()
 // This will be a temporary solution before I come up with some new ideas
 void SmoresModule::ManuallyNodeInitial(SmoresModulePtr module_ptr)
 {
-	NodeFW.NodeInit(0,0,0,module_ptr);
-	NodeUH.NodeInit(3,0,0,module_ptr);
-	NodeLW.NodeInit(1,0,0,module_ptr);
-	NodeRW.NodeInit(2,0,0,module_ptr);
+	NodeFW.SetParent(module_ptr);
+	NodeUH.SetParent(module_ptr);
+	NodeLW.SetParent(module_ptr);
+	NodeRW.SetParent(module_ptr);
 }
 // Get the pointer to the node by node ID
 SmoresNodePtr SmoresModule::GetNode(int node_id)

@@ -15,3 +15,12 @@ SmoresEdge::~SmoresEdge()
 	this->model_2.reset();
 	this->DynamicJointPtr.reset();
 }
+SmoresNodePtr SmoresEdge::FindMatchingNode(SmoresNodePtr node)
+{
+	if (node == this->model_1)
+	{
+		return this->model_2;
+	}else{
+		return this->model_1;
+	}
+}

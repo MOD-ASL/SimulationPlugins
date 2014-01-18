@@ -18,6 +18,8 @@ public:
 
 	~SmoresEdge();
 
+	SmoresNodePtr FindMatchingNode(SmoresNodePtr node);
+
 //++++++++++++++++ Here comes edge propoerties +++++++++++++++++++
 public: double Distance; 	// Distance along the aligned axis
 public: double Angle; 		// Angle in radian around the aligned axis, relative to model_1's X when aligned along Y and Z or Y when aligned along X

@@ -76,6 +76,10 @@ void SmoresNode::NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr par
 		case 3:{this->RelativePosition.Set(0,0.05+0.05*cos(jvalue),0.05*sin(jvalue));break;}
 	}
 }
+void SmoresNode::SetParent(SmoresModulePtr mparent)
+{
+	this->Parent = mparent;
+}
 int SmoresNode::GetAxis(void)
 {
 	int Axis_ID;

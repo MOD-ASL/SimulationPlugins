@@ -27,6 +27,8 @@ public:
 
 	void NodeInit(int nodeID, int jtype, int jvalue, SmoresModulePtr parent);
 
+	void SetParent(SmoresModulePtr mparent);
+
 	int GetAxis(void);
 
 	void ConnectOnEdge(SmoresEdgePtr edge);
