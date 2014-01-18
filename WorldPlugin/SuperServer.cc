@@ -629,7 +629,10 @@ namespace gazebo
     {
       vector<SmoresModulePtr> vector1;
       vector<SmoresModulePtr> vector2;
+      vector<int> node_ids1;
+      vector<int> node_ids2;
       vector1.push_back(module);
+      node_ids1.push_back(4);
       unsigned int module_count = 0;
       while(1)
       {
@@ -640,16 +643,23 @@ namespace gazebo
           {
             for (int j = 0; j < 4; ++j)
             {
-              if(vector1.at(i)->GetNode(j)->Edge)
+              if (node_ids1.at(i)!= j)
               {
-                SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
-                vector2.push_back(ConnectedModule);
+                if(vector1.at(i)->GetNode(j)->Edge)
+                {
+                  SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
+                  vector2.push_back(ConnectedModule);
+                  node_ids2.push_back(vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->NodeID);
+                }
               }
             }
           }
           vector1.clear();
           vector1 = vector2;
           vector2.clear();
+          node_ids1.clear();
+          node_ids1 = node_ids2;
+          node_ids2.clear();
         }else{
           break;
         }
