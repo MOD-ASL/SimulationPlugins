@@ -191,7 +191,7 @@ namespace gazebo
         if (FoundPendingOne==0)
         {
           //---------------------- Add new pending connection request ------------------------
-          if ((!AlreadyConnected(Model1Ptr,NodeOfModel1)) && (!AlreadyConnected(Model2Ptr,NodeOfModel2)))
+          if ((!AlreadyConnected(Model1Ptr,NodeOfModel1)) && (!AlreadyConnected(Model2Ptr,NodeOfModel2)) && (!AlreadyConnected(Model1Ptr,Model2Ptr)))
           {
             // This part is used to check the distance between robots
             math::Vector3 CenterModel1 = currentWorld->GetModel(ModelOfCollision1)->GetWorldPose().pos;
@@ -614,6 +614,24 @@ namespace gazebo
       }
       return HavingAConnection;
     }
+    // Check whether two modules have already connected on a node
+    public: bool AlreadyConnected(SmoresModulePtr module_1, SmoresModulePtr module_2)
+    {
+      bool HavingAConnection = false;
+      for (int j = 0; j < 4; ++j)
+      {
+        if (module_1->GetNode(j)->Edge)
+        {
+          SmoresModulePtr ConnectedModule = module_1->GetNode(j)->Edge->FindMatchingNode(module_1->GetNode(j))->Parent;
+          if (ConnectedModule == module_2)
+          {
+            HavingAConnection = true;
+            break;
+          }
+        }
+      }
+      return HavingAConnection;
+    }
     // Check whether a node a of module has been occupied
     public: bool AlreadyConnected(SmoresModulePtr module, int node_ID)
     {
@@ -629,10 +647,9 @@ namespace gazebo
     {
       vector<SmoresModulePtr> vector1;
       vector<SmoresModulePtr> vector2;
-      vector<int> node_ids1;
-      vector<int> node_ids2;
+      vector<SmoresModulePtr> vector3;
       vector1.push_back(module);
-      node_ids1.push_back(4);
+      vector3.push_back(module);
       unsigned int module_count = 0;
       while(1)
       {
@@ -643,23 +660,32 @@ namespace gazebo
           {
             for (int j = 0; j < 4; ++j)
             {
-              if (node_ids1.at(i)!= j)
+              if(vector1.at(i)->GetNode(j)->Edge)
               {
-                if(vector1.at(i)->GetNode(j)->Edge)
-                {
-                  SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
-                  vector2.push_back(ConnectedModule);
-                  node_ids2.push_back(vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->NodeID);
-                }
+                SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
+                vector2.push_back(ConnectedModule);
               }
             }
           }
           vector1.clear();
-          vector1 = vector2;
+          for (unsigned int i = 0; i < vector2.size(); ++i)
+          {
+            bool have_it = true;
+            for (unsigned int j = 0; j < vector3.size(); ++j)
+            {
+              if (vector2.at(i) == vector3.at(j))
+              {
+                have_it = false;
+                break;
+              }
+            }
+            if (have_it)
+            {
+              vector1.push_back(vector2.at(i));
+              vector3.push_back(vector2.at(i));
+            }
+          }
           vector2.clear();
-          node_ids1.clear();
-          node_ids1 = node_ids2;
-          node_ids2.clear();
         }else{
           break;
         }
