@@ -69,3 +69,4 @@ Known problems of GAZEBO
 MEMO
 ----------------------------------------
 1. shared_ptr: make_shared function will not generate a pointer point to the input variable. Instead, this function will copy the input variable to a new address and makes a pointer point to the new address.
+2. For c++ compiler, it is OK that you define a method(function) in the class in the header file, but you don't specify it in the .cc file. However it is not ok in gazebo. It will show a symbol undefined error. 
