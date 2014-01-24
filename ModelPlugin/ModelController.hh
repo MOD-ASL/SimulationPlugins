@@ -28,7 +28,7 @@ namespace gazebo
 {
   // This is the controlller for SMORES
   // Please find the graphic structure on the lab wiki
-  class ModelController : public ModelPlugin
+  class ModelController : public ModelPlugin 
   {
     /// Constructor.
     public: ModelController();
@@ -58,6 +58,9 @@ namespace gazebo
     /// Used by magnetic connection
     private: void CollisionReceiverProcessor(GzStringPtr &msg);
 
+    /// Callback that manage the new coming message from world plugin
+    private: void CommandReceiving(CommandMessagePtr &msg);
+
     /// Callback that decode commands from world plugin and execute them
     private: void CommandDecoding(CommandMessagePtr &msg);
 
@@ -70,7 +73,7 @@ namespace gazebo
     public: virtual void SetJointAngleForce(physics::JointPtr CurrentJoint, int RotAxis, math::Angle AngleDesired);
 
     /// This function will be implemented future and will call JointPIDController()
-    public: virtual void JointAngleControl(void);
+    //public: virtual void JointAngleControl(void);
 
     /// This function is the actuall joint control function used now
     /// This function apply a PID controller to control the joint speed to achieve the specified angle
@@ -145,6 +148,7 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Vector that contains all the names of connected models
     private: vector<string> NameOfConnectedModels;
+    //private: vector<CommandMessagePtr> MessageArray;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+                       Model Pramaters                           +
@@ -159,6 +163,15 @@ namespace gazebo
     public:  double PlanarMotionStopThreshold;
 
     private: double WheelRadius;
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+                 Model Execution Variables                       +
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: int ExecutionSate; // 0 for waiting mode, 1 for planar motion mode, 2 for joint control mode, 3 for direct control mode 
+    private: double JointAngleShouldBe[4];
+    private: math::Pose TargetPosition;
+    private: double LftWheelSpeed;
+    private: double RgtWheelSpeed;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+                  Varibles only for testing                      +

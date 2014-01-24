@@ -11,11 +11,11 @@ using namespace gazebo;
 class SmoresModule: public boost::enable_shared_from_this<SmoresModule>
 {
 public:
-	SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, unsigned int num_ID);
+	SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, transport::PublisherPtr publisher, transport::SubscriberPtr subsciber, unsigned int num_ID);
 
-	SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr);
+	SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, transport::PublisherPtr publisher, transport::SubscriberPtr subsciber);
 
-	SmoresModule(string mID, bool mtype, unsigned int num_ID);
+	SmoresModule(string mID, bool mtype, transport::PublisherPtr publisher, transport::SubscriberPtr subsciber, unsigned int num_ID);
 
 	~SmoresModule();
 
@@ -36,6 +36,8 @@ public: string ModuleID;
 public: unsigned int ModuleNumID;	// Position in the vector
 public: bool ModuleType; // Active module or Passive Module, true for active
 public: physics::ModelPtr ModuleObject;	// A pointer to the real module
+public: transport::PublisherPtr ModulePublisher;
+public: transport::SubscriberPtr ModuleSubscriber;
 // Geometry information
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

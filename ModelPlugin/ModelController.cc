@@ -8,14 +8,16 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #include "ModelController.hh"
 
-using namespace gazebo;
 using namespace std;
-
+using namespace gazebo;
 GZ_REGISTER_MODEL_PLUGIN(ModelController)
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Model Controller Constructor
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ModelController::~ModelController()
+{
+}
 ModelController::ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),ModelAngleKPID(1,0,0)
 {
 	// Initialize variables
@@ -39,7 +41,7 @@ void ModelController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 	gazebo::transport::NodePtr node(new gazebo::transport::Node());
 	node->Init();
 	this->sub = node->Subscribe("~/Welcome",&ModelController::welcomInfoProcessor, this);
-		// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
+	// commandSubscriber = node->Subscribe("~/collision_map/command", &CollisionMapCreator::create, this);
 	
 	// Bind function which will be executed in each iteration
 	this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ModelController::OnSystemRunning, this, _1));
@@ -109,7 +111,6 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
 {
 	// Do something useful after simulation begins
-
 }
 
 //-------------------------------------------------------------------
@@ -181,6 +182,14 @@ void ModelController::CollisionReceiverProcessor(GzStringPtr &msg)
 // This function will be called when received an command from world plugin
 //            The format of the command might be a gait table
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void ModelController::CommandReceiving(CommandMessagePtr &msg)
+{
+	//this->MessageArray.push_back(msg);
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// This function will be called in the OnSystemRunning(), once for a control period
+//            The format of the command might be a gait table
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ModelController::CommandDecoding(CommandMessagePtr &msg)
 {
 	int commandType = msg->messagetype();
@@ -188,7 +197,49 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 	{
 		// This line may need to be changed
 		// When using the new representation, the old connection management mechanism may be unnecessary
-		case 1:{NameOfConnectedModels.push_back(msg->whichmodelconnectedto());}break;
+		case 1:{NameOfConnectedModels.push_back(msg->stringmessage());break;}
+		case 2:
+		{
+			this->ExecutionSate = 1;
+			this->TargetPosition = gazebo::msgs::Convert(msg->positionneedtobe());
+			break;
+		}
+		case 3:
+		{
+			this->ExecutionSate = 2;
+			for (int i = 0; i < 4; ++i)
+			{
+				if (msg->jointgaittablestatus(i))
+				{
+					this->JointAngleShouldBe[i] = msg->jointgaittable(i);
+				}
+			}
+			break;
+		}
+		case 4:
+		{
+			this->ExecutionSate = 3;
+			for (int i = 0; i < 4; ++i)
+			{
+				if (i==0 || i==3)
+				{
+					if (msg->jointgaittablestatus(i))
+					{
+						this->JointAngleShouldBe[i] = msg->jointgaittable(i);
+					}
+				}else{
+					if (msg->jointgaittablestatus(i) && i == 1)
+					{
+						LftWheelSpeed = msg->jointgaittable(i);
+					}
+					if (msg->jointgaittablestatus(i) && i == 2)
+					{
+						RgtWheelSpeed = msg->jointgaittable(i);
+					}
+				}
+			}
+			break;
+		}
 	}
 }
 

@@ -7,20 +7,25 @@ message CommandMessage
 	// An indicator of what kind of message is being sent
 	// 0. For accomplished feedback from model
 	// 1. For indicating a connection has been established
-	// 2. For Position Setting
-	// 3. For Joint angle Setting
+	// 2. For Position Setting (Planar motion command)
+	// 3. For Joint angle Setting (Gaits table)
 	// 4. For direct control command
+
+	// 10. For require an error information
+	// 11. For require a joint angle information of model
+	// 12. For require a position information of model
+
+	// 20. For error information from model
+	// 21. For joint angle information from model
+	// 22. For position information from model
 	required int32 MessageType = 1;
-	// A string of the model name
-	optional string WhichModelConnectedTo = 2;
+	// A string of the model name/error information
+	optional string StringMessage = 5;
 	// A Position that model will drive to 
 	// Or a position that system acquired
-	optional gazebo.msgs.Pose PositionNeedToBe = 3;
-	// The name of the joint that need to be set to a specific angle
-	optional string JointName = 4;
-	// The angle of the joint that need to be set to a specific angle
-	optional double DesiredAngle = 5; 
-	// The Speed of Wheels
-	optional double LeftWheelSpeed = 6;
-	optional double RightWheelSpeed = 7;
+	optional gazebo.msgs.Pose PositionNeedToBe = 4;
+	// The gait table of the joint angles/speed/increment need to be set
+	repeated double JointGaitTable = 2 [packed=true];
+	// A table indicates which joint need to be set
+	repeated bool JointGaitTableStatus =3 [packed=true];
 }

@@ -16,13 +16,15 @@
 
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
-#define VALIDCONNECTIONDISLOWER 0.095
+#define VALIDCONNECTIONDISLOWER 0.098
+
 
 using namespace std;
 
 namespace gazebo
 {
   typedef const boost::shared_ptr<const collision_message_plus::msgs::CollisionMessage> CollisionMessagePtr;
+  typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr;
   string Int2String(int number) //
   {
      stringstream ss; //create a stringstream
@@ -118,25 +120,27 @@ namespace gazebo
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      // Store the pointers of model into vectors
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      // modelGroup.push_back(currentWorld->GetModel(_info));
-      unsigned int howManyModules = moduleList.size();
-      SmoresModulePtr newModule(new SmoresModule(_info, true, howManyModules));
-      newModule->ManuallyNodeInitial(newModule);
-      NeedToSetPtr = true;
-      moduleList.push_back(newModule);
-      // newModule->ManuallyNodeInitial(newModule);
-      // moduleList.at(howManyModules)->SaySomthing();
-
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Dynamic publisher generation
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       transport::NodePtr node1(new transport::Node());
       node1->Init(_info);
       string NewPubName = "~/" + _info + "_world";
-      transport::PublisherPtr newWorldPub = node1->Advertise<command_message::msgs::CommandMessage>(NewPubName);
-      WorldPublisher.push_back(newWorldPub);
+      transport::PublisherPtr newModulePub = node1->Advertise<command_message::msgs::CommandMessage>(NewPubName);
+      NewPubName = "~/" + _info + "_model";
+      transport::SubscriberPtr newModuleSub = node1->Subscribe(NewPubName,&ControlCenter::FeedBackMessageDecoding, this);
+      // WorldPublisher.push_back(newWorldPub);
+
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // Store the pointers of model into vectors
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // modelGroup.push_back(currentWorld->GetModel(_info));
+      unsigned int howManyModules = moduleList.size();
+      SmoresModulePtr newModule(new SmoresModule(_info, true, newModulePub, newModuleSub, howManyModules));
+      newModule->ManuallyNodeInitial(newModule);
+      NeedToSetPtr = true;
+      moduleList.push_back(newModule);
+      // newModule->ManuallyNodeInitial(newModule);
+      // moduleList.at(howManyModules)->SaySomthing();
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Dynamic subscriber of collision topic
@@ -160,6 +164,11 @@ namespace gazebo
       //   cout<<"World: The crush has nothing to do with disconnection"<<endl;
       // }
     }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function will be called everytime receive command information
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void FeedBackMessageDecoding(CommandMessagePtr &msg)
+    {}
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive collision information
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -246,8 +255,6 @@ namespace gazebo
       {
         newPositionOfLink1 = ContactLinkPos.pos;
         newPositionOfLink2 = ContactLinkPos.pos - (0.1+an_edge->Distance)*ContactLinkPos.rot.GetYAxis();
-        cout<<"World: New position of the module 1: ("<<newPositionOfLink1.x<<","<<newPositionOfLink1.y<<","<<newPositionOfLink1.z<<")"<<endl;
-        cout<<"World: New position of the module 2: ("<<newPositionOfLink2.x<<","<<newPositionOfLink2.y<<","<<newPositionOfLink2.z<<")"<<endl;
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
         newZAxis = newZAxis.Normalize();
@@ -300,8 +307,6 @@ namespace gazebo
       {
         newPositionOfLink1 = ContactLinkPos.pos;
         newPositionOfLink2 = ContactLinkPos.pos + (0.1+an_edge->Distance)*ContactLinkPos.rot.GetXAxis();
-        cout<<"World: New position of the module 1: ("<<newPositionOfLink1.x<<","<<newPositionOfLink1.y<<","<<newPositionOfLink1.z<<")"<<endl;
-        cout<<"World: New position of the module 2: ("<<newPositionOfLink2.x<<","<<newPositionOfLink2.y<<","<<newPositionOfLink2.z<<")"<<endl;
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
         newZAxis = newZAxis.Normalize();
@@ -324,7 +329,6 @@ namespace gazebo
           }else{
             SecondRotationOfLink2.SetFromEuler(0, -AngleBetweenZAxes ,0);
           }
-          cout<<"World: Setting appropriate angle in correct mode"<<endl;
         }
         if (node2_ID==3)
         {
@@ -554,6 +558,28 @@ namespace gazebo
 
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // These functions are used to manage and send message to model
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int msg_type = 3)
+    {
+      command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage.set_messagetype(msg_type);
+      for (int i = 0; i < 4; ++i)
+      {
+        ConnectionMessage.set_jointgaittablestatus(i,flag[i]);
+        ConnectionMessage.set_jointgaittable(i,gait_value[i]);
+      }
+      module->ModulePublisher->Publish(ConnectionMessage);
+    }
+    public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int msg_type = 3)
+    {
+      bool flag[4] = {false};
+      double gait_values[4] = {0};
+      flag[joint_ID] = true;
+      gait_values[joint_ID] = gait_value;
+      SendGaitTable(module, flag, gait_values, msg_type);
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     public: int GetNodeIDByName(string node_name)
@@ -584,6 +610,19 @@ namespace gazebo
         if (module_name.compare(moduleList.at(i)->ModuleID)==0)
         {
           ExistModule = moduleList.at(i);
+          break;
+        }
+      }
+      return ExistModule;
+    }
+    public: int GetModuleIDXByName(string module_name)
+    {
+      int ExistModule = -1;
+      for (unsigned int i = 0; i < moduleList.size(); ++i)
+      {
+        if (module_name.compare(moduleList.at(i)->ModuleID)==0)
+        {
+          ExistModule = i;
           break;
         }
       }
@@ -696,7 +735,7 @@ namespace gazebo
     private: physics::WorldPtr currentWorld;
     private: event::ConnectionPtr addEntityConnection;
     private: transport::PublisherPtr statePub;
-    private: vector<transport::PublisherPtr> WorldPublisher;
+    // private: vector<transport::PublisherPtr> WorldPublisher;
     private: vector<transport::SubscriberPtr> WorldColSubscriber;
     // The pointer vector for all the models in the world
     private: vector<SmoresModulePtr> moduleList;

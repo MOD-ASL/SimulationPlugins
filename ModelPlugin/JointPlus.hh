@@ -7,20 +7,20 @@
 using namespace gazebo;
 
 struct JointPlus
-	{
-		physics::JointPtr JointX;
-		math::Angle JointAngleNow;
-		math::Angle JointAngleDesire;
-		// Whether the angle of the joint needs to be set
-		bool Need2BeSet;
+{
+	physics::JointPtr JointX;
+	math::Angle JointAngleNow;
+	math::Angle JointAngleDesire;
+	// Whether the angle of the joint needs to be set
+	bool Need2BeSet;
 
-		// Joint Properties
-		double MaximiumForce;
-		double MaximiumRotRate;
+	// Joint Properties
+	double MaximiumForce;
+	double MaximiumRotRate;
 
-		// Variables need to be use to control the joint
-	 	double JointErrorHis;
-	 	double JointErrorAccu;
-	};
+	// Variables need to be use to control the joint
+ 	double JointErrorHis;
+ 	double JointErrorAccu;
+};
 
-	#endif
+#endif
