@@ -72,6 +72,7 @@ namespace gazebo
   };
   class ModuleCommands
   {
+  public:
     ModuleCommands(SmoresModulePtr which_module)
     {
       this->WhichModule = which_module;
@@ -175,7 +176,8 @@ namespace gazebo
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
       SetThePointerInSmoresModule();
-
+      // Main command execution procedure
+      CommandManager();
 
       common::Time world_sim_time = currentWorld->GetSimTime();
       if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6)
@@ -184,9 +186,9 @@ namespace gazebo
         // cout<<"World: The crush has nothing to do with disconnection"<<endl;
         // if (!(this->FinishFlag))
         // {
-        //   bool flag[4] = {true,true,true,true};
-        //   double gait_value[4] = {1.5,1.5,1.5,1.5};
-        //   SendGaitTable(moduleList.at(0), flag, gait_value);
+          bool flag[4] = {true,true,true,true};
+          double gait_value[4] = {1.5,1.5,1.5,1.5};
+          SendGaitTable(moduleList.at(0), flag, gait_value);
         //   // SendPosition(moduleList.at(0),1,1,1.5);
         // }
       }
@@ -204,11 +206,13 @@ namespace gazebo
         // {
         //   cout<<"World: Execution finished"<<endl;
         // }
+        cout<<"World: string message is :"<<msg->stringmessage()<<endl;
         string moduleName = msg->stringmessage().substr(0,msg->stringmessage().find(":"));
+        cout<<"World: module name is : "<<moduleName<<endl;
         ModuleCommandsPtr command_for_current_module = GetCommandPtrByModule(GetModulePtrByName(moduleName));
         command_for_current_module->ReceivedFlag = true;
-        string secondField = msg->stringmessage().substr(msg->stringmessage().find(":")+1);
-        cout<<"World: get the correct world : '"<<secondField<<"'"<<endl;
+        string secondField = msg->stringmessage().substr(msg->stringmessage().find(":")+1,string::npos);
+        cout<<"World: get the correct word : '"<<secondField<<"'"<<endl;
         if (secondField.compare("finished")==0)
         {
           cout<<"World: Execution finished"<<endl;
@@ -632,15 +636,19 @@ namespace gazebo
     }
     public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int msg_type = 3)
     {
-      command_message::msgs::CommandMessage ConnectionMessage;
-      ConnectionMessage.set_messagetype(msg_type);
+      CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
+      // command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage->set_messagetype(msg_type);
       for (int i = 0; i < 4; ++i)
       {
-        ConnectionMessage.add_jointgaittablestatus(flag[i]);
-        ConnectionMessage.add_jointgaittable(gait_value[i]);
+        ConnectionMessage->add_jointgaittablestatus(flag[i]);
+        ConnectionMessage->add_jointgaittable(gait_value[i]);
       }
-      module->ModulePublisher->Publish(ConnectionMessage);
-      
+      ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+      new_command_message->CommandSquence.push_back(ConnectionMessage);
+      ModuleCommandContainer.push_back(new_command_message);
+      // module->ModulePublisher->Publish(ConnectionMessage);
+
     }
     public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int msg_type = 3)
     {
@@ -652,16 +660,21 @@ namespace gazebo
     }
     public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle)
     {
-      command_message::msgs::CommandMessage ConnectionMessage;
-      ConnectionMessage.set_messagetype(2);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_x(x);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_y(y);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_z(orientation_angle);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_x(0);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_y(0);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_z(0);
-      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_w(0);
-      module->ModulePublisher->Publish(ConnectionMessage);
+      CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
+      // command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage->set_messagetype(2);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_x(x);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_y(y);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_z(orientation_angle);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_x(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_y(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_z(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_w(0);
+
+      ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+      new_command_message->CommandSquence.push_back(ConnectionMessage);
+      ModuleCommandContainer.push_back(new_command_message);
+      // module->ModulePublisher->Publish(ConnectionMessage);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
