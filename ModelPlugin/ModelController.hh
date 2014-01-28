@@ -16,6 +16,7 @@
 
 // Parameters
 #define PI 3.1415926
+#define EXECUTIONERROR 0.008
 
 using namespace std;
 
@@ -77,7 +78,10 @@ namespace gazebo
 
     /// This function is the actuall joint control function used now
     /// This function apply a PID controller to control the joint speed to achieve the specified angle
-    private: virtual void JointPIDController(JointPlus &CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed = 1);
+    private: virtual void JointPIDController(JointPlus &CurrentJoint, double AngleDesiredRad, double DesireSpeed=0.8);
+
+    ///
+    private: void JointAngleUpdateInJointPlus(void);
 
     /// This function will return the angle of the specified joint
     public: virtual math::Angle GetJointAngle(physics::JointPtr CurrentJoint, int RotAxis);
@@ -85,6 +89,13 @@ namespace gazebo
     /// This function will set the rotation rate of the joint
     /// The unit of this speed is rad/s
     public: virtual void SetJointSpeed(physics::JointPtr CurrentJoint, int RotAxis, double SpeedDesired);
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+            Command Execution Tracking Functions                 +
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    public: void JointAngleTracking(void);
+
+    public: void PositionTracking(void);
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+  Useful functions to get model status and other tool functions  +
@@ -102,6 +113,12 @@ namespace gazebo
 
     /// This function is used to apply a complementary filter
     public: double ComplementaryFilter(double FilteringValue, double ComplementFilterPar = 0.9);
+
+    /// This function is used to return the JointPlus structure according to the node ID
+    public: JointPlus & GetJointPlus(int node_ID);
+
+    /// This function is used to return the index of joint axis according to the node ID
+    public: int GetJointAxis(int node_ID);
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+          Functions that control the model planar motion         +
@@ -140,6 +157,7 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: transport::SubscriberPtr sub;
     private: transport::SubscriberPtr CommandSub;
+    private: transport::PublisherPtr  CommandPub;
     private: transport::SubscriberPtr LinkCollisonSub[4];
     private: transport::PublisherPtr CollisionInfoToServer;
 
@@ -172,6 +190,7 @@ namespace gazebo
     private: math::Pose TargetPosition;
     private: double LftWheelSpeed;
     private: double RgtWheelSpeed;
+    private: bool StartExecution;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+                  Varibles only for testing                      +

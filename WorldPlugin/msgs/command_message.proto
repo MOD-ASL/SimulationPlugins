@@ -19,7 +19,7 @@ message CommandMessage
 	// 21. For joint angle information from model
 	// 22. For position information from model
 	required int32 MessageType = 1;
-	// A string of the model name/error information
+	// A string of the model name/error information/message ID
 	optional string StringMessage = 5;
 	// A Position that model will drive to 
 	// Or a position that system acquired

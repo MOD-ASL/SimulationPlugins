@@ -25,6 +25,7 @@ namespace gazebo
 {
   typedef const boost::shared_ptr<const collision_message_plus::msgs::CollisionMessage> CollisionMessagePtr;
   typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr;
+  typedef boost::shared_ptr<command_message::msgs::CommandMessage> CommandPtr;
   string Int2String(int number) //
   {
      stringstream ss; //create a stringstream
@@ -69,6 +70,24 @@ namespace gazebo
     string LinkOfModel1;
     string LinkofModel2;
   };
+  class ModuleCommands
+  {
+    ModuleCommands(SmoresModulePtr which_module)
+    {
+      this->WhichModule = which_module;
+      FinishedFlag = false;
+      ReceivedFlag = false;
+    }
+  public:
+    SmoresModulePtr WhichModule;
+    // The vector of command arrays
+    vector<CommandPtr> CommandSquence;
+    // The indicator of whether a command has been executing
+    bool FinishedFlag;
+    bool ReceivedFlag;
+  };
+  typedef boost::shared_ptr<ModuleCommands> ModuleCommandsPtr;
+
   class ControlCenter : public WorldPlugin
   {
     public: ControlCenter()
@@ -76,6 +95,7 @@ namespace gazebo
       numOfModules = 0;
       infoCounter = 0;
       NeedToSetPtr = false;
+      // this->FinishFlag = false;
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
     {
@@ -157,18 +177,45 @@ namespace gazebo
       SetThePointerInSmoresModule();
 
 
-      // common::Time world_sim_time = currentWorld->GetSimTime();
-      // if (world_sim_time.sec >= 20 && world_sim_time.sec <= 21)
-      // {
-      //   Deconnection(ConnectionEdges.back());
-      //   cout<<"World: The crush has nothing to do with disconnection"<<endl;
-      // }
+      common::Time world_sim_time = currentWorld->GetSimTime();
+      if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6)
+      {
+        // Deconnection(ConnectionEdges.back());
+        // cout<<"World: The crush has nothing to do with disconnection"<<endl;
+        // if (!(this->FinishFlag))
+        // {
+        //   bool flag[4] = {true,true,true,true};
+        //   double gait_value[4] = {1.5,1.5,1.5,1.5};
+        //   SendGaitTable(moduleList.at(0), flag, gait_value);
+        //   // SendPosition(moduleList.at(0),1,1,1.5);
+        // }
+      }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive command information
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: void FeedBackMessageDecoding(CommandMessagePtr &msg)
-    {}
+    {
+      if (msg->messagetype()==0)
+      {
+        // this->FinishFlag = true;
+        // cout<<"World: Message confirmed"<<endl;
+        // if (msg->stringmessage().compare("finished")==0)
+        // {
+        //   cout<<"World: Execution finished"<<endl;
+        // }
+        string moduleName = msg->stringmessage().substr(0,msg->stringmessage().find(":"));
+        ModuleCommandsPtr command_for_current_module = GetCommandPtrByModule(GetModulePtrByName(moduleName));
+        command_for_current_module->ReceivedFlag = true;
+        string secondField = msg->stringmessage().substr(msg->stringmessage().find(":")+1);
+        cout<<"World: get the correct world : '"<<secondField<<"'"<<endl;
+        if (secondField.compare("finished")==0)
+        {
+          cout<<"World: Execution finished"<<endl;
+          command_for_current_module->FinishedFlag = true;
+        }
+      }
+    }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive collision information
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -560,16 +607,40 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are used to manage and send message to model
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void CommandManager(void)
+    {
+      for (unsigned int i = 0; i < ModuleCommandContainer.size(); ++i)
+      {
+        if (ModuleCommandContainer.at(i)->CommandSquence.size()>0)
+        {
+          if (!ModuleCommandContainer.at(i)->FinishedFlag)
+          {
+            if (!ModuleCommandContainer.at(i)->ReceivedFlag)
+            {
+              ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(*(ModuleCommandContainer.at(i)->CommandSquence.at(0)));
+            }
+          }else{
+            ModuleCommandContainer.at(i)->CommandSquence.erase(ModuleCommandContainer.at(i)->CommandSquence.begin());
+            ModuleCommandContainer.at(i)->FinishedFlag = false;
+            if (ModuleCommandContainer.at(i)->CommandSquence.size() == 0)
+            {
+              ModuleCommandContainer.erase(ModuleCommandContainer.begin()+i);
+            }
+          }
+        }
+      }
+    }
     public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int msg_type = 3)
     {
       command_message::msgs::CommandMessage ConnectionMessage;
       ConnectionMessage.set_messagetype(msg_type);
       for (int i = 0; i < 4; ++i)
       {
-        ConnectionMessage.set_jointgaittablestatus(i,flag[i]);
-        ConnectionMessage.set_jointgaittable(i,gait_value[i]);
+        ConnectionMessage.add_jointgaittablestatus(flag[i]);
+        ConnectionMessage.add_jointgaittable(gait_value[i]);
       }
       module->ModulePublisher->Publish(ConnectionMessage);
+      
     }
     public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int msg_type = 3)
     {
@@ -578,6 +649,19 @@ namespace gazebo
       flag[joint_ID] = true;
       gait_values[joint_ID] = gait_value;
       SendGaitTable(module, flag, gait_values, msg_type);
+    }
+    public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle)
+    {
+      command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage.set_messagetype(2);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_x(x);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_y(y);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_position()->set_z(orientation_angle);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_x(0);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_y(0);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_z(0);
+      ConnectionMessage.mutable_positionneedtobe()->mutable_orientation()->set_w(0);
+      module->ModulePublisher->Publish(ConnectionMessage);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
@@ -614,6 +698,19 @@ namespace gazebo
         }
       }
       return ExistModule;
+    }
+    public: ModuleCommandsPtr GetCommandPtrByModule(SmoresModulePtr module_ptr)
+    {
+      ModuleCommandsPtr command_squence;
+      for (unsigned int i = 0; i < ModuleCommandContainer.size(); ++i)
+      {
+        if (module_ptr == ModuleCommandContainer.at(i)->WhichModule)
+        {
+          command_squence = ModuleCommandContainer.at(i);
+          break;
+        }
+      }
+      return command_squence;
     }
     public: int GetModuleIDXByName(string module_name)
     {
@@ -749,9 +846,12 @@ namespace gazebo
     private: vector<SmoresEdgePtr> ConnectionEdges;
     // The indicator of a new model has been added
     private: bool NeedToSetPtr;
+    
+    private: vector<ModuleCommandsPtr> ModuleCommandContainer;
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;
+    // private: bool FinishFlag;
     };
 
 

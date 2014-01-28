@@ -24,7 +24,10 @@ ModelController::ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),Model
 	WheelRadius =  0.045275;
 	MaxiRotationRate = 2.4086;
 	AccelerationRate = 8;
-	PlanarMotionStopThreshold = 0.02;
+	PlanarMotionStopThreshold = 0.016;
+
+	ExecutionSate = 0;
+	StartExecution = false;
 
 	// A hint of model been initialized
 	printf("Model Initiated\n");
@@ -84,12 +87,12 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 	JointCBP.JointErrorAccu = 0;
 	// Setting the model states
 	// Setting the maximium torque of the two wheels
-	this->JointWR->SetMaxForce(0,JointWR->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
-	this->JointWL->SetMaxForce(0,JointWL->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
+	this->JointWR->SetMaxForce(0,JointWR->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
+	this->JointWL->SetMaxForce(0,JointWL->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
 	// Setting the maximium torque of the front wheel
-	this->JointWF->SetMaxForce(0,JointWF->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
+	this->JointWF->SetMaxForce(0,JointWF->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
 	// Setting the maximium torque of the body bending joint
-	this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->GetValueDouble());
+	this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
 	// Set the angle of the hinge in the center to zero
 	math::Angle InitialAngle(0.05);
 	this->JointCB->SetAngle(0, InitialAngle);
@@ -99,9 +102,11 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 	
 	// physics::ModelState CurrentModelState(model);
 	string TopicName = "~/" + model->GetName() + "_world";
+	string TopicNamePub = "~/" + model->GetName() + "_model";
 	gazebo::transport::NodePtr node(new gazebo::transport::Node());
 	node->Init(model->GetName());
 	this->CommandSub = node->Subscribe(TopicName,&ModelController::CommandDecoding, this);
+	this->CommandPub = node->Advertise<command_message::msgs::CommandMessage>(TopicNamePub);
 	CollisionPubAndSubInitialization();
 }
 
@@ -110,7 +115,37 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
 {
+	// Update variables that need to be updated in each iteration
+	JointAngleUpdateInJointPlus();
 	// Do something useful after simulation begins
+	if (ExecutionSate == 1)
+	{
+		math::Vector2d final_position(TargetPosition.pos.x,TargetPosition.pos.y);
+		math::Angle final_orientation(TargetPosition.pos.z);
+		Move2Point(final_position,final_orientation);
+		if (StartExecution)
+		{
+			PositionTracking();
+		}
+	}
+	if (ExecutionSate == 2)
+	{
+		for (int i = 0; i < 4; ++i)
+		{
+			JointPIDController(GetJointPlus(i), JointAngleShouldBe[i]);
+		}
+		if (StartExecution)
+		{
+			JointAngleTracking();
+		}
+	}
+	if (ExecutionSate == 3)
+	{
+		JointPIDController(GetJointPlus(0), JointAngleShouldBe[0]);
+		JointPIDController(GetJointPlus(3), JointAngleShouldBe[3]);
+		SetJointSpeed(JointWL, 0, LftWheelSpeed);
+		SetJointSpeed(JointWR, 0, RgtWheelSpeed);
+	}
 }
 
 //-------------------------------------------------------------------
@@ -241,6 +276,16 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 			break;
 		}
 	}
+	if (commandType == 0)
+	{
+		StartExecution = false;
+	}else{
+		StartExecution = true;
+	}
+	command_message::msgs::CommandMessage feed_back_message;
+	feed_back_message.set_messagetype(0);
+	feed_back_message.set_stringmessage(model->GetName()+":");
+	CommandPub->Publish(feed_back_message);
 }
 
 //------------- Low level model control functions --------------------
@@ -256,10 +301,12 @@ void ModelController::SetJointAngleForce(physics::JointPtr CurrentJoint, int Rot
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // This function is used to control the joint angle by using a PID controller
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void ModelController::JointPIDController(JointPlus &CurrentJoint, int RotAxis, math::Angle AngleDesired, double DesireSpeed)
+void ModelController::JointPIDController(JointPlus &CurrentJoint, double AngleDesiredRad, double DesireSpeed) 	// Desired Speed is a percentage of the maximum speed
 {
 	double AngleError, AngleDiffError;
 	double SwingSpeed;
+	int RotAxis = 0;
+	math::Angle AngleDesired(AngleDesiredRad);
 	AngleError = (AngleDesired - CurrentJoint.JointAngleNow).Radian();
 	// cout<<"AngleError:"<<AngleError<<endl;
 	AngleDiffError = AngleError - CurrentJoint.JointErrorHis;
@@ -273,6 +320,14 @@ void ModelController::JointPIDController(JointPlus &CurrentJoint, int RotAxis, m
 	SetJointSpeed(CurrentJoint.JointX,RotAxis,SwingSpeed);
 
 	CurrentJoint.JointErrorHis = AngleError;
+}
+
+void ModelController::JointAngleUpdateInJointPlus(void)
+{
+	JointWRP.JointAngleNow = GetJointAngle(JointWR,0);
+	JointWLP.JointAngleNow = GetJointAngle(JointWL,0);
+	JointWFP.JointAngleNow = GetJointAngle(JointWF,0);
+	JointCBP.JointAngleNow = GetJointAngle(JointCB,0);
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -296,6 +351,61 @@ void ModelController::SetJointSpeed(physics::JointPtr CurrentJoint, int RotAxis,
 }
 
 //------------- Low level model control functions END ----------------
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// These functions will be used to check whether the module has finished execute a command
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void ModelController::JointAngleTracking(void)
+{
+	bool execution_finished_flag = true;
+	if (abs(GetJointAngle(JointWF,0).Radian()-JointAngleShouldBe[0])>EXECUTIONERROR)
+	{
+		execution_finished_flag = false;
+	}
+	if (abs(GetJointAngle(JointWL,0).Radian()-JointAngleShouldBe[1])>EXECUTIONERROR)
+	{
+		execution_finished_flag = false;
+	}
+	if (abs(GetJointAngle(JointWR,0).Radian()-JointAngleShouldBe[2])>EXECUTIONERROR)
+	{
+		execution_finished_flag = false;
+	}
+	if (abs(GetJointAngle(JointCB,0).Radian()-JointAngleShouldBe[3])>EXECUTIONERROR)
+	{
+		execution_finished_flag = false;
+	}
+	if (execution_finished_flag)
+	{
+		command_message::msgs::CommandMessage feed_back_message;
+		feed_back_message.set_messagetype(0);
+		feed_back_message.set_stringmessage(model->GetName()+":finished");
+		CommandPub->Publish(feed_back_message);
+	}
+}
+
+void ModelController::PositionTracking(void)
+{
+	bool execution_finished_flag = true;
+	math::Vector2d module_pos(GetModelCentralCoor().pos.x,GetModelCentralCoor().pos.y);
+	math::Vector2d desired_pos(TargetPosition.pos.x,TargetPosition.pos.y);
+	if (module_pos.Distance(desired_pos)>2*EXECUTIONERROR)
+	{
+		execution_finished_flag = false;
+		cout<<"Model: distance is : "<<module_pos.Distance(desired_pos)<<endl;
+	}
+	if (abs(TargetPosition.pos.z-GetModelCentralCoor().rot.GetYaw())>(EXECUTIONERROR+0.002))
+	{
+		execution_finished_flag = false;
+		cout<<"Model: angle difference is : "<<abs(TargetPosition.pos.z-GetModelCentralCoor().rot.GetYaw())<<endl;
+	}
+	if (execution_finished_flag)
+	{
+		command_message::msgs::CommandMessage feed_back_message;
+		feed_back_message.set_messagetype(0);
+		feed_back_message.set_stringmessage(model->GetName()+":finished");
+		CommandPub->Publish(feed_back_message);
+	}
+}
 
 //----------------------- Utility functions --------------------------
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -350,6 +460,42 @@ double ModelController::ComplementaryFilter(double FilteringValue, double Comple
 	ValueRecorder = FiltedValue;
 
 	return FiltedValue;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// This function is used to return asked JointPlus
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+JointPlus & ModelController::GetJointPlus(int node_ID)
+{
+	if (node_ID == 1)
+	{
+		return JointWLP;
+	}
+	if (node_ID == 2)
+	{
+		return JointWRP;
+	}
+	if (node_ID == 3)
+	{
+		return JointCBP;
+	}
+	return JointWFP;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// This function is used to return axis of a joint
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+int ModelController::GetJointAxis(int node_ID)
+{
+	int axis_idx;
+	switch(node_ID)
+	{
+		case 0:axis_idx = 1;break;
+		case 1:axis_idx = 0;break;
+		case 2:axis_idx = 0;break;
+		case 3:axis_idx = 0;break;
+	}
+	return axis_idx;
 }
 
 //----------------------- Utility functions END ----------------------
