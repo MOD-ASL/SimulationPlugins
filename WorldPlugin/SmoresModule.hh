@@ -2,11 +2,29 @@
 #define _GAZEBO_SMORES_MODULE_HH_
 // #include "SmoresEdge.hh"
 #include "SmoresNode.hh"
+#include "command_message.pb.h"
 #include <string>
 // #include <iostream>
 
 using namespace std;
 using namespace gazebo;
+
+typedef boost::shared_ptr<command_message::msgs::CommandMessage> CommandPtr;
+class ModuleCommands
+{
+public:
+  ModuleCommands(SmoresModulePtr which_module);
+
+public:
+  SmoresModulePtr WhichModule;
+  // The vector of command arrays
+  vector<CommandPtr> CommandSquence;
+  // The indicator of whether a command has been executing
+  bool FinishedFlag;
+  bool ReceivedFlag;
+};
+
+typedef boost::shared_ptr<ModuleCommands> ModuleCommandsPtr;
 
 class SmoresModule: public boost::enable_shared_from_this<SmoresModule>
 {
@@ -38,6 +56,7 @@ public: bool ModuleType; // Active module or Passive Module, true for active
 public: physics::ModelPtr ModuleObject;	// A pointer to the real module
 public: transport::PublisherPtr ModulePublisher;
 public: transport::SubscriberPtr ModuleSubscriber;
+public: ModuleCommandsPtr ModuleCommandContainer;
 // Geometry information
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

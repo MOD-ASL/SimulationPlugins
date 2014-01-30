@@ -1,5 +1,12 @@
 #include "SmoresModule.hh"
 
+ModuleCommands::ModuleCommands(SmoresModulePtr which_module)
+{
+  this->WhichModule = which_module;
+  FinishedFlag = false;
+  ReceivedFlag = false;
+}
+  
 SmoresModule::SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, transport::PublisherPtr publisher, transport::SubscriberPtr subsciber, unsigned int num_ID):
 																						NodeUH(3,0,0),NodeFW(0,0,0),NodeLW(1,0,0),NodeRW(2,0,0),NodeUHPtr(&NodeUH),NodeFWPtr(&NodeFW),NodeLWPtr(&NodeLW),NodeRWPtr(&NodeRW)
 {

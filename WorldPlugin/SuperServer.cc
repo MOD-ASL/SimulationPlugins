@@ -10,7 +10,7 @@
 #include <cmath>
 // Libraries for messages needed to use to communicate between plugins
 #include "collision_message_plus.pb.h"
-#include "command_message.pb.h"
+// #include "command_message.pb.h"
 // Libraries for connectivity representation
 #include "SmoresModule.hh"
 
@@ -25,7 +25,6 @@ namespace gazebo
 {
   typedef const boost::shared_ptr<const collision_message_plus::msgs::CollisionMessage> CollisionMessagePtr;
   typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr;
-  typedef boost::shared_ptr<command_message::msgs::CommandMessage> CommandPtr;
   string Int2String(int number) //
   {
      stringstream ss; //create a stringstream
@@ -70,24 +69,24 @@ namespace gazebo
     string LinkOfModel1;
     string LinkofModel2;
   };
-  class ModuleCommands
-  {
-  public:
-    ModuleCommands(SmoresModulePtr which_module)
-    {
-      this->WhichModule = which_module;
-      FinishedFlag = false;
-      ReceivedFlag = false;
-    }
-  public:
-    SmoresModulePtr WhichModule;
-    // The vector of command arrays
-    vector<CommandPtr> CommandSquence;
-    // The indicator of whether a command has been executing
-    bool FinishedFlag;
-    bool ReceivedFlag;
-  };
-  typedef boost::shared_ptr<ModuleCommands> ModuleCommandsPtr;
+  // class ModuleCommands
+  // {
+  // public:
+  //   ModuleCommands(SmoresModulePtr which_module)
+  //   {
+  //     this->WhichModule = which_module;
+  //     FinishedFlag = false;
+  //     ReceivedFlag = false;
+  //   }
+  // public:
+  //   SmoresModulePtr WhichModule;
+  //   // The vector of command arrays
+  //   vector<CommandPtr> CommandSquence;
+  //   // The indicator of whether a command has been executing
+  //   bool FinishedFlag;
+  //   bool ReceivedFlag;
+  // };
+  // typedef boost::shared_ptr<ModuleCommands> ModuleCommandsPtr;
 
   class ControlCenter : public WorldPlugin
   {
@@ -96,6 +95,7 @@ namespace gazebo
       numOfModules = 0;
       infoCounter = 0;
       NeedToSetPtr = false;
+      test_count = 0;
       // this->FinishFlag = false;
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
@@ -180,7 +180,7 @@ namespace gazebo
       CommandManager();
 
       common::Time world_sim_time = currentWorld->GetSimTime();
-      if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6)
+      if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6 && test_count<3)
       {
         // Deconnection(ConnectionEdges.back());
         // cout<<"World: The crush has nothing to do with disconnection"<<endl;
@@ -189,6 +189,7 @@ namespace gazebo
           bool flag[4] = {true,true,true,true};
           double gait_value[4] = {1.5,1.5,1.5,1.5};
           SendGaitTable(moduleList.at(0), flag, gait_value);
+          test_count++;
         //   // SendPosition(moduleList.at(0),1,1,1.5);
         // }
       }
@@ -209,14 +210,20 @@ namespace gazebo
         cout<<"World: string message is :"<<msg->stringmessage()<<endl;
         string moduleName = msg->stringmessage().substr(0,msg->stringmessage().find(":"));
         cout<<"World: module name is : "<<moduleName<<endl;
-        ModuleCommandsPtr command_for_current_module = GetCommandPtrByModule(GetModulePtrByName(moduleName));
-        command_for_current_module->ReceivedFlag = true;
+        ModuleCommandsPtr command_for_current_module = GetModulePtrByName(moduleName)->ModuleCommandContainer;
+        if (command_for_current_module)
+        {
+          command_for_current_module->ReceivedFlag = true;
+        }
         string secondField = msg->stringmessage().substr(msg->stringmessage().find(":")+1,string::npos);
         cout<<"World: get the correct word : '"<<secondField<<"'"<<endl;
         if (secondField.compare("finished")==0)
         {
           cout<<"World: Execution finished"<<endl;
-          command_for_current_module->FinishedFlag = true;
+          if (command_for_current_module)
+          {
+            command_for_current_module->FinishedFlag = true;
+          }
         }
       }
     }
@@ -626,8 +633,12 @@ namespace gazebo
           }else{
             ModuleCommandContainer.at(i)->CommandSquence.erase(ModuleCommandContainer.at(i)->CommandSquence.begin());
             ModuleCommandContainer.at(i)->FinishedFlag = false;
+            command_message::msgs::CommandMessage finish_confirm_message;
+            finish_confirm_message.set_messagetype(0);
+            ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(finish_confirm_message);
             if (ModuleCommandContainer.at(i)->CommandSquence.size() == 0)
             {
+              ModuleCommandContainer.at(i)->WhichModule->ModuleCommandContainer.reset();
               ModuleCommandContainer.erase(ModuleCommandContainer.begin()+i);
             }
           }
@@ -644,9 +655,18 @@ namespace gazebo
         ConnectionMessage->add_jointgaittablestatus(flag[i]);
         ConnectionMessage->add_jointgaittable(gait_value[i]);
       }
-      ModuleCommandsPtr new_command_message(new ModuleCommands(module));
-      new_command_message->CommandSquence.push_back(ConnectionMessage);
-      ModuleCommandContainer.push_back(new_command_message);
+      if (!module->ModuleCommandContainer)
+      {
+        ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+        new_command_message->CommandSquence.push_back(ConnectionMessage);
+        ModuleCommandContainer.push_back(new_command_message);
+        module->ModuleCommandContainer = new_command_message;
+      }else{
+        module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+      }
+      // ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+      // new_command_message->CommandSquence.push_back(ConnectionMessage);
+      // ModuleCommandContainer.push_back(new_command_message);
       // module->ModulePublisher->Publish(ConnectionMessage);
 
     }
@@ -671,9 +691,18 @@ namespace gazebo
       ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_z(0);
       ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_w(0);
 
-      ModuleCommandsPtr new_command_message(new ModuleCommands(module));
-      new_command_message->CommandSquence.push_back(ConnectionMessage);
-      ModuleCommandContainer.push_back(new_command_message);
+      if (!module->ModuleCommandContainer)
+      {
+        ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+        new_command_message->CommandSquence.push_back(ConnectionMessage);
+        ModuleCommandContainer.push_back(new_command_message);
+        module->ModuleCommandContainer = new_command_message;
+      }else{
+        module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+      }
+      // ModuleCommandsPtr new_command_message(new ModuleCommands(module));
+      // new_command_message->CommandSquence.push_back(ConnectionMessage);
+      // ModuleCommandContainer.push_back(new_command_message);
       // module->ModulePublisher->Publish(ConnectionMessage);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -712,19 +741,19 @@ namespace gazebo
       }
       return ExistModule;
     }
-    public: ModuleCommandsPtr GetCommandPtrByModule(SmoresModulePtr module_ptr)
-    {
-      ModuleCommandsPtr command_squence;
-      for (unsigned int i = 0; i < ModuleCommandContainer.size(); ++i)
-      {
-        if (module_ptr == ModuleCommandContainer.at(i)->WhichModule)
-        {
-          command_squence = ModuleCommandContainer.at(i);
-          break;
-        }
-      }
-      return command_squence;
-    }
+    // public: ModuleCommandsPtr GetCommandPtrByModule(SmoresModulePtr module_ptr)
+    // {
+    //   ModuleCommandsPtr command_squence;
+    //   for (unsigned int i = 0; i < ModuleCommandContainer.size(); ++i)
+    //   {
+    //     if (module_ptr == ModuleCommandContainer.at(i)->WhichModule)
+    //     {
+    //       command_squence = ModuleCommandContainer.at(i);
+    //       break;
+    //     }
+    //   }
+    //   return command_squence;
+    // }
     public: int GetModuleIDXByName(string module_name)
     {
       int ExistModule = -1;
@@ -864,6 +893,7 @@ namespace gazebo
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;
+    private: int test_count;
     // private: bool FinishFlag;
     };
 
