@@ -641,6 +641,7 @@ namespace gazebo
                 break;
               }
             }
+            ModuleCommandContainer.at(i)->ReceivedFlag = false;
             ModuleCommandContainer.at(i)->FinishedFlag = false;
             command_message::msgs::CommandMessage finish_confirm_message;
             finish_confirm_message.set_messagetype(0);
@@ -740,6 +741,38 @@ namespace gazebo
       // new_command_message->CommandSquence.push_back(ConnectionMessage);
       // ModuleCommandContainer.push_back(new_command_message);
       // module->ModulePublisher->Publish(ConnectionMessage);
+    }
+    // Those commands are not recommended for sending the gait table or position coordinates
+    // But could be used in the direct driving situation
+    public: void SendGaitTableInstance(SmoresModulePtr module, bool flag[4], double gait_value[4], int msg_type = 4)
+    {
+      CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
+      // command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage->set_messagetype(msg_type);
+      ConnectionMessage->set_priority(-1);
+      for (int i = 0; i < 4; ++i)
+      {
+        ConnectionMessage->add_jointgaittablestatus(flag[i]);
+        ConnectionMessage->add_jointgaittable(gait_value[i]);
+      }
+
+      module->ModulePublisher->Publish(ConnectionMessage);
+    }
+    public: void SendPositionInstance(SmoresModulePtr module, double x, double y, double orientation_angle)
+    {
+      CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
+      // command_message::msgs::CommandMessage ConnectionMessage;
+      ConnectionMessage->set_messagetype(2);
+      ConnectionMessage->set_priority(-1);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_x(x);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_y(y);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_z(orientation_angle);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_x(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_y(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_z(0);
+      ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_w(0);
+
+      module->ModulePublisher->Publish(ConnectionMessage);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
