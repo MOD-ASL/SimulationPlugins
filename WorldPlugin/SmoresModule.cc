@@ -5,6 +5,7 @@ ModuleCommands::ModuleCommands(SmoresModulePtr which_module)
   this->WhichModule = which_module;
   FinishedFlag = false;
   ReceivedFlag = false;
+  CurrentPriority = 0;
 }
   
 SmoresModule::SmoresModule(string mID, bool mtype, physics::ModelPtr modulePtr, transport::PublisherPtr publisher, transport::SubscriberPtr subsciber, unsigned int num_ID):

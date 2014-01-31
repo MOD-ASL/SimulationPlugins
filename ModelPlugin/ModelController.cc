@@ -28,6 +28,7 @@ ModelController::ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),Model
 
 	ExecutionSate = 0;
 	StartExecution = false;
+	CommandPriority = 0;
 
 	// A hint of model been initialized
 	printf("Model Initiated\n");
@@ -281,6 +282,7 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 		StartExecution = false;
 	}else{
 		StartExecution = true;
+		CommandPriority = msg->priority();
 	}
 	command_message::msgs::CommandMessage feed_back_message;
 	feed_back_message.set_messagetype(0);
@@ -378,6 +380,7 @@ void ModelController::JointAngleTracking(void)
 	{
 		command_message::msgs::CommandMessage feed_back_message;
 		feed_back_message.set_messagetype(0);
+		feed_back_message.set_priority(CommandPriority);
 		feed_back_message.set_stringmessage(model->GetName()+":finished");
 		CommandPub->Publish(feed_back_message);
 	}
@@ -402,6 +405,7 @@ void ModelController::PositionTracking(void)
 	{
 		command_message::msgs::CommandMessage feed_back_message;
 		feed_back_message.set_messagetype(0);
+		feed_back_message.set_priority(CommandPriority);
 		feed_back_message.set_stringmessage(model->GetName()+":finished");
 		CommandPub->Publish(feed_back_message);
 	}

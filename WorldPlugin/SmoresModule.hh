@@ -22,6 +22,7 @@ public:
   // The indicator of whether a command has been executing
   bool FinishedFlag;
   bool ReceivedFlag;
+  int CurrentPriority;
 };
 
 typedef boost::shared_ptr<ModuleCommands> ModuleCommandsPtr;

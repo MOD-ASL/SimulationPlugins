@@ -19,13 +19,14 @@ message CommandMessage
 	// 21. For joint angle information from model
 	// 22. For position information from model
 	required int32 MessageType = 1;
-	// A string of the model name/error information
-	optional string StringMessage = 5;
+	optional int32 Priority = 2;
+	// A string of the model name/error information/message ID
+	optional string StringMessage = 6;
 	// A Position that model will drive to 
 	// Or a position that system acquired
-	optional gazebo.msgs.Pose PositionNeedToBe = 4;
+	optional gazebo.msgs.Pose PositionNeedToBe = 5;
 	// The gait table of the joint angles/speed/increment need to be set
-	repeated double JointGaitTable = 2 [packed=true];
+	repeated double JointGaitTable = 3 [packed=true];
 	// A table indicates which joint need to be set
-	repeated bool JointGaitTableStatus =3 [packed=true];
+	repeated bool JointGaitTableStatus =4 [packed=true];
 }

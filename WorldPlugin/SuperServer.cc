@@ -223,6 +223,7 @@ namespace gazebo
           if (command_for_current_module)
           {
             command_for_current_module->FinishedFlag = true;
+            command_for_current_module->CurrentPriority = msg->priority();
           }
         }
       }
@@ -631,7 +632,15 @@ namespace gazebo
               ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(*(ModuleCommandContainer.at(i)->CommandSquence.at(0)));
             }
           }else{
-            ModuleCommandContainer.at(i)->CommandSquence.erase(ModuleCommandContainer.at(i)->CommandSquence.begin());
+            // This part will delete the correct priority level command
+            for (unsigned int j = 0; j < ModuleCommandContainer.at(i)->CommandSquence.size(); ++j)
+            {
+              if (ModuleCommandContainer.at(i)->CommandSquence.at(j)->priority()==ModuleCommandContainer.at(i)->CurrentPriority)
+              {
+                ModuleCommandContainer.at(i)->CommandSquence.erase(ModuleCommandContainer.at(i)->CommandSquence.begin()+j);
+                break;
+              }
+            }
             ModuleCommandContainer.at(i)->FinishedFlag = false;
             command_message::msgs::CommandMessage finish_confirm_message;
             finish_confirm_message.set_messagetype(0);
@@ -645,11 +654,12 @@ namespace gazebo
         }
       }
     }
-    public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int msg_type = 3)
+    public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int priority = 0, int msg_type = 3)
     {
       CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
       // command_message::msgs::CommandMessage ConnectionMessage;
       ConnectionMessage->set_messagetype(msg_type);
+      ConnectionMessage->set_priority(priority);
       for (int i = 0; i < 4; ++i)
       {
         ConnectionMessage->add_jointgaittablestatus(flag[i]);
@@ -662,7 +672,19 @@ namespace gazebo
         ModuleCommandContainer.push_back(new_command_message);
         module->ModuleCommandContainer = new_command_message;
       }else{
-        module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+        if (priority == 0)
+        {
+          module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+        }else{
+          for (unsigned int i = 0; i < module->ModuleCommandContainer->CommandSquence.size(); ++i)
+          {
+            if (priority > module->ModuleCommandContainer->CommandSquence.at(i)->priority())
+            {
+              module->ModuleCommandContainer->CommandSquence.insert(module->ModuleCommandContainer->CommandSquence.begin()+i,ConnectionMessage);
+              break;
+            }
+          }
+        }
       }
       // ModuleCommandsPtr new_command_message(new ModuleCommands(module));
       // new_command_message->CommandSquence.push_back(ConnectionMessage);
@@ -670,19 +692,20 @@ namespace gazebo
       // module->ModulePublisher->Publish(ConnectionMessage);
 
     }
-    public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int msg_type = 3)
+    public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int priority = 0, int msg_type = 3)
     {
       bool flag[4] = {false};
       double gait_values[4] = {0};
       flag[joint_ID] = true;
       gait_values[joint_ID] = gait_value;
-      SendGaitTable(module, flag, gait_values, msg_type);
+      SendGaitTable(module, flag, gait_values, priority, msg_type);
     }
-    public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle)
+    public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle, int priority = 0)
     {
       CommandPtr ConnectionMessage(new command_message::msgs::CommandMessage());
       // command_message::msgs::CommandMessage ConnectionMessage;
       ConnectionMessage->set_messagetype(2);
+      ConnectionMessage->set_priority(priority);
       ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_x(x);
       ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_y(y);
       ConnectionMessage->mutable_positionneedtobe()->mutable_position()->set_z(orientation_angle);
@@ -698,7 +721,20 @@ namespace gazebo
         ModuleCommandContainer.push_back(new_command_message);
         module->ModuleCommandContainer = new_command_message;
       }else{
-        module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+        if (priority == 0)
+        {
+          module->ModuleCommandContainer->CommandSquence.push_back(ConnectionMessage);
+        }else
+        {
+          for (unsigned int i = 0; i < module->ModuleCommandContainer->CommandSquence.size(); ++i)
+          {
+            if (priority > module->ModuleCommandContainer->CommandSquence.at(i)->priority())
+            {
+              module->ModuleCommandContainer->CommandSquence.insert(module->ModuleCommandContainer->CommandSquence.begin()+i,ConnectionMessage);
+              break;
+            }
+          }
+        }
       }
       // ModuleCommandsPtr new_command_message(new ModuleCommands(module));
       // new_command_message->CommandSquence.push_back(ConnectionMessage);

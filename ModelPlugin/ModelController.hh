@@ -191,6 +191,8 @@ namespace gazebo
     private: double LftWheelSpeed;
     private: double RgtWheelSpeed;
     private: bool StartExecution;
+    // May replaced by the command ID in the future
+    private: int CommandPriority;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //+                  Varibles only for testing                      +
