@@ -70,6 +70,7 @@ Known problems of GAZEBO
 ----------------------------------------
 1. It doesn't provide a function to delete an entity, this feature probabily wull be supported in the future, which also means we likely cannot delete the dynamic joints cleanly. For more information, please see the link [here](http://answers.gazebosim.org/question/550/how-to-delete-links-from-a-model-gazebo-125/).
 2. In the world plugin, when add entity event called response function, the entity itself(The object) hasn't been created, ehich means we cannot get the pointer pointing to that object. In our case that entity is a model. So the temporary solution is to set the pointer somewhere else. Haven't searched for gazebo answer or post a question. Will do it later.
+3. One method from boost library GAZEBO 1.9 using now is no longer supported by the newest version of boost library. The known version of boost library that compatible with GAZEBO 1.9 is boost 1.46
 
 MEMO
 ----------------------------------------
