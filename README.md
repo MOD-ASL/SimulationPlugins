@@ -38,6 +38,11 @@ To get the simulator, clone the two repositories using git. In order to get the 
 
 **Compiling Plugins**
 
+***Note:*** <br>
+1. World plugin is in the WorldPlugin/ folder
+2. Model plugin is in the ModelPlugin/ folder
+3. In the ContactSensor/ folder there is an important library used for simulating the magnetic connection
+
 Each plugin has its own folder in the plugins repository. To compile a plugin, create a build/ directory within that plugin's folder. From the new directory, run the commands:<br>
  <code>cmake ../</code><br>
  <code>make</code>
