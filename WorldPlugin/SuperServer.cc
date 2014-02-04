@@ -179,6 +179,8 @@ namespace gazebo
       // Main command execution procedure
       CommandManager();
 
+      currentWorld->InsertModelFile("model://SMORES6Uriah");
+
       common::Time world_sim_time = currentWorld->GetSimTime();
       if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6 && test_count<3)
       {
@@ -756,7 +758,7 @@ namespace gazebo
         ConnectionMessage->add_jointgaittable(gait_value[i]);
       }
 
-      module->ModulePublisher->Publish(ConnectionMessage);
+      module->ModulePublisher->Publish(*ConnectionMessage);
     }
     public: void SendPositionInstance(SmoresModulePtr module, double x, double y, double orientation_angle)
     {
@@ -772,7 +774,7 @@ namespace gazebo
       ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_z(0);
       ConnectionMessage->mutable_positionneedtobe()->mutable_orientation()->set_w(0);
 
-      module->ModulePublisher->Publish(ConnectionMessage);
+      module->ModulePublisher->Publish(*ConnectionMessage);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
