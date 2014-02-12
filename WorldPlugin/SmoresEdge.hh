@@ -1,7 +1,7 @@
 #ifndef _GAZEBO_SMORES_EDGE_HH_
 #define _GAZEBO_SMORES_EDGE_HH_
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+// #include <boost/make_shared.hpp>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 // #include "SmoresNode.hh"
