@@ -17,6 +17,7 @@
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
 #define VALIDCONNECTIONDISLOWER 0.098
+#define MODULEPATH "SMORE.sdf"
 
 
 using namespace std;
@@ -96,6 +97,7 @@ namespace gazebo
       infoCounter = 0;
       NeedToSetPtr = false;
       test_count = 0;
+      insertModuleFlag = true;
       // this->FinishFlag = false;
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
@@ -175,11 +177,18 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
+      // Initalization functions
       SetThePointerInSmoresModule();
       // Main command execution procedure
       CommandManager();
 
-      currentWorld->InsertModelFile("model://SMORES6Uriah");
+      // currentWorld->InsertModelFile("model://SMORES6Uriah");
+      math::Pose positionTMP(math::Vector3(0, 0, 0), math::Quaternion(1.57, 0, 0));
+      // if (insertModuleFlag)
+      // {
+        InsertModel("Module0", positionTMP);
+      //   insertModuleFlag = false;
+      // }
 
       common::Time world_sim_time = currentWorld->GetSimTime();
       if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6 && test_count<3)
@@ -562,6 +571,33 @@ namespace gazebo
       }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function is used to insert a model to the current world
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    public: void InsertModel(string name, math::Pose position)
+    {
+      if (!currentWorld->GetModel(name))
+      {
+        sdf::SDFPtr modelSDF;
+        modelSDF.reset(new sdf::SDF);  
+        // sdf::initFile("gazebo.sdf", modelSDF);
+        sdf::init(modelSDF);
+        sdf::readFile(MODULEPATH, modelSDF);
+        sdf::ElementPtr modelElem = modelSDF->root->GetElement("model");
+        // std::string modelName = modelElem->GetValueString("name");
+        math::Pose CalibrateShift(math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
+        modelElem->GetAttribute("name")->Set(name);
+        modelElem->GetElement("pose")->Set(CalibrateShift+position);
+
+        //TODO: find sensors'name
+        // sdf::ElementPtr sensorElem = modelSDF->root->GetElement("model")->GetElement("link")->GetElement("sensor");
+        // if(sensorElem)
+        // {
+        //     sensorElem->GetAttribute("name")->Set(modelElem->GetValueString("name") +"::"+ sensorElem->GetValueString("name")  );
+        // }
+        currentWorld->InsertModelSDF(*modelSDF);
+      }
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are used to connect or deconnect modules
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Connect two modules by pointers and node_ID
@@ -776,6 +812,15 @@ namespace gazebo
 
       module->ModulePublisher->Publish(*ConnectionMessage);
     }
+    // Erase all the existing commands of a specific module
+    public: void EraseComaands(SmoresModulePtr module)
+    {
+      if (module->ModuleCommandContainer)
+      {
+        EraseCommandPtrByModule(module);
+        module->ModuleCommandContainer.reset();
+      }
+    }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are utility functions
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -825,6 +870,17 @@ namespace gazebo
     //   }
     //   return command_squence;
     // }
+    public: void EraseCommandPtrByModule(SmoresModulePtr module_ptr)
+    {
+      for (unsigned int i = 0; i < ModuleCommandContainer.size(); ++i)
+      {
+        if (module_ptr == ModuleCommandContainer.at(i)->WhichModule)
+        {
+          ModuleCommandContainer.erase(ModuleCommandContainer.begin()+i);
+          break;
+        }
+      }
+    } 
     public: int GetModuleIDXByName(string module_name)
     {
       int ExistModule = -1;
@@ -965,6 +1021,7 @@ namespace gazebo
     private: int infoCounter;
     private: int numOfModules;
     private: int test_count;
+    bool insertModuleFlag;
     // private: bool FinishFlag;
     };
 
