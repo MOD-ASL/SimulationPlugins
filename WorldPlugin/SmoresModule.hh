@@ -59,11 +59,11 @@ public: transport::PublisherPtr ModulePublisher;
 public: transport::SubscriberPtr ModuleSubscriber;
 public: ModuleCommandsPtr ModuleCommandContainer;
 // Geometry information
-
+public: math::Pose ModulePosition;
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //-------------- Nodes -------------------------------------------
-private:
+public:
 	SmoresNode NodeUH; 	// The Ushape part
 	SmoresNode NodeFW;	// The Front Wheel
 	SmoresNode NodeLW;

@@ -95,7 +95,7 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 	// Setting the maximium torque of the body bending joint
 	this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
 	// Set the angle of the hinge in the center to zero
-	math::Angle InitialAngle(0.05);
+	math::Angle InitialAngle(0.00);
 	this->JointCB->SetAngle(0, InitialAngle);
 	// math::Angle AngleNeed2Be(0.49778);
 	// this->JointCB->SetAngle(0, AngleNeed2Be);

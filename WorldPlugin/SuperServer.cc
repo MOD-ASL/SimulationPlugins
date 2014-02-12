@@ -6,6 +6,7 @@
 #include "gazebo/physics/physics.hh"
 #include "gazebo/msgs/msgs.hh"
 #include <string>
+#include <stdlib.h>
 #include <iostream>
 #include <cmath>
 // Libraries for messages needed to use to communicate between plugins
@@ -13,14 +14,19 @@
 // #include "command_message.pb.h"
 // Libraries for connectivity representation
 #include "SmoresModule.hh"
+// XML paser library
+#include "rapidxml.hpp"
+#include "rapidxml_utils.hpp"
 
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
 #define VALIDCONNECTIONDISLOWER 0.098
-#define MODULEPATH "SMORE.sdf"
+#define MODULEPATH "SMORE.sdf"  // Depende on current execution folder, I think
+#define INTIALCONFIGURATION "InitialConfiguration"
 
 
 using namespace std;
+using namespace rapidxml;
 
 namespace gazebo
 {
@@ -120,6 +126,10 @@ namespace gazebo
       // statePub->Publish(stateMsg);
       this->addEntityConnection = event::Events::ConnectAddEntity(boost::bind(&ControlCenter::addEntity2World, this, _1));
       this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ControlCenter::OnSystemRunning, this, _1));
+
+      // math::Pose positionTMP(math::Vector3(0, 0, 0), math::Quaternion(1.57, 0, 0));
+      // InsertModel("Module0", positionTMP);
+      BuildConfigurationFromXML();
     }
     private: void addEntity2World(std::string & _info)
     {
@@ -183,26 +193,64 @@ namespace gazebo
       CommandManager();
 
       // currentWorld->InsertModelFile("model://SMORES6Uriah");
-      math::Pose positionTMP(math::Vector3(0, 0, 0), math::Quaternion(1.57, 0, 0));
+      // math::Pose positionTMP(math::Vector3(0, 0, 0), math::Quaternion(1.57, 0, 0));
       // if (insertModuleFlag)
       // {
-        InsertModel("Module0", positionTMP);
+        // InsertModel("Module0", positionTMP);
       //   insertModuleFlag = false;
       // }
 
-      common::Time world_sim_time = currentWorld->GetSimTime();
-      if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6 && test_count<3)
+      // common::Time world_sim_time = currentWorld->GetSimTime();
+      // if (world_sim_time.sec >= 5 && world_sim_time.sec <= 6 && test_count<3)
+      // {
+      //   // Deconnection(ConnectionEdges.back());
+      //   // cout<<"World: The crush has nothing to do with disconnection"<<endl;
+      //   // if (!(this->FinishFlag))
+      //   // {
+      //     bool flag[4] = {true,true,true,true};
+      //     double gait_value[4] = {1.5,1.5,1.5,1.5};
+      //     SendGaitTable(moduleList.at(0), flag, gait_value);
+      //     test_count++;
+      //   //   // SendPosition(moduleList.at(0),1,1,1.5);
+      //   // }
+      // }
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function is used to build initial configuration using a XML file
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void BuildConfigurationFromXML(void)
+    {
+      file<> xmlFile(INTIALCONFIGURATION);
+      // file<> xmlFile(file_name);
+      xml_document<> doc;    // character type defaults to char
+      doc.parse<0>(xmlFile.data());
+      // cout<<"World: first node is "<<doc.first_node()->name()<<endl;
+      xml_node<> *modlue_node = doc.first_node("modules")->first_node("module");
+      // cout<<"World: modlue_node is "<<modlue_node->first_node("name")->value()<<endl;
+      while (modlue_node)
       {
-        // Deconnection(ConnectionEdges.back());
-        // cout<<"World: The crush has nothing to do with disconnection"<<endl;
-        // if (!(this->FinishFlag))
-        // {
-          bool flag[4] = {true,true,true,true};
-          double gait_value[4] = {1.5,1.5,1.5,1.5};
-          SendGaitTable(moduleList.at(0), flag, gait_value);
-          test_count++;
-        //   // SendPosition(moduleList.at(0),1,1,1.5);
-        // }
+        string module_name = modlue_node->first_node("name")->value();
+        // cout<<"World: XML: Module name: "<<module_name<<endl;
+        string position_string = modlue_node->first_node("position")->value();
+        // cout<<"World: XML: position: "<<position_string<<endl;
+        double coordinates[3] = {0};
+        for (int i = 0; i < 3; ++i)
+        {
+          coordinates[i] = atof(position_string.substr(0,position_string.find(" ")).c_str());
+          position_string = position_string.substr(position_string.find(" ")+1);
+        }
+        double orientation[3] = {0};
+        for (int i = 0; i < 3; ++i)
+        {
+          orientation[i] = atof(position_string.substr(0,position_string.find(" ")).c_str());
+          position_string = position_string.substr(position_string.find(" ")+1);
+        }
+        math::Pose positionTMP(math::Vector3(coordinates[0], coordinates[1], coordinates[2]), math::Quaternion(orientation[0], orientation[1], orientation[2]));
+        InsertModel(module_name, positionTMP);
+        // cout<<"World: first three values "<<coordinates[0]<<" "<<coordinates[1]<<" "<<coordinates[2]<<endl;
+        string joints_string = modlue_node->first_node("joints")->value();
+        // cout<<"World: XML: joint values: "<<joints_string<<endl;
+        modlue_node = modlue_node->next_sibling();
       }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -596,6 +644,9 @@ namespace gazebo
         // }
         currentWorld->InsertModelSDF(*modelSDF);
       }
+      // else{
+      //   cout<<"World: Insertion failed: module name exists"
+      // }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // These functions are used to connect or deconnect modules
