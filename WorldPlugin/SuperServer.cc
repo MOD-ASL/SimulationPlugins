@@ -212,6 +212,7 @@ namespace gazebo
     {
       // Initalization functions
       SetThePointerInSmoresModule();
+      // Confiuration connection initialized
       BuildConnectionFromXML();
       // Main command execution procedure
       CommandManager();
@@ -276,11 +277,9 @@ namespace gazebo
           }
         }
         math::Pose positionTMP(math::Vector3(coordinates[0], coordinates[1], coordinates[2]), math::Quaternion(orientation[0], orientation[1], orientation[2]));
-        string joint_values = "0 0 0 0.60";
-        InsertModel(module_name, positionTMP, joint_values);
-        // cout<<"World: first three values "<<coordinates[0]<<" "<<coordinates[1]<<" "<<coordinates[2]<<endl;
+
         string joints_string = modlue_node->first_node("joints")->value();
-        // cout<<"World: XML: joint values: "<<joints_string<<endl;
+        InsertModel(module_name, positionTMP, joints_string);
         modlue_node = modlue_node->next_sibling();
       }
 
