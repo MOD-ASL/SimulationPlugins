@@ -95,8 +95,8 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 	// Setting the maximium torque of the body bending joint
 	this->JointCB->SetMaxForce(0,JointCB->GetSDF()->GetElement("physics")->GetElement("ode")->GetElement("max_force")->Get<double>());
 	// Set the angle of the hinge in the center to zero
-	math::Angle InitialAngle(0.00);
-	this->JointCB->SetAngle(0, InitialAngle);
+	// math::Angle InitialAngle(0.00);
+	// this->JointCB->SetAngle(0, InitialAngle);
 	// math::Angle AngleNeed2Be(0.49778);
 	// this->JointCB->SetAngle(0, AngleNeed2Be);
 
@@ -109,6 +109,11 @@ void ModelController::SystemInitialization(physics::ModelPtr parentModel)
 	this->CommandSub = node->Subscribe(TopicName,&ModelController::CommandDecoding, this);
 	this->CommandPub = node->Advertise<command_message::msgs::CommandMessage>(TopicNamePub);
 	CollisionPubAndSubInitialization();
+	
+	command_message::msgs::CommandMessage feed_back_message;
+	feed_back_message.set_messagetype(5);
+	feed_back_message.set_stringmessage(model->GetName());
+	CommandPub->Publish(feed_back_message);
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -276,8 +281,17 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 			}
 			break;
 		}
+		// case 5:
+		// {
+		// 	JointWF->SetAngle(0,math::Angle(msg->jointgaittable(0)));
+		// 	JointWL->SetAngle(0,math::Angle(msg->jointgaittable(1)));
+		// 	JointWR->SetAngle(0,math::Angle(msg->jointgaittable(2)));
+		// 	JointCB->SetAngle(0,math::Angle(msg->jointgaittable(3)));
+		// 	cout<<"Model: Initial Joint Angle Set "<<endl;
+		// 	break;
+		// }
 	}
-	if (commandType == 0)
+	if (commandType == 0 || commandType == 5)
 	{
 		StartExecution = false;
 	}else{

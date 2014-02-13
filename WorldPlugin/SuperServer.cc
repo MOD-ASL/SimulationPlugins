@@ -149,7 +149,7 @@ namespace gazebo
       CurrentMessage = "Model"+Int2String(modelnumber);
       welcomeMsg.set_data(CurrentMessage);
 
-      statePub->Publish(welcomeMsg);
+      // statePub->Publish(welcomeMsg);
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -174,6 +174,23 @@ namespace gazebo
       moduleList.push_back(newModule);
       // newModule->ManuallyNodeInitial(newModule);
       // moduleList.at(howManyModules)->SaySomthing();
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // Initiate the joint values
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      if (InitalJointValue.size()>0)
+      {
+        // cout<<"World: InitalJointValue size is "<<InitalJointValue.size()<<endl;
+        bool flags[4] = {true};
+        double joint_angles[4] = {0};
+        string joint_values_string = InitalJointValue.at(0);
+        for (int i = 0; i < 4; ++i)
+        {
+          joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
+          joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+        }
+        SendGaitTable(newModule, flags, joint_angles);
+        // InitalJointValue.erase(InitalJointValue.begin());
+      }
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Dynamic subscriber of collision topic
@@ -246,7 +263,8 @@ namespace gazebo
           position_string = position_string.substr(position_string.find(" ")+1);
         }
         math::Pose positionTMP(math::Vector3(coordinates[0], coordinates[1], coordinates[2]), math::Quaternion(orientation[0], orientation[1], orientation[2]));
-        InsertModel(module_name, positionTMP);
+        string joint_values = "0 0 0 0.60";
+        InsertModel(module_name, positionTMP, joint_values);
         // cout<<"World: first three values "<<coordinates[0]<<" "<<coordinates[1]<<" "<<coordinates[2]<<endl;
         string joints_string = modlue_node->first_node("joints")->value();
         // cout<<"World: XML: joint values: "<<joints_string<<endl;
@@ -284,6 +302,26 @@ namespace gazebo
             command_for_current_module->FinishedFlag = true;
             command_for_current_module->CurrentPriority = msg->priority();
           }
+        }
+      }
+      if (msg->messagetype()==5)
+      {
+        if (InitalJointValue.size()>0)
+        {
+          double joint_angles[4] = {0};
+          string joint_values_string = InitalJointValue.at(0);
+          for (int i = 0; i < 4; ++i)
+          {
+            joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
+            joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+          }
+          // cout<<"World: Initial Joint Angle Set "<<endl;
+          InitalJointValue.erase(InitalJointValue.begin());
+          // cout<<"World: model name is: "<<msg->stringmessage()<<endl;
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Front_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[0]));
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Left_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[1]));
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Right_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[2]));
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Center_hinge")->SetAngle(0, math::Angle(joint_angles[3]));
         }
       }
     }
@@ -636,13 +674,30 @@ namespace gazebo
         modelElem->GetAttribute("name")->Set(name);
         modelElem->GetElement("pose")->Set(CalibrateShift+position);
 
-        //TODO: find sensors'name
-        // sdf::ElementPtr sensorElem = modelSDF->root->GetElement("model")->GetElement("link")->GetElement("sensor");
-        // if(sensorElem)
-        // {
-        //     sensorElem->GetAttribute("name")->Set(modelElem->GetValueString("name") +"::"+ sensorElem->GetValueString("name")  );
-        // }
         currentWorld->InsertModelSDF(*modelSDF);
+        // cout<<"World: Initial Joint Angle Set "<<endl;
+      }
+      // else{
+      //   cout<<"World: Insertion failed: module name exists"
+      // }
+    }
+    public: void InsertModel(string name, math::Pose position, string joint_angles)
+    {
+      if (!currentWorld->GetModel(name))
+      {
+        sdf::SDFPtr modelSDF;
+        modelSDF.reset(new sdf::SDF);  
+        // sdf::initFile("gazebo.sdf", modelSDF);
+        sdf::init(modelSDF);
+        sdf::readFile(MODULEPATH, modelSDF);
+        sdf::ElementPtr modelElem = modelSDF->root->GetElement("model");
+        // std::string modelName = modelElem->GetValueString("name");
+        math::Pose CalibrateShift(math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
+        modelElem->GetAttribute("name")->Set(name);
+        modelElem->GetElement("pose")->Set(CalibrateShift+position);
+
+        currentWorld->InsertModelSDF(*modelSDF);
+        InitalJointValue.push_back(joint_angles);
       }
       // else{
       //   cout<<"World: Insertion failed: module name exists"
@@ -1066,6 +1121,8 @@ namespace gazebo
     private: vector<SmoresEdgePtr> ConnectionEdges;
     // The indicator of a new model has been added
     private: bool NeedToSetPtr;
+    // A String vector which contain the initial joint angles of modules
+    private: vector<string> InitalJointValue;
     
     private: vector<ModuleCommandsPtr> ModuleCommandContainer;
     //+++++++++ testing ++++++++++++++++++++++++++++
