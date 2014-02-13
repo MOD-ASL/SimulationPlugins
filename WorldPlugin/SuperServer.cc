@@ -212,6 +212,7 @@ namespace gazebo
     {
       // Initalization functions
       SetThePointerInSmoresModule();
+      BuildConnectionFromXML();
       // Main command execution procedure
       CommandManager();
 
@@ -282,7 +283,48 @@ namespace gazebo
         // cout<<"World: XML: joint values: "<<joints_string<<endl;
         modlue_node = modlue_node->next_sibling();
       }
+
     }
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // This function is used to build connection using a XML file
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private: void BuildConnectionFromXML(void)
+    {
+      file<> xmlFile(INTIALCONFIGURATION);
+      // file<> xmlFile(file_name);
+      xml_document<> doc;    // character type defaults to char
+      doc.parse<0>(xmlFile.data());
+
+      xml_node<> *connection_node = doc.first_node("connections")->first_node("connection");
+//       cout<<"World: connection_node is "<<connection_node->first_node("module1")->value()<<endl;
+      while (connection_node)
+      {
+        string module1_name = connection_node->first_node("module1")->value();
+        string module2_name = connection_node->first_node("module2")->value();
+
+        string node1_ID_string = connection_node->first_node("node1")->value();
+        string node2_ID_string = connection_node->first_node("node2")->value();
+
+        int node1_ID = atoi(node1_ID_string.c_str());
+        int node2_ID = atoi(node2_ID_string.c_str());
+
+        string distance_string = connection_node->first_node("distance")->value();
+        string angle_string = connection_node->first_node("angle")->value();
+
+        double distance = atof(distance_string.c_str());
+        double angle = atof(angle_string.c_str());
+
+        SmoresModulePtr Model1Ptr = GetModulePtrByName(module1_name);
+        SmoresModulePtr Model2Ptr = GetModulePtrByName(module2_name);
+
+        ActiveConnection(Model1Ptr,Model2Ptr,node1_ID,node2_ID, angle, distance);
+
+        connection_node = connection_node->next_sibling();
+      }
+    }
+
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // This function will be called everytime receive command information
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
