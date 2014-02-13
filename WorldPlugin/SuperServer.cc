@@ -185,8 +185,14 @@ namespace gazebo
         string joint_values_string = InitalJointValue.at(0);
         for (int i = 0; i < 4; ++i)
         {
-          joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
-          joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+          if (i<3)
+          {
+            joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
+            joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+          }else
+          {
+            joint_angles[i] = atof(joint_values_string.substr(0).c_str());
+          }
         }
         SendGaitTable(newModule, flags, joint_angles);
         // InitalJointValue.erase(InitalJointValue.begin());
@@ -259,8 +265,14 @@ namespace gazebo
         double orientation[3] = {0};
         for (int i = 0; i < 3; ++i)
         {
-          orientation[i] = atof(position_string.substr(0,position_string.find(" ")).c_str());
-          position_string = position_string.substr(position_string.find(" ")+1);
+          if (i==2)
+          {
+            orientation[i] = atof(position_string.substr(0).c_str());
+          }else
+          {
+            orientation[i] = atof(position_string.substr(0,position_string.find(" ")).c_str());
+            position_string = position_string.substr(position_string.find(" ")+1);
+          }
         }
         math::Pose positionTMP(math::Vector3(coordinates[0], coordinates[1], coordinates[2]), math::Quaternion(orientation[0], orientation[1], orientation[2]));
         string joint_values = "0 0 0 0.60";
@@ -312,8 +324,14 @@ namespace gazebo
           string joint_values_string = InitalJointValue.at(0);
           for (int i = 0; i < 4; ++i)
           {
-            joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
-            joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+            if (i<3)
+            {
+              joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
+              joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+            }else
+            {
+              joint_angles[i] = atof(joint_values_string.substr(0).c_str());
+            }
           }
           // cout<<"World: Initial Joint Angle Set "<<endl;
           InitalJointValue.erase(InitalJointValue.begin());
