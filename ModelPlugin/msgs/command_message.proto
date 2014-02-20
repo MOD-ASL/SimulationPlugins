@@ -10,6 +10,7 @@ message CommandMessage
 	// 2. For Position Setting (Planar motion command)
 	// 3. For Joint angle Setting (Gaits table)
 	// 4. For direct control command
+	// 5. For Joint Initiation
 
 	// 10. For require an error information
 	// 11. For require a joint angle information of model

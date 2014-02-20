@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 // Libraries for messages needed to use to communicate between plugins
 #include "collision_message_plus.pb.h"
 // #include "command_message.pb.h"
@@ -101,10 +102,11 @@ namespace gazebo
     {
       numOfModules = 0;
       infoCounter = 0;
-      NeedToSetPtr = false;
+      NeedToSetPtr = 0;
       test_count = 0;
       insertModuleFlag = true;
       // this->FinishFlag = false;
+      AlreadyBuild = false;
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
     {
@@ -170,33 +172,36 @@ namespace gazebo
       unsigned int howManyModules = moduleList.size();
       SmoresModulePtr newModule(new SmoresModule(_info, true, newModulePub, newModuleSub, howManyModules));
       newModule->ManuallyNodeInitial(newModule);
-      NeedToSetPtr = true;
       moduleList.push_back(newModule);
       // newModule->ManuallyNodeInitial(newModule);
       // moduleList.at(howManyModules)->SaySomthing();
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Initiate the joint values
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      if (InitalJointValue.size()>0)
-      {
-        // cout<<"World: InitalJointValue size is "<<InitalJointValue.size()<<endl;
-        bool flags[4] = {true};
-        double joint_angles[4] = {0};
-        string joint_values_string = InitalJointValue.at(0);
-        for (int i = 0; i < 4; ++i)
-        {
-          if (i<3)
-          {
-            joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
-            joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
-          }else
-          {
-            joint_angles[i] = atof(joint_values_string.substr(0).c_str());
-          }
-        }
-        SendGaitTable(newModule, flags, joint_angles);
-        // InitalJointValue.erase(InitalJointValue.begin());
-      }
+      // if (InitalJointValue.size()>0)
+      // {
+      //   // cout<<"World: InitalJointValue size is "<<InitalJointValue.size()<<endl;
+      //   bool flags[4] = {true};
+      //   double joint_angles[4] = {0};
+      //   string joint_values_string = InitalJointValue.at(0);
+      //   for (int i = 0; i < 4; ++i)
+      //   {
+      //     if (i<3)
+      //     {
+      //       joint_angles[i] = atof(joint_values_string.substr(0,joint_values_string.find(" ")).c_str());
+      //       joint_values_string = joint_values_string.substr(joint_values_string.find(" ")+1);
+      //     }else
+      //     {
+      //       joint_angles[i] = atof(joint_values_string.substr(0).c_str());
+      //     }
+      //   }
+      //   cout<<"World: "<<newModule->ModuleID<<":joint0:"<<joint_angles[0]<<endl;
+      //   cout<<"World: "<<newModule->ModuleID<<":joint1:"<<joint_angles[1]<<endl;
+      //   cout<<"World: "<<newModule->ModuleID<<":joint2:"<<joint_angles[2]<<endl;
+      //   cout<<"World: "<<newModule->ModuleID<<":joint3:"<<joint_angles[3]<<endl;
+      //   SendGaitTable(newModule, flags, joint_angles);
+      //   // InitalJointValue.erase(InitalJointValue.begin());
+      // }
 
       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Dynamic subscriber of collision topic
@@ -211,9 +216,7 @@ namespace gazebo
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
       // Initalization functions
-      SetThePointerInSmoresModule();
-      // Confiuration connection initialized
-      BuildConnectionFromXML();
+      // SetThePointerInSmoresModule();
       // Main command execution procedure
       CommandManager();
 
@@ -359,8 +362,13 @@ namespace gazebo
       }
       if (msg->messagetype()==5)
       {
+        // Initalization functions
+        moduleList.at(NeedToSetPtr)->SetModulePtr(currentWorld->GetModel(moduleList.at(NeedToSetPtr)->ModuleID));
+        cout<<"World: Asign the pointer to module: "<<moduleList.at(NeedToSetPtr)->ModuleID<<endl;
+        NeedToSetPtr += 1; // Need a function when delete a entity, this value needs to be decrease
         if (InitalJointValue.size()>0)
         {
+          bool flags[4] = {true,true,true,true};
           double joint_angles[4] = {0};
           string joint_values_string = InitalJointValue.at(0);
           for (int i = 0; i < 4; ++i)
@@ -375,12 +383,25 @@ namespace gazebo
             }
           }
           // cout<<"World: Initial Joint Angle Set "<<endl;
-          InitalJointValue.erase(InitalJointValue.begin());
           // cout<<"World: model name is: "<<msg->stringmessage()<<endl;
-          currentWorld->GetModel(msg->stringmessage())->GetJoint("Front_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[0]));
-          currentWorld->GetModel(msg->stringmessage())->GetJoint("Left_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[1]));
-          currentWorld->GetModel(msg->stringmessage())->GetJoint("Right_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[2]));
-          currentWorld->GetModel(msg->stringmessage())->GetJoint("Center_hinge")->SetAngle(0, math::Angle(joint_angles[3]));
+          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Front_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[0]));
+          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Left_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[1]));
+          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Right_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[2]));
+          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Center_hinge")->SetAngle(0, math::Angle(joint_angles[3]));
+          currentWorld->GetModel(msg->stringmessage())->SetLinkWorldPose(InitialPosition.at(0),currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
+          // cout<<"World: "<<msg->stringmessage()<<":joint0flag:"<<flags[0]<<endl;
+          // cout<<"World: "<<msg->stringmessage()<<":joint1flag:"<<flags[1]<<endl;
+          // cout<<"World: "<<msg->stringmessage()<<":joint2flag:"<<flags[2]<<endl;
+          // cout<<"World: "<<msg->stringmessage()<<":joint3flag:"<<flags[3]<<endl;
+          SendGaitTable(GetModulePtrByName(msg->stringmessage()), flags, joint_angles);
+          if (InitalJointValue.size()==1)
+          {
+            // Confiuration connection initialized
+            BuildConnectionFromXML();
+            cout<<"World: Build the connection"<<endl;
+          }
+          InitalJointValue.erase(InitalJointValue.begin());
+          InitialPosition.erase(InitialPosition.begin());
         }
       }
     }
@@ -418,8 +439,9 @@ namespace gazebo
           if ((!AlreadyConnected(Model1Ptr,NodeOfModel1)) && (!AlreadyConnected(Model2Ptr,NodeOfModel2)) && (!AlreadyConnected(Model1Ptr,Model2Ptr)))
           {
             // This part is used to check the distance between robots
-            math::Vector3 CenterModel1 = currentWorld->GetModel(ModelOfCollision1)->GetWorldPose().pos;
-            math::Vector3 CenterModel2 = currentWorld->GetModel(ModelOfCollision2)->GetWorldPose().pos;
+            math::Vector3 CenterModel1 = currentWorld->GetModel(ModelOfCollision1)->GetLink("CircuitHolder")->GetWorldPose().pos;
+            math::Vector3 CenterModel2 = currentWorld->GetModel(ModelOfCollision2)->GetLink("CircuitHolder")->GetWorldPose().pos;
+            cout<<"World: models distance"<<(CenterModel1-CenterModel2).GetLength()<<endl;
             if((CenterModel1-CenterModel2).GetLength()<VALIDCONNECTIONDISUPPER && (CenterModel1-CenterModel2).GetLength()>VALIDCONNECTIONDISLOWER)
             {
               cout<<"World: Distance between centers: "<<(CenterModel1-CenterModel2).GetLength()<<endl;
@@ -473,7 +495,8 @@ namespace gazebo
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
         newZAxis = newZAxis.Normalize();
-        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        double CosineValue = newZAxis.Dot(newDirectionofLink1.GetZAxis())>0?min(1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis())):max(-1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis()));
+        AngleBetweenZAxes = acos(CosineValue); // + an_edge->Angle;
         FirstRotationOfLink2.SetFromEuler(0,0,PI);
         double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
         if (DirectionReference>0)
@@ -525,7 +548,9 @@ namespace gazebo
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
         newZAxis = newZAxis.Normalize();
-        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        double CosineValue = newZAxis.Dot(newDirectionofLink1.GetZAxis())>0?min(1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis())):max(-1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis()));
+        AngleBetweenZAxes = acos(CosineValue); // + an_edge->Angle;
+        cout<<"World: AngleBetweenZAxes is "<<AngleBetweenZAxes<<endl;
         FirstRotationOfLink2.SetFromEuler(0,0,PI);
         double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
         if (DirectionReference>0)
@@ -577,7 +602,8 @@ namespace gazebo
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetYAxis())*newDirectionofLink1.GetYAxis();
         newZAxis = newZAxis.Normalize();
-        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        double CosineValue = newZAxis.Dot(newDirectionofLink1.GetZAxis())>0?min(1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis())):max(-1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis()));
+        AngleBetweenZAxes = acos(CosineValue); // + an_edge->Angle;
         FirstRotationOfLink2.SetFromEuler(0,0,PI);
         double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetXAxis());
         if (DirectionReference>0)
@@ -629,7 +655,8 @@ namespace gazebo
         newDirectionofLink1 = ContactLinkPos.rot;
         newZAxis = PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetZAxis())*newDirectionofLink1.GetZAxis() + PosOfTheOtherModel.rot.GetZAxis().Dot(newDirectionofLink1.GetXAxis())*newDirectionofLink1.GetXAxis();
         newZAxis = newZAxis.Normalize();
-        AngleBetweenZAxes = acos(newZAxis.Dot(newDirectionofLink1.GetZAxis())); // + an_edge->Angle;
+        double CosineValue = newZAxis.Dot(newDirectionofLink1.GetZAxis())>0?min(1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis())):max(-1.0,newZAxis.Dot(newDirectionofLink1.GetZAxis()));
+        AngleBetweenZAxes = acos(CosineValue); // + an_edge->Angle;
         FirstRotationOfLink2.SetFromEuler(0,0,PI);
         double DirectionReference = newDirectionofLink1.GetZAxis().Cross(newZAxis).Dot(PosOfTheOtherModel.rot.GetYAxis());
         if (DirectionReference>0)
@@ -731,9 +758,10 @@ namespace gazebo
         // std::string modelName = modelElem->GetValueString("name");
         math::Pose CalibrateShift(math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
         modelElem->GetAttribute("name")->Set(name);
-        modelElem->GetElement("pose")->Set(CalibrateShift+position);
+        modelElem->GetElement("pose")->Set(CalibrateShift);
 
         currentWorld->InsertModelSDF(*modelSDF);
+        InitialPosition.push_back(position);
         // cout<<"World: Initial Joint Angle Set "<<endl;
       }
       // else{
@@ -753,10 +781,11 @@ namespace gazebo
         // std::string modelName = modelElem->GetValueString("name");
         math::Pose CalibrateShift(math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
         modelElem->GetAttribute("name")->Set(name);
-        modelElem->GetElement("pose")->Set(CalibrateShift+position);
+        modelElem->GetElement("pose")->Set(CalibrateShift);
 
         currentWorld->InsertModelSDF(*modelSDF);
         InitalJointValue.push_back(joint_angles);
+        InitialPosition.push_back(position);
       }
       // else{
       //   cout<<"World: Insertion failed: module name exists"
@@ -978,7 +1007,7 @@ namespace gazebo
       module->ModulePublisher->Publish(*ConnectionMessage);
     }
     // Erase all the existing commands of a specific module
-    public: void EraseComaands(SmoresModulePtr module)
+    public: void EraseComaands(SmoresModulePtr module)  // Need to be tested
     {
       if (module->ModuleCommandContainer)
       {
@@ -1059,18 +1088,18 @@ namespace gazebo
       }
       return ExistModule;
     }
-    public: void SetThePointerInSmoresModule(void)
-    {
-      if (NeedToSetPtr)
-      {
-        for (unsigned int i = 0; i < moduleList.size(); ++i)
-        {
-          moduleList.at(i)->SetModulePtr(currentWorld->GetModel(moduleList.at(i)->ModuleID));
-        }
-        NeedToSetPtr = false;
-        cout<<"World: Pointer has been assigned"<<endl;
-      }
-    }
+    // public: void SetThePointerInSmoresModule(void)
+    // {
+    //   if (NeedToSetPtr)
+    //   {
+    //     for (unsigned int i = 0; i < moduleList.size(); ++i)
+    //     {
+    //       moduleList.at(i)->SetModulePtr(currentWorld->GetModel(moduleList.at(i)->ModuleID));
+    //     }
+    //     NeedToSetPtr = false;
+    //     cout<<"World: Pointer has been assigned"<<endl;
+    //   }
+    // }
     // Check whether two nodes are connected together
     public: bool AlreadyConnected(SmoresModulePtr module_1, SmoresModulePtr module_2, int node1_ID, int node2_ID)
     {
@@ -1179,9 +1208,10 @@ namespace gazebo
     // The container that has all the edges
     private: vector<SmoresEdgePtr> ConnectionEdges;
     // The indicator of a new model has been added
-    private: bool NeedToSetPtr;
+    private: int NeedToSetPtr;
     // A String vector which contain the initial joint angles of modules
     private: vector<string> InitalJointValue;
+    private: vector<math::Pose> InitialPosition;
     
     private: vector<ModuleCommandsPtr> ModuleCommandContainer;
     //+++++++++ testing ++++++++++++++++++++++++++++
@@ -1189,6 +1219,7 @@ namespace gazebo
     private: int numOfModules;
     private: int test_count;
     bool insertModuleFlag;
+    bool AlreadyBuild;
     // private: bool FinishFlag;
     };
 

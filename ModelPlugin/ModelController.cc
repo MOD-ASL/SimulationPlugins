@@ -255,6 +255,10 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 					this->JointAngleShouldBe[i] = msg->jointgaittable(i);
 				}
 			}
+			cout<<"Model: "<<model->GetName()<<":joint0:"<<JointAngleShouldBe[0]<<endl;
+			cout<<"Model: "<<model->GetName()<<":joint1:"<<JointAngleShouldBe[1]<<endl;
+			cout<<"Model: "<<model->GetName()<<":joint2:"<<JointAngleShouldBe[2]<<endl;
+			cout<<"Model: "<<model->GetName()<<":joint3:"<<JointAngleShouldBe[3]<<endl;
 			break;
 		}
 		case 4:
@@ -324,7 +328,7 @@ void ModelController::JointPIDController(JointPlus &CurrentJoint, double AngleDe
 	int RotAxis = 0;
 	math::Angle AngleDesired(AngleDesiredRad);
 	AngleError = (AngleDesired - CurrentJoint.JointAngleNow).Radian();
-	// cout<<"AngleError:"<<AngleError<<endl;
+
 	AngleDiffError = AngleError - CurrentJoint.JointErrorHis;
 	CurrentJoint.JointErrorAccu += AngleError;
 	SwingSpeed = JointAngleKPID.x*AngleError + JointAngleKPID.y*CurrentJoint.JointErrorAccu + JointAngleKPID.z*AngleDiffError;
