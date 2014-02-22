@@ -18,7 +18,7 @@ GZ_REGISTER_MODEL_PLUGIN(ModelController)
 ModelController::~ModelController()
 {
 }
-ModelController::ModelController() : ModelPlugin(),JointAngleKPID(1.5,0,0),ModelAngleKPID(1,0,0)
+ModelController::ModelController() : ModelPlugin(),JointAngleKPID(5.5,0,0.75),ModelAngleKPID(1,0,0)
 {
 	// Initialize variables
 	WheelRadius =  0.045275;
@@ -234,6 +234,9 @@ void ModelController::CommandReceiving(CommandMessagePtr &msg)
 void ModelController::CommandDecoding(CommandMessagePtr &msg)
 {
 	int commandType = msg->messagetype();
+	command_message::msgs::CommandMessage feed_back_message;
+	feed_back_message.set_messagetype(0);
+	feed_back_message.set_stringmessage(model->GetName()+":");
 	switch(commandType)
 	{
 		// This line may need to be changed
@@ -243,6 +246,7 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 		{
 			this->ExecutionSate = 1;
 			this->TargetPosition = gazebo::msgs::Convert(msg->positionneedtobe());
+			CommandPub->Publish(feed_back_message);
 			break;
 		}
 		case 3:
@@ -259,6 +263,7 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 			cout<<"Model: "<<model->GetName()<<":joint1:"<<JointAngleShouldBe[1]<<endl;
 			cout<<"Model: "<<model->GetName()<<":joint2:"<<JointAngleShouldBe[2]<<endl;
 			cout<<"Model: "<<model->GetName()<<":joint3:"<<JointAngleShouldBe[3]<<endl;
+			CommandPub->Publish(feed_back_message);
 			break;
 		}
 		case 4:
@@ -283,6 +288,7 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 					}
 				}
 			}
+			CommandPub->Publish(feed_back_message);
 			break;
 		}
 		// case 5:
@@ -302,10 +308,6 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
 		StartExecution = true;
 		CommandPriority = msg->priority();
 	}
-	command_message::msgs::CommandMessage feed_back_message;
-	feed_back_message.set_messagetype(0);
-	feed_back_message.set_stringmessage(model->GetName()+":");
-	CommandPub->Publish(feed_back_message);
 }
 
 //------------- Low level model control functions --------------------
@@ -381,18 +383,22 @@ void ModelController::JointAngleTracking(void)
 	if (abs(GetJointAngle(JointWF,0).Radian()-JointAngleShouldBe[0])>EXECUTIONERROR)
 	{
 		execution_finished_flag = false;
+		cout<<"Model: "<<model->GetName() <<" joint 0 difference "<<abs(GetJointAngle(JointWF,0).Radian()-JointAngleShouldBe[0])<<endl;
 	}
 	if (abs(GetJointAngle(JointWL,0).Radian()-JointAngleShouldBe[1])>EXECUTIONERROR)
 	{
 		execution_finished_flag = false;
+		cout<<"Model: "<<model->GetName() <<" joint 1 difference "<<abs(GetJointAngle(JointWL,0).Radian()-JointAngleShouldBe[1])<<endl;
 	}
 	if (abs(GetJointAngle(JointWR,0).Radian()-JointAngleShouldBe[2])>EXECUTIONERROR)
 	{
 		execution_finished_flag = false;
+		cout<<"Model: "<<model->GetName() <<" joint 2 difference "<<abs(GetJointAngle(JointWR,0).Radian()-JointAngleShouldBe[2])<<endl;
 	}
 	if (abs(GetJointAngle(JointCB,0).Radian()-JointAngleShouldBe[3])>EXECUTIONERROR)
 	{
 		execution_finished_flag = false;
+		cout<<"Model: "<<model->GetName() <<" joint 3 difference "<<abs(GetJointAngle(JointCB,0).Radian()-JointAngleShouldBe[3])<<endl;
 	}
 	if (execution_finished_flag)
 	{

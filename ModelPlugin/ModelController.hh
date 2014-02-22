@@ -16,7 +16,7 @@
 
 // Parameters
 #define PI 3.1415926
-#define EXECUTIONERROR 0.008
+#define EXECUTIONERROR 0.015
 
 using namespace std;
 

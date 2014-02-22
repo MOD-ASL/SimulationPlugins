@@ -7,7 +7,7 @@
     </module>
     <module>
     	<name>Module_1</name>
-    	<position>0 0 0.15 1.57 0 0</position>
+    	<position>0 0 0.15 -1.57 0 0</position>
     	<joints>0 0 0 0</joints>
     </module>
 </modules>
@@ -17,7 +17,7 @@
 		<module1>Module_0</module1>
 		<module2>Module_1</module2>
 		<node1>0</node1>
-		<node2>0</node2>
+		<node2>3</node2>
 		<distance>0</distance>
 		<angle>0</angle>
 	</connection>

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 // Libraries for messages needed to use to communicate between plugins
 #include "collision_message_plus.pb.h"
 // #include "command_message.pb.h"
@@ -107,6 +108,8 @@ namespace gazebo
       insertModuleFlag = true;
       // this->FinishFlag = false;
       AlreadyBuild = false;
+
+      // All code below this line is for testing
     }
     public: void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
     {
@@ -215,8 +218,6 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: void OnSystemRunning(const common::UpdateInfo & /*_info*/)
     {
-      // Initalization functions
-      // SetThePointerInSmoresModule();
       // Main command execution procedure
       CommandManager();
 
@@ -340,24 +341,35 @@ namespace gazebo
         // {
         //   cout<<"World: Execution finished"<<endl;
         // }
-        cout<<"World: string message is :"<<msg->stringmessage()<<endl;
+        // cout<<"World: string message is :"<<msg->stringmessage()<<endl;
         string moduleName = msg->stringmessage().substr(0,msg->stringmessage().find(":"));
-        cout<<"World: module name is : "<<moduleName<<endl;
+        // cout<<"World: module name is : "<<moduleName<<endl;
         ModuleCommandsPtr command_for_current_module = GetModulePtrByName(moduleName)->ModuleCommandContainer;
         if (command_for_current_module)
         {
-          command_for_current_module->ReceivedFlag = true;
+          if (command_for_current_module->ExecutionFlag)
+          {
+            command_for_current_module->ReceivedFlag = true;
+            cout<<"World: "<<moduleName<<" set receive flag"<<endl;
+          }
         }
         string secondField = msg->stringmessage().substr(msg->stringmessage().find(":")+1,string::npos);
-        cout<<"World: get the correct word : '"<<secondField<<"'"<<endl;
+        // cout<<"World: get the correct word : '"<<secondField<<"'"<<endl;
         if (secondField.compare("finished")==0)
         {
-          cout<<"World: Execution finished"<<endl;
+          cout<<"World: "<<moduleName<<" Execution finished"<<endl;
           if (command_for_current_module)
           {
-            command_for_current_module->FinishedFlag = true;
-            command_for_current_module->CurrentPriority = msg->priority();
+            if (command_for_current_module->ExecutionFlag)
+            {
+              command_for_current_module->FinishedFlag = true;
+              command_for_current_module->CurrentPriority = msg->priority();
+              command_for_current_module->ExecutionFlag = false;
+            }
           }
+          command_message::msgs::CommandMessage finish_confirm_message;
+          finish_confirm_message.set_messagetype(0);
+          GetModulePtrByName(moduleName)->ModulePublisher->Publish(finish_confirm_message);
         }
       }
       if (msg->messagetype()==5)
@@ -382,23 +394,21 @@ namespace gazebo
               joint_angles[i] = atof(joint_values_string.substr(0).c_str());
             }
           }
-          // cout<<"World: Initial Joint Angle Set "<<endl;
-          // cout<<"World: model name is: "<<msg->stringmessage()<<endl;
-          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Front_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[0]));
-          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Left_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[1]));
-          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Right_wheel_hinge")->SetAngle(0, math::Angle(joint_angles[2]));
-          // currentWorld->GetModel(msg->stringmessage())->GetJoint("Center_hinge")->SetAngle(0, math::Angle(joint_angles[3]));
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Front_wheel_hinge")->SetAngle(0,joint_angles[0]);
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Left_wheel_hinge")->SetAngle(0,joint_angles[1]);
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Right_wheel_hinge")->SetAngle(0,joint_angles[2]);
+          currentWorld->GetModel(msg->stringmessage())->GetJoint("Center_hinge")->SetAngle(0,joint_angles[3]);
           currentWorld->GetModel(msg->stringmessage())->SetLinkWorldPose(InitialPosition.at(0),currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
-          // cout<<"World: "<<msg->stringmessage()<<":joint0flag:"<<flags[0]<<endl;
-          // cout<<"World: "<<msg->stringmessage()<<":joint1flag:"<<flags[1]<<endl;
-          // cout<<"World: "<<msg->stringmessage()<<":joint2flag:"<<flags[2]<<endl;
-          // cout<<"World: "<<msg->stringmessage()<<":joint3flag:"<<flags[3]<<endl;
+
           SendGaitTable(GetModulePtrByName(msg->stringmessage()), flags, joint_angles);
           if (InitalJointValue.size()==1)
           {
             // Confiuration connection initialized
             BuildConnectionFromXML();
             cout<<"World: Build the connection"<<endl;
+            // This line is a test, please delete in the future
+            readFileAndGenerateCommands("Commands");
+            cout<<"World: Command been sent"<<endl;
           }
           InitalJointValue.erase(InitalJointValue.begin());
           InitialPosition.erase(InitialPosition.begin());
@@ -861,7 +871,11 @@ namespace gazebo
           {
             if (!ModuleCommandContainer.at(i)->ReceivedFlag)
             {
+              cout<<"World: Still can get in here"<<endl;
               ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(*(ModuleCommandContainer.at(i)->CommandSquence.at(0)));
+              cout<<"World: Message to '"<<ModuleCommandContainer.at(i)->WhichModule->ModuleID<<"' set joint angle 3 to : "<<ModuleCommandContainer.at(i)->CommandSquence.at(0)->jointgaittable(3)<<endl;
+              cout<<"World: Size of the message is "<<ModuleCommandContainer.at(i)->CommandSquence.size()<<endl;
+              ModuleCommandContainer.at(i)->ExecutionFlag = true;
             }
           }else{
             // This part will delete the correct priority level command
@@ -870,16 +884,18 @@ namespace gazebo
               if (ModuleCommandContainer.at(i)->CommandSquence.at(j)->priority()==ModuleCommandContainer.at(i)->CurrentPriority)
               {
                 ModuleCommandContainer.at(i)->CommandSquence.erase(ModuleCommandContainer.at(i)->CommandSquence.begin()+j);
+                cout<<"World: second place:"<<ModuleCommandContainer.at(i)->WhichModule->ModuleID<<" Size of the message is "<<ModuleCommandContainer.at(i)->CommandSquence.size()<<endl;
                 break;
               }
             }
             ModuleCommandContainer.at(i)->ReceivedFlag = false;
             ModuleCommandContainer.at(i)->FinishedFlag = false;
-            command_message::msgs::CommandMessage finish_confirm_message;
-            finish_confirm_message.set_messagetype(0);
-            ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(finish_confirm_message);
+            // command_message::msgs::CommandMessage finish_confirm_message;
+            // finish_confirm_message.set_messagetype(0);
+            // ModuleCommandContainer.at(i)->WhichModule->ModulePublisher->Publish(finish_confirm_message);
             if (ModuleCommandContainer.at(i)->CommandSquence.size() == 0)
             {
+              cout<<"World: Erase the command sequence of "<<ModuleCommandContainer.at(i)->WhichModule->ModuleID<<endl;
               ModuleCommandContainer.at(i)->WhichModule->ModuleCommandContainer.reset();
               ModuleCommandContainer.erase(ModuleCommandContainer.begin()+i);
             }
@@ -1192,6 +1208,38 @@ namespace gazebo
       return module_count;
     }
 
+    // This function is only for demonstration
+    void readFileAndGenerateCommands(const char* fileName)
+    {
+      string output;
+      ifstream infile;
+      infile.open(fileName);
+      int smallcount = 0;
+      double joints_values[4] = {0,0,0,0};
+      bool flags[4] = {true,true,true,true};
+      int model_number;
+      if (infile.is_open()) {
+        while (!infile.eof()) {
+          infile >> output;
+          // cout<<output<<endl;
+          switch(smallcount){
+            case 0:model_number = atoi(output.c_str());break;
+            case 1:joints_values[0] = atof(output.c_str());break;
+            case 2:joints_values[1] = atof(output.c_str());break;
+            case 3:joints_values[2] = atof(output.c_str());break;
+            case 4:joints_values[3] = atof(output.c_str());break;
+          }
+          smallcount++;
+          if (smallcount == 5)
+          {
+            smallcount=0;
+            SendGaitTable(moduleList.at(model_number), flags, joints_values);
+          }
+        }
+      }
+      infile.close();
+    }
+
     private: physics::WorldPtr currentWorld;
     private: event::ConnectionPtr addEntityConnection;
     private: transport::PublisherPtr statePub;
@@ -1221,6 +1269,9 @@ namespace gazebo
     bool insertModuleFlag;
     bool AlreadyBuild;
     // private: bool FinishFlag;
+    // vector<std::array<double,4>> jointCommands;
+    double jointCommands[10][4];
+    vector<int> relatedModules;
     };
 
 

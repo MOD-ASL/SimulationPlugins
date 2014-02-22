@@ -5,6 +5,7 @@ ModuleCommands::ModuleCommands(SmoresModulePtr which_module)
   this->WhichModule = which_module;
   FinishedFlag = false;
   ReceivedFlag = false;
+  ExecutionFlag = false;
   CurrentPriority = 0;
 }
   
