@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modules>
+    <module>
+    	<name>Module_0</name>
+    	<position>0 0 0.05 -1.57 0 0</position>
+    	<joints>0 0 0 0</joints>
+    </module>
+    <module>
+    	<name>Module_1</name>
+    	<position>0 0 0.15 -1.57 0 0</position>
+    	<joints>0 0 0 0</joints>
+    </module>
+</modules>
+
+<connections>
+	<connection>
+		<module1>Module_0</module1>
+		<module2>Module_1</module2>
+		<node1>0</node1>
+		<node2>3</node2>
+		<distance>0</distance>
+		<angle>0</angle>
+	</connection>
+</connections>

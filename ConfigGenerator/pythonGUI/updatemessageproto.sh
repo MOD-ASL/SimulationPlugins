@@ -1,0 +1,1 @@
+protoc --proto_path=../worldplugin/msgs/ --python_out=./ ../worldplugin/msgs/config_message.proto

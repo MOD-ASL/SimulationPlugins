@@ -1,0 +1,13 @@
+package config_message.msgs;
+
+message ConfigMessage
+{
+	required string ModelName = 1;
+	repeated double ModelPosition = 2 [packed=true];
+	repeated double JointAngles = 3 [packed=true];
+	optional string ConnectedModel = 4;
+	optional int32 ConnectedOn = 5;
+	optional int32 ConnectedTo = 6;
+	optional double EdgeDis = 7;
+	optional double EdgeAng = 8;
+}
