@@ -23,6 +23,8 @@
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
 
+#include "LibraryTemplate.hh"
+
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110
 #define VALIDCONNECTIONDISLOWER 0.098
@@ -31,13 +33,6 @@
 
 using namespace std;
 using namespace rapidxml;
-
-string Int2String(int number)
-{
-  stringstream ss; //create a stringstream
-  ss << number;    //add number to the stream
-  return ss.str(); //return a string with the contents of the stream
-}
 
 namespace gazebo
 {
@@ -132,11 +127,11 @@ namespace gazebo
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private: void CommandManager(void);
     
-    public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int priority = 0, int msg_type = 3);
+    public: void SendGaitTable(SmoresModulePtr module, bool flag[4], double gait_value[4], int group = 0, unsigned int time_stamp = 0, int priority = 0, int msg_type = 3);
  
-    public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int priority = 0, int msg_type = 3);
+    public: void SendGaitTable(SmoresModulePtr module, int joint_ID, double gait_value, int group = 0, unsigned int time_stamp = 0, int priority = 0, int msg_type = 3);
 
-    public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle, int priority = 0);
+    public: void SendPosition(SmoresModulePtr module, double x, double y, double orientation_angle, int group = 0, unsigned int time_stamp = 0, int priority = 0);
     
     // Those commands are not recommended for sending the gait table or position coordinates
     // But could be used in the direct driving situation
@@ -198,6 +193,8 @@ namespace gazebo
     // This function is only for demonstration
     void readFileAndGenerateCommands(const char* fileName);
 
+    void currentCommandGroupInitialization(void);
+
     private: physics::WorldPtr currentWorld;
     private: event::ConnectionPtr addEntityConnection;
     private: transport::PublisherPtr statePub;
@@ -220,6 +217,8 @@ namespace gazebo
     private: vector<math::Pose> InitialPosition;
     
     private: vector<ModuleCommandsPtr> ModuleCommandContainer;
+    private: int CurrentCommandGroup;
+    private: int CurrentMinimalGroup;
     //+++++++++ testing ++++++++++++++++++++++++++++
     private: int infoCounter;
     private: int numOfModules;

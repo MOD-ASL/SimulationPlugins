@@ -1,5 +1,12 @@
 #include "SmoresModule.hh"
 
+CommandPro::CommandPro()
+{
+	TimeInterval = 0;	// Not a time based command
+	CommandGroup = 0; 
+	// FinishTimeReccorderMS = 0;
+	// FinishTimeReccorderS = 0;
+}
 ModuleCommands::ModuleCommands(SmoresModulePtr which_module)
 {
   this->WhichModule = which_module;

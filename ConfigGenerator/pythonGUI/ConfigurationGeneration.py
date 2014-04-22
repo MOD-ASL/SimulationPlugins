@@ -9,6 +9,7 @@ import eventlet  # need to install: $:sudo pip install eventlet
 from pygazebo import *  #need to install: $: sudo pip install pygazebo
 from gztopic import *
 from SimpleKL import CloseEnough, Connectable
+from SmoresKinematics import SmoresKinematics
 import pdb
 # from SmoresKinematics import SmoresKinematics # Kinematics using Embedding code
 
@@ -18,7 +19,7 @@ Border_width = 20
 Border_hieht = 40
 PI = 3.1415926
 
-class Example(Frame):
+class App(Frame):
   
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -31,7 +32,7 @@ class Example(Frame):
         self.modulenameincrementrecorder = 0
         self.InsertMethod = StringVar()
         self.InsertMethod.set('Connection')
-        # self.Kinematics = SmoresKinematics()  # Computes kinematics
+        self.Kinematics = SmoresKinematics()  # Computes kinematics
         self.connectedmodelvar = StringVar()
         self.Node1 = IntVar()
         self.Node1.set(3)
@@ -292,6 +293,8 @@ class Example(Frame):
         print "Joint angle tuple is ",module_jointangle
         new_module = Module(self.modelname.get(),module_position,module_jointangle)
         self.ModuleList.append(new_module)
+        # Add the module to the kinematic structure:
+        self.Kinematics.add_root_module( new_module.ModelName, new_module.Position, new_module.JointAngle )
         if self.ServerConnected == 1:
           self.PublishMessage(self.ModuleList[-1])
       else:
@@ -401,6 +404,23 @@ class Example(Frame):
         self.Joint_2.set(int(modelobj.JointAngle[2]/PI*180))
         self.Joint_1.set(int(modelobj.JointAngle[1]/PI*180))
         self.Joint_0.set(int(modelobj.JointAngle[0]/PI*180))
+      # Lock the connected joint
+        if len(modelobj.nodes[0]) > 0:
+          self.Joint_0["state"] = DISABLED
+        else:
+          self.Joint_0["state"] = NORMAL
+        if len(modelobj.nodes[1]) > 0:
+          self.Joint_1["state"] = DISABLED
+        else:
+          self.Joint_1["state"] = NORMAL
+        if len(modelobj.nodes[2]) > 0:
+          self.Joint_2["state"] = DISABLED
+        else:
+          self.Joint_2["state"] = NORMAL
+        if len(modelobj.nodes[3]) > 0:
+          self.Joint_3["state"] = DISABLED
+        else:
+          self.Joint_3["state"] = NORMAL
       self.FindConnectable()
       self.DeleteButtonEnable()
 
@@ -418,6 +438,7 @@ class Example(Frame):
     def WriteFile(self):
       f = open("InitialConfiguration", 'w')
       lines = ['<?xml version="1.0" encoding="UTF-8"?>\n']
+      lines.append('<configuration>\n')
       lines.append('<modules>\n')
       for eachmodule in self.ModuleList:
         lines.append('\t<module>\n')
@@ -436,7 +457,8 @@ class Example(Frame):
         lines.append('\t\t<distance>'+str(eachconnection.Distance)+'</distance>\n')
         lines.append('\t\t<angle>'+str(eachconnection.Angle)+'</angle>\n')
         lines.append('\t</connection>\n')
-      lines.append('</connections>')
+      lines.append('</connections>\n')
+      lines.append('</configuration>')
       f.writelines(lines)
       f.close()
       self.saveButton["state"] = DISABLED
@@ -467,7 +489,7 @@ class Example(Frame):
       for eachmodel in closeModules:
         connectNode = Connectable(modelobj.Position,modelobj.JointAngle,eachmodel.Position,eachmodel.JointAngle)
         if connectNode :
-          connectableList.append("node"+str(connectNode[0])+":"+eachmodel.ModelName+"-"+str(connectNode[1]))
+          connectableList.append(self.GetNodenameByNodeNumber(connectNode[0])+":"+eachmodel.ModelName+"-"+self.GetNodenameByNodeNumber(connectNode[1]))
           self.connectableRealList.append([modelobj,eachmodel,connectNode])
       self.nodeselect['values'] = tuple(connectableList)
 
@@ -515,6 +537,16 @@ class Example(Frame):
     def DeleteButtonEnable(self):
       self.DeleteButton["state"] = NORMAL
 
+    def GetNodenameByNodeNumber(self,node):
+      if node == 0:
+        return "Front"
+      if node == 1:
+        return "Left"
+      if node == 2:
+        return "Right"
+      if node == 3:
+        return "Back"
+
 def degree2rad(angle):
   return angle/180.0*PI
                      
@@ -522,7 +554,7 @@ def main():
   
     root = Tk()
     root.geometry(str(window_width)+"x"+str(window_height))
-    app = Example(root)
+    app = App(root)
     root.mainloop()  
 
 

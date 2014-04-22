@@ -5,11 +5,22 @@
 #include "command_message.pb.h"
 #include <string>
 // #include <iostream>
+#define MAX_COMMANDGROUP_LENGTH 5000
 
 using namespace std;
 using namespace gazebo;
 
 typedef boost::shared_ptr<command_message::msgs::CommandMessage> CommandPtr;
+struct CommandPro 	// abbr for Command protocol
+{
+	CommandPtr ActualCommandMessage;
+	unsigned int TimeInterval;	// Millisecond
+	int CommandGroup;		// Maximum length: 5000
+	// unsigned int FinishTimeReccorderMS;
+	// unsigned int FinishTimeReccorderS;
+	CommandPro();
+};
+
 class ModuleCommands
 {
 public:
@@ -18,7 +29,8 @@ public:
 public:
   SmoresModulePtr WhichModule;
   // The vector of command arrays
-  vector<CommandPtr> CommandSquence;
+  // vector<CommandPtr> CommandSquence;
+  vector<CommandPro> CommandSquence;
   // The indicator of whether a command has been executing
   bool FinishedFlag;
   bool ReceivedFlag;

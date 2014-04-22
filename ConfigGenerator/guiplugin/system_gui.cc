@@ -134,24 +134,51 @@ namespace gazebo
           math::Pose linkpose5(0,0,0.05,0,0,0);
           // cout<<"Gui: breakpoint 2"<<endl;
           // SmallDelay(10);
-          if (scene->GetVisual(modelname)->GetChild(0))
-          // if (scene->GetVisual(modelname)->GetChild(0) && scene->GetVisual(modelname)->GetChild(1) && scene->GetVisual(modelname)->GetChild(2) && scene->GetVisual(modelname)->GetChild(3) && scene->GetVisual(modelname)->GetChild(4))
+          string modelvisual1 = modelname + "::" + "UHolderBody";
+          string modelvisual2 = modelname + "::" + "FrontWheel";
+          string modelvisual3 = modelname + "::" + "LeftWheel";
+          string modelvisual4 = modelname + "::" + "RightWheel";
+          string modelvisual5 = modelname + "::" + "CircuitHolder";
+          if (scene->GetVisual(modelvisual1))
           {
-            scene->GetVisual(modelname)->GetChild(3)->SetPose(linkpose1);
-            scene->GetVisual(modelname)->GetChild(4)->SetPose(linkpose5);
-            scene->GetVisual(modelname)->GetChild(2)->SetPose(linkpose4);
-            scene->GetVisual(modelname)->GetChild(1)->SetPose(linkpose2);
-            scene->GetVisual(modelname)->GetChild(0)->SetPose(linkpose3);
+            scene->GetVisual(modelvisual1)->SetPose(linkpose1);
           }
+          if (scene->GetVisual(modelvisual2))
+          {
+            scene->GetVisual(modelvisual2)->SetPose(linkpose2);
+          }
+          if (scene->GetVisual(modelvisual3))
+          {
+            scene->GetVisual(modelvisual3)->SetPose(linkpose3);
+          }
+          if (scene->GetVisual(modelvisual4))
+          {
+            scene->GetVisual(modelvisual4)->SetPose(linkpose4);
+          }
+          if (scene->GetVisual(modelvisual5))
+          {
+            scene->GetVisual(modelvisual5)->SetPose(linkpose5);
+          }
+          // if (scene->GetVisual(modelname)->GetChild(4))
+          // // if (scene->GetVisual(modelname)->GetChild(0) && scene->GetVisual(modelname)->GetChild(1) && scene->GetVisual(modelname)->GetChild(2) && scene->GetVisual(modelname)->GetChild(3) && scene->GetVisual(modelname)->GetChild(4))
+          // {
+          //   scene->GetVisual(modelname)->GetChild(3)->SetPose(linkpose1);
+          //   scene->GetVisual(modelname)->GetChild(4)->SetPose(linkpose5);
+          //   scene->GetVisual(modelname)->GetChild(2)->SetPose(linkpose4);
+          //   scene->GetVisual(modelname)->GetChild(1)->SetPose(linkpose2);
+          //   scene->GetVisual(modelname)->GetChild(0)->SetPose(linkpose3);
+          // }
           // cout << "GUI: visual 0: "<<scene->GetVisual(modelname)->GetChild(0)->GetName()<<endl;  //left wheel
           // cout << "GUI: visual 1: "<<scene->GetVisual(modelname)->GetChild(1)->GetName()<<endl;  //front wheel
           // cout << "GUI: visual 2: "<<scene->GetVisual(modelname)->GetChild(2)->GetName()<<endl;  //right wheel
           // cout << "GUI: visual 4: "<<scene->GetVisual(modelname)->GetChild(4)->GetName()<<endl;  //circuit holder
+          // cout << "GUI: visual 5: "<<scene->GetVisual(modelname)->GetChild(3)->GetName()<<endl; 
           // JointUpdateList.erase(JointUpdateList.begin());
-        }else
-        {
-          SmallDelay(500);
         }
+        // else
+        // {
+        //   SmallDelay(500);
+        // }
       }
     }
 

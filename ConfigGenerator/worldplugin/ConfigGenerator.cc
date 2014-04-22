@@ -209,7 +209,7 @@ void ControlCenter::BuildConfigurationFromXML(void)
   xml_document<> doc;    // character type defaults to char
   doc.parse<0>(xmlFile.data());
   // cout<<"World: first node is "<<doc.first_node()->name()<<endl;
-  xml_node<> *modlue_node = doc.first_node("modules")->first_node("module");
+  xml_node<> *modlue_node = doc.first_node("configuration")->first_node("modules")->first_node("module");
   // cout<<"World: modlue_node is "<<modlue_node->first_node("name")->value()<<endl;
   while (modlue_node)
   {
@@ -251,7 +251,7 @@ void ControlCenter::BuildConnectionFromXML(void)
   xml_document<> doc;    // character type defaults to char
   doc.parse<0>(xmlFile.data());
 
-  xml_node<> *connection_node = doc.first_node("connections")->first_node("connection");
+  xml_node<> *connection_node = doc.first_node("configuration")->first_node("connections")->first_node("connection");
 //       cout<<"World: connection_node is "<<connection_node->first_node("module1")->value()<<endl;
   while (connection_node)
   {

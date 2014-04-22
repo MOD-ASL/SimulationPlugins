@@ -10,6 +10,7 @@ include_directories(
 	${GAZEBO_INCLUDE_DIRS}
 	${CMAKE_CURRENT_BINARY_DIR}/msgs
 	${CMAKE_CURRENT_BINARY_DIR}/../../Libraries/
+	${CMAKE_CURRENT_BINARY_DIR}/../
 	)
 link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/msgs)
 add_subdirectory(msgs)
