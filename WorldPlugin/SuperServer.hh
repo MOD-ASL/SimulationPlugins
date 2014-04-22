@@ -23,7 +23,7 @@
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
 
-#include "LibraryTemplate.hh"
+// #include "LibraryTemplate.hh"
 
 #define PI 3.141593   // 3.1411593
 #define VALIDCONNECTIONDISUPPER 0.110

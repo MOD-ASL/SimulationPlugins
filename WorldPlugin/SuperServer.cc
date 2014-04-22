@@ -78,28 +78,28 @@ void ControlCenter::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // InsertModel("Module0", positionTMP);
   BuildConfigurationFromXML();
 
-  // Here is the test for dynamic shared libraries
-  void *lib_handle;
-  char *error;
-  LibraryTemplate * (*mkr)();
+  // // Here is the test for dynamic shared libraries
+  // void *lib_handle;
+  // char *error;
+  // LibraryTemplate * (*mkr)();
 
-  lib_handle = dlopen("/home/edward/.gazebo/models/SMORES6Uriah/plugins/libSpiderController.so", RTLD_LAZY);
-  if (!lib_handle) 
-  {
-    fprintf(stderr, "%s\n", dlerror());
-    exit(1);
-  }
+  // lib_handle = dlopen("/home/edward/.gazebo/models/SMORES6Uriah/plugins/libSpiderController.so", RTLD_LAZY);
+  // if (!lib_handle) 
+  // {
+  //   fprintf(stderr, "%s\n", dlerror());
+  //   exit(1);
+  // }
 
-  // void *mkr = dlsym(lib_handle, "maker");
-  mkr = (LibraryTemplate * (*)())dlsym(lib_handle, "maker");
-  if ((error = dlerror()) != NULL)  
-  {
-    fprintf(stderr, "%s\n", error);
-    exit(1);
-  }
+  // // void *mkr = dlsym(lib_handle, "maker");
+  // mkr = (LibraryTemplate * (*)())dlsym(lib_handle, "maker");
+  // if ((error = dlerror()) != NULL)  
+  // {
+  //   fprintf(stderr, "%s\n", error);
+  //   exit(1);
+  // }
 
-  LibraryTemplate *Spider = mkr();
-  Spider->WhenRunning();
+  // LibraryTemplate *Spider = mkr();
+  // Spider->WhenRunning();
 }
 
 void ControlCenter::addEntity2World(std::string & _info)
