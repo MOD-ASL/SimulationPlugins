@@ -1,11 +1,3 @@
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Filename:  ModelController.hh
-// Author:  Edward Cui
-// Contact: cyk1990995@gmail.com
-// Last updated:  1/6/2014
-// Description: 
-// Commit info: git@github.com:princeedward/SimulationPlugins.git
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #include "ModelController.hh"
 
 using namespace std;

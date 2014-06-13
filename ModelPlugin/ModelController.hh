@@ -1,29 +1,38 @@
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Author: Edward Yunkai Cui
+// Description: Thie is a customized model plugin class, in which we 
+//              implemented the low level controllers of each individual
+//              model. Those controllers including joint position
+//              control, joint speed control, model plane motion control,
+//              model plane position and orientation control
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #ifndef _GAZEBO_MODEL_CONTROLLER_HH_
 #define _GAZEBO_MODEL_CONTROLLER_HH_
 
+#include <iostream>
+#include <cmath>
 #include <boost/bind.hpp>
+
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
-#include <iostream>
-#include <cmath>
 // Google protocol buffers
-// Classes for information exchanges in different plugins
+// Classes for communication between different plugins
 #include "collision_message_plus.pb.h"
 #include "command_message.pb.h"
 // The head file which contains the joint_plus structure
 #include "JointPlus.hh"
 
-// Parameters
 #define PI 3.1415926
 #define EXECUTIONERROR 0.015
 
-using namespace std;
+using std::vector;
 
 // Useful pointer type declaration
 typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
 typedef const boost::shared_ptr<const msgs::Pose> PosePtr;
-typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> CommandMessagePtr; 
+typedef const boost::shared_ptr
+    <const command_message::msgs::CommandMessage> CommandMessagePtr; 
 
 namespace gazebo
 {
