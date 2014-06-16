@@ -4,23 +4,21 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 
-using namespace gazebo;
-
+namespace gazebo{
 struct JointPlus
 {
-	physics::JointPtr JointX;
-	math::Angle JointAngleNow;
-	math::Angle JointAngleDesire;
+	physics::JointPtr jointPtr;
+	math::Angle jointAngleNow;
+	math::Angle jointAngleDesire;	// This member is unused
 	// Whether the angle of the joint needs to be set
-	bool Need2BeSet;
-
+	bool needToBeSet;
 	// Joint Properties
-	double MaximiumForce;
-	double MaximiumRotRate;
-
+	double maximiumForce;
+	double maximiumRotRate;
 	// Variables need to be use to control the joint
- 	double JointErrorHis;
- 	double JointErrorAccu;
+ 	double jointErrorHis;
+ 	double jointErrorAccu;
 };
+}
 
 #endif
