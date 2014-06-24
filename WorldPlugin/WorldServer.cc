@@ -1,0 +1,1879 @@
+#include "WorldServer.hh"
+
+using std::string;
+using std::vector;
+using std::cout;
+
+using rapidxml::file;
+using rapidxml::xml_document;
+using rapidxml::xml_node;
+
+namespace gazebo
+{
+WorldServer::WorldServer()
+{
+  needToSetPtr = 0;
+  autoMagneticConnectionFlag = false;
+  // All code below this line is for testing
+} // WorldServer::WorldServer
+WorldServer::~WorldServer(){}
+void WorldServer::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
+{
+  this->currentWorld = _parent;
+  // Create a new transport node
+  transport::NodePtr node(new transport::Node());
+  // Initialize the node with the world name
+  node->Init(_parent->GetName());
+  // Create a publisher to publish welcome information
+  this->welcomePub = node->Advertise<msgs::GzString>("~/Welcome");
+  // Event binding functions
+  this->addEntityConnection = event::Events::ConnectAddEntity(
+      boost::bind(&WorldServer::AddEntityToWorld, this, _1));
+  this->updateConnection = event::Events::ConnectWorldUpdateBegin(
+      boost::bind(&WorldServer::OnSystemRunning, this, _1));
+  // Perform extra initializations
+  ExtraInitializationInLoad(_parent,_sdf);
+} // WorldServer::Load
+void WorldServer::ExtraInitializationInLoad(
+    physics::WorldPtr _parent, sdf::ElementPtr _sdf)
+{} // WorldServer::ExtraInitializationInLoad
+LibraryTemplate *WorldServer::DynamicallyLoadedLibrary(
+   const char* library_path, void *lib_handle)
+{
+  char *error;
+  LibraryTemplate * (*mkr)();
+  lib_handle = dlopen(library_path, RTLD_LAZY);
+  if (!lib_handle) {
+    fprintf(stderr, "%s\n", dlerror());
+    exit(1);
+  }
+  mkr = (LibraryTemplate * (*)())dlsym(lib_handle, "maker");
+  if ((error = dlerror()) != NULL) {
+    fprintf(stderr, "%s\n", error);
+    exit(1);
+  }
+  return mkr();
+} // WorldServer::DynamicallyLoadedLibrary
+void WorldServer::CloseLoadedLibrary(void **lib_handle)
+{
+  dlclose(lib_handle);
+} // WorldServer::CloseLoadedLibrary
+void WorldServer::EnableAutoMagneticConnection(void)
+{
+  this->autoMagneticConnectionFlag = true;
+}
+void WorldServer::AddEntityToWorld(std::string & _info)
+{
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Welcome message generation each time a new model has been added
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  int model_number = this->currentWorld->GetModelCount();
+  string current_message = "Model"+Int2String(model_number);
+  // A log line, which can be deleted in the future
+  cout<<"World: Number of models: "<<model_number<<endl;
+  msgs::GzString welcome_msgs;
+  welcome_msgs.set_data(current_message);
+  welcomePub->Publish(welcome_msgs);
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Dynamic publisher generation for Commands between world and modules
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  transport::NodePtr node(new transport::Node());
+  node->Init(_info);
+  // Topic name for publisher
+  string topic_name = "~/" + _info + "_world";
+  transport::PublisherPtr new_module_pub 
+      = node->Advertise<command_message::msgs::CommandMessage>(topic_name);
+  // Topic name for subscriber
+  topic_name = "~/" + _info + "_model";
+  transport::SubscriberPtr new_module_sub 
+      = node->Subscribe(topic_name,&WorldServer::FeedBackMessageDecoding, this);
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Initialize module object and store the pointers into the module vector
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  unsigned int how_many_modules = moduleList.size();
+  SmoresModulePtr new_module(new SmoresModule(
+      _info, true, new_module_pub, new_module_sub, how_many_modules));
+  // TODO: find a elegent way for the following line
+  new_module->ManuallyNodeInitial(new_module);
+  moduleList.push_back(new_module);
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Dynamic subscriber of collision topic
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  if (autoMagneticConnectionFlag) {
+    string new_sub_name = "~/"+_info+"_Collision";
+    transport::SubscriberPtr new_world_sub = node->Subscribe(
+        new_sub_name,&WorldServer::AutomaticMagneticConnectionManagement, this);
+    WorldColSubscriber.push_back(new_world_sub);
+  }
+} // WorldServer::AddEntityToWorld
+void WorldServer::OnSystemRunning(const common::UpdateInfo & _info)
+{
+  // Main command execution procedure
+  CommandManager();
+  // Extra Code that needs to be run in each iteration
+  OnSystemRunningExtra(_info);
+} // WorldServer::OnSystemRunning
+void WorldServer::OnSystemRunningExtra(
+    const common::UpdateInfo & _info){} // WorldServer::OnSystemRunningExtra
+void WorldServer::BuildConfigurationFromXML(string file_name)
+{
+  file<> xmlFile(file_name.c_str());
+  xml_document<> doc;    // character type defaults to char
+  doc.parse<0>(xmlFile.data());
+  xml_node<> *modlue_node = doc.first_node("configuration")
+      ->first_node("modules")->first_node("module");
+  while (modlue_node) {
+    string module_name = modlue_node->first_node("name")->value();
+    string position_string = modlue_node->first_node("position")->value();
+    double coordinates[3] = {0,0,0};
+    for (int i = 0; i < 3; ++i) {
+      coordinates[i] 
+          = atof(position_string.substr(0,position_string.find(" ")).c_str());
+      position_string = position_string.substr(position_string.find(" ")+1);
+    }
+    double orientation[3] = {0,0,0};
+    for (int i = 0; i < 3; ++i) {
+      if (i==2) {
+        orientation[i] = atof(position_string.substr(0).c_str());
+      }else {
+        orientation[i] 
+            = atof(position_string.substr(0,position_string.find(" ")).c_str());
+        position_string = position_string.substr(position_string.find(" ")+1);
+      }
+    }
+    math::Pose model_position(
+        math::Vector3(coordinates[0], coordinates[1], coordinates[2]), 
+        math::Quaternion(orientation[0], orientation[1], orientation[2]));
+    string joints_string = modlue_node->first_node("joints")->value();
+    InsertModel(module_name, model_position, joints_string);
+    modlue_node = modlue_node->next_sibling();
+  }
+} // WorldServer::BuildConfigurationFromXML
+void WorldServer::BuildConnectionFromXML(string file_name)
+{
+  file<> xmlFile(file_name.c_str());
+  xml_document<> doc;    // character type defaults to char
+  doc.parse<0>(xmlFile.data());
+  xml_node<> *connection_node = doc.first_node("configuration")
+      ->first_node("connections")->first_node("connection");
+  while (connection_node) {
+    string module1_name = connection_node->first_node("module1")->value();
+    string module2_name = connection_node->first_node("module2")->value();
+    string node1_ID_string = connection_node->first_node("node1")->value();
+    string node2_ID_string = connection_node->first_node("node2")->value();
+    int node1_ID = atoi(node1_ID_string.c_str());
+    int node2_ID = atoi(node2_ID_string.c_str());
+    string distance_string = connection_node->first_node("distance")->value();
+    string angle_string = connection_node->first_node("angle")->value();
+    double distance = atof(distance_string.c_str());
+    double angle = atof(angle_string.c_str());
+    SmoresModulePtr model1_ptr = GetModulePtrByName(module1_name);
+    SmoresModulePtr model2_ptr = GetModulePtrByName(module2_name);
+    ActiveConnect(model1_ptr,model2_ptr,node1_ID,node2_ID, angle, distance);
+    connection_node = connection_node->next_sibling();
+  }
+} // WorldServer::BuildConnectionFromXML
+void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
+{
+  // Command feedback handler
+  if (msg->messagetype()==0) {
+    string module_name 
+        = msg->stringmessage().substr(0,msg->stringmessage().find(":"));
+    ModuleCommandsPtr command_for_current_module 
+        = GetModulePtrByName(module_name)->moduleCommandContainer;
+    if (command_for_current_module) {
+      if (command_for_current_module->ExecutionFlag) {
+        command_for_current_module->ReceivedFlag = true;
+        // cout<<"World: "<<module_name<<" set receive flag"<<endl;
+      }
+    }
+    string second_field = msg->stringmessage().substr(
+        msg->stringmessage().find(":")+1,string::npos);
+    if (second_field.compare("finished")==0) {
+      cout<<"World: "<<module_name<<" Execution finished"<<endl;
+      if (command_for_current_module) {
+        if (command_for_current_module->ExecutionFlag) {
+          command_for_current_module->FinishedFlag = true;
+          command_for_current_module->ExecutionFlag = false;
+        }
+      }
+      command_message::msgs::CommandMessage finish_confirm_message;
+      finish_confirm_message.set_messagetype(0);
+      GetModulePtrByName(module_name)->ModulePublisher
+          ->Publish(finish_confirm_message);
+    }
+  }
+  // Inserted model initialization
+  if (msg->messagetype()==5) {
+    // Initalization functions
+    moduleList.at(needToSetPtr)->SetModulePtr(
+        currentWorld->GetModel(moduleList.at(needToSetPtr)->ModuleID));
+    cout<<"World: Asign the pointer to module: "
+        <<moduleList.at(needToSetPtr)->ModuleID<<endl;
+    // Need a function when delete a entity, this value needs to be decrease
+    needToSetPtr += 1;
+    if (initalJointValue.size()>0) {
+      bool flags[4] = {true,true,true,true};
+      double joint_angles[4] = {0};
+      string joint_values_string = initalJointValue.at(0);
+      for (int i = 0; i < 4; ++i) {
+        if (i<3) {
+          joint_angles[i] = atof(joint_values_string
+              .substr(0,joint_values_string.find(" ")).c_str());
+          joint_values_string = joint_values_string
+              .substr(joint_values_string.find(" ")+1);
+        }else {
+          joint_angles[i] = atof(joint_values_string.substr(0).c_str());
+        }
+      }
+      currentWorld->GetModel(msg->stringmessage())
+          ->GetJoint("Front_wheel_hinge")->SetAngle(0,joint_angles[0]);
+      currentWorld->GetModel(msg->stringmessage())
+          ->GetJoint("Left_wheel_hinge")->SetAngle(0,joint_angles[1]);
+      currentWorld->GetModel(msg->stringmessage())
+          ->GetJoint("Right_wheel_hinge")->SetAngle(0,joint_angles[2]);
+      currentWorld->GetModel(msg->stringmessage())
+          ->GetJoint("Center_hinge")->SetAngle(0,joint_angles[3]);
+      currentWorld->GetModel(msg->stringmessage())
+          ->SetLinkWorldPose(initialPosition.at(0),
+          currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
+      SendGaitTableInstance(
+          GetModulePtrByName(msg->stringmessage()), flags, joint_angles,3);
+      ExtraWorkWhenModelInserted(msg);
+      initalJointValue.erase(initalJointValue.begin());
+      initialPosition.erase(initialPosition.begin());
+    }
+  }
+} // WorldServer::FeedBackMessageDecoding
+void WorldServer::ExtraWorkWhenModelInserted(CommandMessagePtr &msg)
+{} // WorldServer::ExtraWorkWhenModelInserted
+void WorldServer::AutomaticMagneticConnectionManagement(CollisionMessagePtr &msg)
+{
+  string model_of_collision1 
+      = msg->collision1().substr(0,msg->collision1().find("::"));
+  string model_of_collision2 
+      = msg->collision2().substr(0,msg->collision2().find("::"));
+  string link_of_collision1 = msg->collision1().substr(msg->collision1()
+      .find("::")+2,msg->collision1().rfind("::")-msg->collision1().find("::")-2);
+  string link_of_collision2 = msg->collision2().substr(msg->collision2()
+      .find("::")+2,msg->collision2().rfind("::")-msg->collision2().find("::")-2);
+  SmoresModulePtr model1_ptr = GetModulePtrByName(model_of_collision1);
+  SmoresModulePtr model2_ptr = GetModulePtrByName(model_of_collision2);
+  int node_of_model1 = GetNodeIDByName(link_of_collision1);
+  int node_of_model2 = GetNodeIDByName(link_of_collision2);
+  //---------------------- Find the pending connection request ----------------
+  bool found_pending_one = false;
+  for (unsigned int i = 0; i < pendingRequest.size(); ++i)
+  {
+    if (pendingRequest.at(i).SameCollision(model_of_collision1,
+        model_of_collision2,link_of_collision1,link_of_collision2)) {
+      pendingRequest.erase(pendingRequest.begin()+i);
+      found_pending_one = true;
+      break;
+    }
+  }
+  if (node_of_model1<4 && node_of_model2<4) {
+    if (!found_pending_one) {
+  //---------------------- Add new pending connection request -----------------
+      if ((!AlreadyConnected(model1_ptr,node_of_model1)) 
+          && (!AlreadyConnected(model2_ptr,node_of_model2)) 
+          && (!AlreadyConnected(model1_ptr,model2_ptr))) {
+        // This part is used to check the distance between robots
+        math::Vector3 center_of_model1 = currentWorld->GetModel(
+            model_of_collision1)->GetLink("CircuitHolder")->GetWorldPose().pos;
+        math::Vector3 center_of_model2 = currentWorld->GetModel(
+            model_of_collision2)->GetLink("CircuitHolder")->GetWorldPose().pos;
+        double distance_between_two_centers
+            = (center_of_model1-center_of_model2).GetLength();
+        if (distance_between_two_centers<VALIDCONNECTIONDISUPPER
+            && distance_between_two_centers>VALIDCONNECTIONDISLOWER)
+        {
+          // cout<<"World: Distance between centers: "
+          //     <<distance_between_two_centers<<endl;
+          CollisionInformation new_connection_request(
+              model_of_collision1, model_of_collision2,
+              link_of_collision1, link_of_collision2);
+          pendingRequest.push_back(new_connection_request);
+          cout<<"World: An pending entry has been established: '"
+              << model_of_collision1+":"+link_of_collision1+"::"
+              + model_of_collision2 + ":"+link_of_collision2<<"'"<<endl;
+        }
+      }
+    }else{
+      // The lighter cluster connects to heavier cluster
+      if (CountModules(model1_ptr) < CountModules(model2_ptr)) {
+        SmoresModulePtr tmp_module_ptr = model1_ptr;
+        model1_ptr = model2_ptr;
+        model2_ptr = tmp_module_ptr;
+        int tmp_node = node_of_model1;
+        node_of_model1 = node_of_model2;
+        node_of_model2 = tmp_node;
+      }
+  //-------- Do the real connection (including generate dynamic joint) --------
+      ActiveConnect(model1_ptr,model2_ptr,node_of_model1,node_of_model2);
+    }
+  }
+} // WorldServer::AutomaticMagneticConnectionManagement
+// TODO: Since there is a huge change in this function, it should be tested
+void WorldServer::ConnectAndDynamicJointGeneration(
+    SmoresModulePtr module_1, SmoresModulePtr module_2, 
+    int node1_ID, int node2_ID, SmoresEdgePtr an_edge)
+{
+  math::Pose ContactLinkPos = module_1->GetLinkPtr(node1_ID)->GetWorldPose();
+  math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node2_ID)->GetWorldPose();
+  cout<<"World: Post position of the module 1: ("
+      <<ContactLinkPos.pos.x<<","<<ContactLinkPos.pos.y<<","
+      <<ContactLinkPos.pos.z<<")"<<endl;
+  cout<<"World: Post position of the module 2: ("
+      <<PosOfTheOtherModel.pos.x<<","<<PosOfTheOtherModel.pos.y<<","
+      <<PosOfTheOtherModel.pos.z<<")"<<endl;
+  physics::LinkPtr Link1, Link2;
+  math::Vector3 axis;
+  math::Pose position_of_module1(math::Vector3(0,0,0),math::Quaternion(0,0,0,0));
+  math::Pose position_of_module2(math::Vector3(0,0,0),math::Quaternion(0,0,0,0));
+  NewPositionCalculation(an_edge, ContactLinkPos, PosOfTheOtherModel, 
+      node1_ID, node2_ID, &position_of_module1, &position_of_module2);
+  if (node1_ID == 0 || node1_ID == 3) {
+    axis.Set(0,1,0);
+  }
+  if (node1_ID == 1 || node1_ID == 2) {
+    axis.Set(1,0,0);
+  }
+  //+++++ This part of the code set the correct position of the models ++++++++
+  Link1 = module_1->GetLinkPtr(node1_ID);
+  Link2 = module_2->GetLinkPtr(node2_ID);
+
+  module_1->ModuleObject->SetLinkWorldPose(position_of_module1,Link1);
+  module_2->ModuleObject->SetLinkWorldPose(position_of_module2,Link2);
+
+  //++++ This part of the code generate the dynamic joint +++++++++++++++++++++
+  physics::JointPtr DynamicJoint;
+  DynamicJoint = currentWorld->GetPhysicsEngine()->CreateJoint(
+      "revolute",  module_1->ModuleObject);
+  DynamicJoint->Attach(Link1, Link2);
+  DynamicJoint->Load(
+      Link1, Link2, math::Pose(math::Vector3(0,-0.00,0),math::Quaternion()));
+  DynamicJoint->SetAxis(0, axis);
+  module_1->ModuleObject->GetJointController()->AddJoint(DynamicJoint);
+  DynamicJoint->SetAngle(0,math::Angle(0));
+  DynamicJoint->SetHighStop(0,math::Angle(0.01));
+  DynamicJoint->SetLowStop(0,math::Angle(-0.01));
+  dynamicConnections.push_back(DynamicJoint);
+  // This is necessary for easy access of the dynamic joint
+  an_edge->DynamicJointPtr = dynamicConnections.back();
+} // WorldServer::ConnectAndDynamicJointGeneration
+void WorldServer::RotationQuaternionCalculation(math::Vector3 normal_axis,
+    math::Vector3 z_axis_of_link1, math::Vector3 z_axis_of_link2, 
+    math::Vector3 first_rotation, math::Vector3 second_rotation,
+    math::Quaternion *first_rotation_of_link2, 
+    math::Quaternion *second_rotation_of_link2)
+{
+  first_rotation_of_link2->SetFromEuler(first_rotation);
+  double direction_reference 
+      = z_axis_of_link1.Cross(z_axis_of_link2).Dot(normal_axis);
+  if (direction_reference>0)
+  {
+    second_rotation_of_link2->SetFromEuler(second_rotation);
+  }else{
+    second_rotation_of_link2->SetFromEuler(-second_rotation);
+  }
+} // WorldServer::RotationQuaternionCalculation
+void WorldServer::NewPositionCalculation(SmoresEdgePtr an_edge,
+    math::Pose old_pose_of_module1, math::Pose old_pose_of_module2, 
+    int node1_ID, int node2_ID, 
+    math::Pose *new_pose_of_module1, math::Pose *new_pose_of_module2)
+{
+  double z_rotation[3] = {PI,PI/2,0};
+  math::Vector3 new_position_of_link1 = old_pose_of_module1.pos;
+  math::Quaternion new_direction_of_link1 = old_pose_of_module1.rot;
+  math::Vector3 new_position_of_link2 = old_pose_of_module1.pos 
+      - (0.1+an_edge->Distance)*old_pose_of_module1.rot.GetYAxis();
+  math::Vector3 z_axis_of_old_module2 = old_pose_of_module2.rot.GetZAxis();
+  math::Vector3 z_axis_of_new_direction = new_direction_of_link1.GetZAxis();
+  math::Vector3 x_axis_of_new_direction = new_direction_of_link1.GetXAxis();
+  math::Vector3 new_z_axis = z_axis_of_old_module2
+      .Dot(z_axis_of_new_direction)*z_axis_of_new_direction 
+      + z_axis_of_old_module2
+      .Dot(x_axis_of_new_direction)*x_axis_of_new_direction;
+  if (node1_ID == 1 || node1_ID == 2) {
+    for (int i = 0; i < 3; ++i) {
+      z_rotation[i] = ConversionForAngleOverPi(z_rotation[i] - 3/2*PI);
+    }
+    new_position_of_link2 = old_pose_of_module1.pos 
+        + (0.1+an_edge->Distance)*old_pose_of_module1.rot.GetXAxis();
+    new_z_axis = z_axis_of_old_module2
+        .Dot(z_axis_of_new_direction)*z_axis_of_new_direction 
+        + z_axis_of_old_module2
+        .Dot(new_direction_of_link1.GetYAxis())*new_direction_of_link1.GetYAxis();
+  }
+  if (node1_ID == 3) {
+    for (int i = 0; i < 3; ++i) {
+      z_rotation[i] = ConversionForAngleOverPi(z_rotation[i] - PI);
+    }
+    new_position_of_link2 = old_pose_of_module1.pos 
+        + (0.1+an_edge->Distance)*old_pose_of_module1.rot.GetYAxis();
+    new_z_axis = z_axis_of_old_module2
+        .Dot(z_axis_of_new_direction)*z_axis_of_new_direction 
+        + z_axis_of_old_module2
+        .Dot(x_axis_of_new_direction)*x_axis_of_new_direction;
+  }
+  new_z_axis = new_z_axis.Normalize();
+  double cosine_value = new_z_axis.Dot(z_axis_of_new_direction)>0?
+      min(1.0,new_z_axis.Dot(z_axis_of_new_direction)):
+      max(-1.0,new_z_axis.Dot(z_axis_of_new_direction));
+  double angle_between_z_axes = acos(cosine_value); // + an_edge->Angle;
+  math::Quaternion first_rotation_of_link2;
+  math::Quaternion second_rotation_of_link2;
+  math::Quaternion new_direction_of_link2;
+  if (node2_ID==0)
+  {
+    RotationQuaternionCalculation(old_pose_of_module2.rot.GetYAxis(),
+        z_axis_of_new_direction,new_z_axis, 
+        math::Vector3(0,0,z_rotation[0]),math::Vector3(0, angle_between_z_axes ,0),
+        &first_rotation_of_link2, &second_rotation_of_link2);
+  }
+  if (node2_ID==1)
+  {
+    RotationQuaternionCalculation(old_pose_of_module2.rot.GetXAxis(),
+        z_axis_of_new_direction,new_z_axis, 
+        math::Vector3(0,0,z_rotation[1]),math::Vector3(angle_between_z_axes, 0, 0),
+        &first_rotation_of_link2, &second_rotation_of_link2);
+  }
+  if (node2_ID==2)
+  {
+    RotationQuaternionCalculation(old_pose_of_module2.rot.GetXAxis(),
+        z_axis_of_new_direction,new_z_axis, 
+        math::Vector3(0,0,z_rotation[1]),math::Vector3(angle_between_z_axes, 0, 0),
+        &first_rotation_of_link2, &second_rotation_of_link2);
+  }
+  if (node2_ID==3)
+  {
+    RotationQuaternionCalculation(old_pose_of_module2.rot.GetYAxis(),
+        z_axis_of_new_direction,new_z_axis, 
+        math::Vector3(0,0,z_rotation[2]),math::Vector3(0, angle_between_z_axes ,0),
+        &first_rotation_of_link2, &second_rotation_of_link2);
+  }
+  new_direction_of_link2 
+      = new_direction_of_link1*first_rotation_of_link2*second_rotation_of_link2;
+  new_pose_of_module1->Set(new_position_of_link1,new_direction_of_link1);
+  new_pose_of_module2->Set(new_position_of_link2,new_direction_of_link2);
+} // WorldServer::NewPositionCalculation
+double WorldServer::ConversionForAngleOverPi(double angle)
+{
+  if (abs(angle) > PI+0.0000000001){
+    return angle>0?angle-2*PI:2*PI+angle;
+  }
+  return angle;
+} // WorldServer::ConversionForAngleOverPi
+void WorldServer::DynamicJointDestroy(SmoresEdgePtr edge)
+{
+  edge->DynamicJointPtr->Detach();
+  for (unsigned int i = 0; i < dynamicConnections.size(); ++i) {
+    if (edge->DynamicJointPtr==dynamicConnections.at(i)) {
+      dynamicConnections.at(i).reset();
+      dynamicConnections.erase(dynamicConnections.begin()+i);
+      break;
+    }
+  }
+} // WorldServer::DynamicJointDestroy
+void WorldServer::InsertModel(string name, math::Pose position)
+{
+  if (!currentWorld->GetModel(name)) {
+    sdf::SDFPtr model_sdf;
+    model_sdf.reset(new sdf::SDF);
+    sdf::init(model_sdf);
+    sdf::readFile(MODULEPATH, model_sdf);
+    sdf::ElementPtr model_element = model_sdf->root->GetElement("model");
+    math::Pose position_calibrate(
+        math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
+    model_element->GetAttribute("name")->Set(name);
+    model_element->GetElement("pose")->Set(position_calibrate);
+    currentWorld->InsertModelSDF(*model_sdf);
+    initialPosition.push_back(position);
+  }else{
+    Color::Modifier red_log(Color::FG_RED);
+    Color::Modifier def_log(Color::FG_DEFAULT);
+    cout<<red_log<<"WARNING: World: Insertion failed: module name exists."
+        <<def_log<<endl;
+  }
+} // WorldServer::InsertModel
+void WorldServer::InsertModel(string name, math::Pose position, 
+    string joint_angles)
+{
+  if (!currentWorld->GetModel(name))
+  {
+    sdf::SDFPtr model_sdf;
+    model_sdf.reset(new sdf::SDF);
+    sdf::init(model_sdf);
+    sdf::readFile(MODULEPATH, model_sdf);
+    sdf::ElementPtr model_element = model_sdf->root->GetElement("model");
+    math::Pose position_calibrate(
+        math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
+    model_element->GetAttribute("name")->Set(name);
+    model_element->GetElement("pose")->Set(position_calibrate);
+    currentWorld->InsertModelSDF(*model_sdf);
+    initalJointValue.push_back(joint_angles);
+    initialPosition.push_back(position);
+  }else{
+    Color::Modifier red_log(Color::FG_RED);
+    Color::Modifier def_log(Color::FG_DEFAULT);
+    cout<<red_log<<"WARNING: World: Insertion failed: module name exists."
+        <<def_log<<endl;
+  }
+} // WorldServer::InsertModel
+void WorldServer::AddInitialPosition(math::Pose position)
+{
+  initialPosition.push_back(position);
+} // WorldServer::AddInitialPosition
+void WorldServer::AddInitialJoints(string joint_angles)
+{
+  initalJointValue.push_back(joint_angles);
+} // WorldServer::AddInitialJoints
+void WorldServer::DeleteModule(string module_name)
+{
+  SmoresModulePtr currentModule = GetModulePtrByName(module_name);
+  // ---------- Destroy all the edges -------------------
+  if (currentModule->NodeFWPtr->Edge) {
+    Disconnect(currentModule, 0);
+  }
+  if (currentModule->NodeLWPtr->Edge) {
+    Disconnect(currentModule, 1);
+  }
+  if (currentModule->NodeRWPtr->Edge) {
+    Disconnect(currentModule, 2);
+  }
+  if (currentModule->NodeUHPtr->Edge) {
+    Disconnect(currentModule, 3);
+  }
+  // ---------- Destroy module in the module list -----
+  for (unsigned int i = 0; i < moduleList.size(); ++i) {
+    if (currentModule == moduleList.at(i)) {
+      moduleList.at(i).reset();
+      moduleList.erase(moduleList.begin()+i);
+      break;
+    }
+  }
+  currentWorld->GetModel(module_name)->Fini();
+  needToSetPtr -= 1;
+}
+void WorldServer::PassiveConnect(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2, int node1_ID, int node2_ID, 
+    double node_angle, double node_distance)
+{
+  if (!AlreadyConnected(module_1, module_2, node1_ID, node2_ID)) {
+    SmoresEdgePtr new_connection(new SmoresEdge(module_1->GetNode(node1_ID),
+        module_2->GetNode(node2_ID),node_distance,node_angle,
+        module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID)));
+    connectionEdges.push_back(new_connection);
+    module_1->GetNode(node1_ID)->ConnectOnEdge(new_connection);
+    module_2->GetNode(node2_ID)->ConnectOnEdge(new_connection);
+    // Adding the dynamic joint after adding the new edge
+    ConnectAndDynamicJointGeneration(module_1, module_2, node1_ID, node2_ID, 
+        new_connection);
+  }
+} // WorldServer::PassiveConnect
+void WorldServer::PassiveConnect(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2, int node1_ID, int node2_ID)
+{
+  PassiveConnect(module_1, module_2, node1_ID, node2_ID, 0, 0);
+} // WorldServer::PassiveConnect
+void WorldServer::ActiveConnect(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2, int node1_ID, int node2_ID, 
+    double node_angle, double node_distance)
+{
+  if (!AlreadyConnected(module_1, module_2, node1_ID, node2_ID))
+  {
+    SmoresEdgePtr new_connection(new SmoresEdge(module_1->GetNode(node1_ID),
+        module_2->GetNode(node2_ID),node_distance,node_angle,
+        module_1->GetNodeAxis(node1_ID),module_2->GetNodeAxis(node2_ID)));
+    connectionEdges.push_back(new_connection);
+    module_1->GetNode(node1_ID)->ConnectOnEdge(new_connection);
+    module_2->GetNode(node2_ID)->ConnectOnEdge(new_connection);
+    // Adding the dynamic joint after adding the new edge
+    ConnectAndDynamicJointGeneration(module_1, module_2, node1_ID, node2_ID,
+        new_connection);
+  }
+} // WorldServer::ActiveConnect
+void WorldServer::ActiveConnect(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2, int node1_ID, int node2_ID)
+{
+  ActiveConnect(module_1, module_2, node1_ID, node2_ID, 0, 0);
+} // WorldServer::ActiveConnect
+void WorldServer::Disconnect(SmoresEdgePtr edge)
+{
+  DynamicJointDestroy(edge);
+  edge->model_1->Edge.reset();
+  edge->model_2->Edge.reset();
+  for (unsigned int i = 0; i < connectionEdges.size(); ++i) {
+    if (connectionEdges.at(i)==edge) {
+      connectionEdges.at(i).reset();
+      connectionEdges.erase(connectionEdges.begin()+i);
+      break;
+    }
+  }
+} // WorldServer::Disconnect
+void WorldServer::Disconnect(SmoresModulePtr module, int node_ID)
+{
+  SmoresEdgePtr edge = module->GetNode(node_ID)->GetEdge();
+  this->Disconnect(edge);
+} // WorldServer::Disconnect
+void WorldServer::Disconnect(string module_name, int node_ID)
+{
+  SmoresEdgePtr edge = 
+      GetModulePtrByName(module_name)->GetNode(node_ID)->GetEdge();
+  this->Disconnect(edge);
+} // WorldServer::Disconnect
+void WorldServer::Disconnect(string module_name1, string module_name2)
+{
+  for (unsigned int i = 0; i < connectionEdges.size(); ++i) {
+    string model1_in_edge = connectionEdges.at(i)->model_1->Parent->ModuleID;
+    string model2_in_edge = connectionEdges.at(i)->model_2->Parent->ModuleID;
+    if ((model1_in_edge.compare(module_name1)==0 
+        && model2_in_edge.compare(module_name2)==0)
+        || (model1_in_edge.compare(module_name2)==0
+        && model2_in_edge.compare(module_name1)==0)) {
+      DynamicJointDestroy(connectionEdges.at(i));
+      connectionEdges.at(i)->model_1->Edge.reset();
+      connectionEdges.at(i)->model_2->Edge.reset();
+      connectionEdges.at(i).reset();
+      connectionEdges.erase(connectionEdges.begin()+i);
+      break;
+    }
+  }
+} // WorldServer::Disconnect
+void WorldServer::CommandManager(void)
+{
+  for (unsigned int i = 0; i < moduleCommandContainer.size(); ++i)
+  {
+    ModuleCommandsPtr current_command_container
+        = moduleCommandContainer.at(i);
+    // Time based gait-table checking
+    if (current_command_container->CommandSquence.at(0).TimeBased) {
+      if (current_command_container->CommandSquence.at(0).TimeInterval == 0) {
+        current_command_container->FinishedFlag = true;
+      }else{
+        current_command_container->FinishedFlag = false;
+      }
+    }
+    // Command execution processure
+    if (!current_command_container->FinishedFlag) {
+      if (!current_command_container->ReceivedFlag) {
+        if (current_command_container->CommandSquence.at(0)
+            .ConditionOnOtherCommand) {
+          // Condition checking
+          if (CheckCondition(
+              current_command_container->CommandSquence.at(0).Dependency)) {
+            CommandExecution(current_command_container);
+          }
+          // TODO: Check whether this part is necessary in logic
+          // else
+          // {
+          //   // current_command_container->FinishedFlag = false;
+          //   // current_command_container->ReceivedFlag = false;
+          //   cout<<"World: is waiting for condition: "
+          //       << current_command_container->CommandSquence.at(0).Dependency
+          //       <<endl;
+          // }
+        }else{
+          CommandExecution(current_command_container);
+        }
+      }else{
+        // Timer Count Down
+        if (current_command_container->CommandSquence.at(0).TimeBased) {
+          current_command_container->CommandSquence.at(0).TimeInterval -= 1;
+        }
+      }
+    }else{
+      if (current_command_container->CommandSquence.at(0).ConditionCommand){
+        FinishOneConditionCommand(
+            current_command_container->CommandSquence.at(0).ConditionID);
+      }
+      current_command_container->CommandSquence.erase(
+          current_command_container->CommandSquence.begin());
+      current_command_container->ReceivedFlag = false;
+      current_command_container->FinishedFlag = false;
+      // Send confirm message back to model
+      command_message::msgs::CommandMessage finish_confirm_message;
+      finish_confirm_message.set_messagetype(0);
+      current_command_container->WhichModule->ModulePublisher
+          ->Publish(finish_confirm_message);
+      // Erase empty container
+      if (current_command_container->CommandSquence.size() == 0) {
+        cout<<"World: Erase the command sequence of "
+            <<current_command_container->WhichModule->ModuleID<<endl;
+        current_command_container->WhichModule->moduleCommandContainer.reset();
+        moduleCommandContainer.erase(moduleCommandContainer.begin()+i);
+      }
+    }
+  }
+} // WorldServer::CommandManager
+void WorldServer::CommandExecution(ModuleCommandsPtr current_command_container)
+{
+  if (current_command_container->CommandSquence.at(0).SpecialCommandFlag) {
+    if (current_command_container->CommandSquence.at(0).Command.CommandType == 1)
+    {
+      ActiveConnect(current_command_container->WhichModule, GetModulePtrByName(
+          current_command_container->CommandSquence.at(0).Command.Module2), 
+          current_command_container->CommandSquence.at(0).Command.Node1, 
+          current_command_container->CommandSquence.at(0).Command.Node2);
+      current_command_container->ReceivedFlag = true;
+      if (!current_command_container->CommandSquence.at(0).TimeBased) {
+        current_command_container->FinishedFlag = true;
+      }
+    }
+    if (current_command_container->CommandSquence.at(0).Command.CommandType == 2)
+    {
+      Disconnect(current_command_container->CommandSquence.at(0).Command.Module1, 
+          current_command_container->CommandSquence.at(0).Command.Module2);
+      current_command_container->ReceivedFlag = true;
+      if (!current_command_container->CommandSquence.at(0).TimeBased) {
+        current_command_container->FinishedFlag = true;
+      }
+    }
+  }else{
+    current_command_container->WhichModule->ModulePublisher->Publish(
+        *(current_command_container->CommandSquence.at(0).ActualCommandMessage));
+  }
+  cout<<"World: Model: "<<current_command_container->WhichModule->ModuleID
+      <<": command sent"<<endl;
+  cout<<"World: Size of the message is "
+      <<current_command_container->CommandSquence.size()<<endl;
+  current_command_container->ExecutionFlag = true;
+} // WorldServer::CommandExecution
+void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+    const double *gait_value, int msg_type, unsigned int time_stamp, 
+    string condition_str, string dependency_str) 
+    // unit of time_stamp is millisecond
+{
+  CommandPtr command_message(new command_message::msgs::CommandMessage());
+  command_message->set_messagetype(msg_type);
+  // TODO: Need to get rid of priority entirely
+  command_message->set_priority(0);
+  for (int i = 0; i < 4; ++i) {
+    command_message->add_jointgaittablestatus(flag[i]);
+    command_message->add_jointgaittable(gait_value[i]);
+  }
+  // Here is a patch for instantly executed command
+  // TODO: Need an elegant way to implement it
+  if (time_stamp == 0) {
+    time_stamp = 1;
+  }
+  CommandPro new_message(command_message,time_stamp);
+  if (condition_str.size()>0) {
+    new_message.SetCondition(condition_str);
+    AddCondition(condition_str);
+  }
+  if (dependency_str.size()>0) {
+    new_message.SetDependency(dependency_str);
+  }
+  if (!module->moduleCommandContainer) {
+    ModuleCommandsPtr new_command_message(new ModuleCommands(module));  
+    new_command_message->CommandSquence.push_back(new_message);
+    moduleCommandContainer.push_back(new_command_message);
+    module->moduleCommandContainer = new_command_message;
+    cout<<"World: "<<module->ModuleID<<" : command length: "
+        <<module->moduleCommandContainer->CommandSquence.size()<<endl;
+  }else{
+    module->moduleCommandContainer->CommandSquence.push_back(new_message);
+    cout<<"World: "<<module->ModuleID<<" : command length: "
+        <<module->moduleCommandContainer->CommandSquence.size()<<endl;
+  }
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+    const double *gait_value, int msg_type, unsigned int time_stamp) 
+    // unit of time_stamp is millisecond
+{
+  SendGaitTable(module, flag, gait_value, msg_type, time_stamp, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+    const double *gait_value, int msg_type, string condition_str, 
+    string dependency_str)
+{
+  CommandPtr command_message(new command_message::msgs::CommandMessage());
+  command_message->set_messagetype(msg_type);
+  command_message->set_priority(0);
+  for (int i = 0; i < 4; ++i) {
+    command_message->add_jointgaittablestatus(flag[i]);
+    command_message->add_jointgaittable(gait_value[i]);
+  }
+  CommandPro new_message(command_message);
+  if (condition_str.size()>0) {
+    new_message.SetCondition(condition_str);
+    AddCondition(condition_str);
+  }
+  if (dependency_str.size()>0) {
+    new_message.SetDependency(dependency_str);
+  }
+
+  if (!module->moduleCommandContainer) {
+    ModuleCommandsPtr new_command_message(new ModuleCommands(module));   
+    new_command_message->CommandSquence.push_back(new_message);
+    moduleCommandContainer.push_back(new_command_message);
+    module->moduleCommandContainer = new_command_message;
+    cout<<"World: "<<module->ModuleID<<" : command length: "
+        <<module->moduleCommandContainer->CommandSquence.size()<<endl;
+  }else{
+    module->moduleCommandContainer->CommandSquence.push_back(new_message);
+    cout<<"World: "<<module->ModuleID<<" : command length: "
+        <<module->moduleCommandContainer->CommandSquence.size()<<endl;
+  }
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+    const double *gait_value, int msg_type)
+{
+  SendGaitTable(module, flag, gait_value, msg_type, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
+    double gait_value, int msg_type, unsigned int time_stamp, 
+    string condition_str, string dependency_str)
+{
+  bool flag[4] = {false,false,false,false};
+  double gait_values[4] = {0,0,0,0};
+  flag[joint_ID] = true;
+  gait_values[joint_ID] = gait_value;
+  SendGaitTable(module, flag, gait_values, msg_type, time_stamp, 
+      condition_str, dependency_str);
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
+    double gait_value, int msg_type, unsigned int time_stamp)
+{
+  SendGaitTable(module, joint_ID, gait_value, msg_type, time_stamp, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
+    double gait_value, int msg_type, string condition_str, string dependency_str)
+{
+  bool flag[4] = {false,false,false,false};
+  double gait_values[4] = {0,0,0,0};
+  flag[joint_ID] = true;
+  gait_values[joint_ID] = gait_value;
+  SendGaitTable(module, flag, gait_values, msg_type, 
+      condition_str, dependency_str);
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
+    double gait_value, int msg_type)
+{
+  SendGaitTable(module, joint_ID, gait_value, msg_type, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, 
+    string module1, string module2, int node1, int node2, 
+    int command_type, unsigned int time_stamp, 
+    string condition_str, string dependency_str)
+{
+  CommandPro new_message;
+  // Here is a patch for instantly executed command
+  if (time_stamp == 0) {
+    time_stamp = 1;
+  }
+  new_message.SetTimer(time_stamp);
+  SpecialCommand special_command(command_type, module1, module2, node1, node2);
+  new_message.SetSpecialCommand(special_command);
+  cout<<"World: Special Command: condition: "<<condition_str
+      <<"; dependency: "<<dependency_str<<endl;
+  if (condition_str.size()>0) {
+    new_message.SetCondition(condition_str);
+    AddCondition(condition_str);
+  }
+  if (dependency_str.size()>0) {
+    new_message.SetDependency(dependency_str);
+  }
+  if (!module->moduleCommandContainer) {
+    ModuleCommandsPtr new_command_message(new ModuleCommands(module));    
+    new_command_message->CommandSquence.push_back(new_message);
+    moduleCommandContainer.push_back(new_command_message);
+    module->moduleCommandContainer = new_command_message;
+  }else{
+    module->moduleCommandContainer->CommandSquence.push_back(new_message);
+  }
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, 
+  string module1, string module2, int node1, int node2, 
+  int command_type, unsigned int time_stamp)
+{
+  SendGaitTable(module, module1, module2, node1, node2, 
+      command_type, time_stamp, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, 
+    string module1, string module2, int node1, int node2, 
+    int command_type, string condition_str, string dependency_str)
+{
+  CommandPro new_message;
+  SpecialCommand special_command(command_type, module1, module2, node1, node2);
+  new_message.SetSpecialCommand(special_command);
+  cout<<"World: Special Command: condition: "<<condition_str
+      <<"; dependency: "<<dependency_str<<endl;
+  if (condition_str.size()>0) {
+    new_message.SetCondition(condition_str);
+    AddCondition(condition_str);
+  }
+  if (dependency_str.size()>0) {
+    new_message.SetDependency(dependency_str);
+  }
+  if (!module->moduleCommandContainer) {
+    ModuleCommandsPtr new_command_message(new ModuleCommands(module));    
+    new_command_message->CommandSquence.push_back(new_message);
+    moduleCommandContainer.push_back(new_command_message);
+    module->moduleCommandContainer = new_command_message;
+  }else{
+    module->moduleCommandContainer->CommandSquence.push_back(new_message);
+  }
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTable(SmoresModulePtr module, 
+    string module1, string module2, int node1, int node2, int command_type)
+{
+  SendGaitTable(module, module1, module2, node1, node2, command_type, "", "");
+} // WorldServer::SendGaitTable
+void WorldServer::SendGaitTableInstance(SmoresModulePtr module, 
+    const bool *flag, const double *gait_value, int msg_type)
+{
+  CommandPtr connection_message(new command_message::msgs::CommandMessage());
+  connection_message->set_messagetype(msg_type);
+  connection_message->set_priority(-1);
+  for (int i = 0; i < 4; ++i) {
+    connection_message->add_jointgaittablestatus(flag[i]);
+    connection_message->add_jointgaittable(gait_value[i]);
+  }
+  module->ModulePublisher->Publish(*connection_message);
+} // WorldServer::SendGaitTableInstance
+void WorldServer::SendGaitTableInstance(SmoresModulePtr module, 
+    const bool *flag, const double *gait_value)
+{
+  SendGaitTableInstance(module, flag, gait_value, 4);
+} // WorldServer::SendGaitTableInstance
+void WorldServer::SendPositionInstance(SmoresModulePtr module, 
+  double x, double y, double orientation_angle)
+{
+  CommandPtr connection_message(new command_message::msgs::CommandMessage());
+  connection_message->set_messagetype(2);
+  connection_message->set_priority(-1);
+  connection_message->mutable_positionneedtobe()->mutable_position()->set_x(x);
+  connection_message->mutable_positionneedtobe()->mutable_position()->set_y(y);
+  connection_message->mutable_positionneedtobe()->mutable_position()
+      ->set_z(orientation_angle);
+  connection_message->mutable_positionneedtobe()->mutable_orientation()->set_x(0);
+  connection_message->mutable_positionneedtobe()->mutable_orientation()->set_y(0);
+  connection_message->mutable_positionneedtobe()->mutable_orientation()->set_z(0);
+  connection_message->mutable_positionneedtobe()->mutable_orientation()->set_w(0);
+  module->ModulePublisher->Publish(*connection_message);
+} // WorldServer::SendPositionInstance
+// TODO: Need to be tested
+void WorldServer::EraseComaands(SmoresModulePtr module) 
+{
+  if (module->moduleCommandContainer) {
+    EraseCommandPtrByModule(module);
+    module->moduleCommandContainer.reset();
+  }
+} // WorldServer::EraseComaands
+int WorldServer::GetNodeIDByName(string node_name)
+{
+  if (node_name.rfind("FrontWheel")!=string::npos) {
+    return 0;
+  }
+  if (node_name.rfind("LeftWheel")!=string::npos) {
+    return 1;
+  }
+  if (node_name.rfind("RightWheel")!=string::npos) {
+    return 2;
+  }
+  if (node_name.rfind("UHolderBody")!=string::npos) {
+    return 3;
+  }
+  Color::Modifier red_log(Color::FG_RED);
+  Color::Modifier def_log(Color::FG_DEFAULT);
+  cout<<red_log<<"WARNING: World: Wrong node number"<<def_log<<endl;
+  return 4; // When return 4, then there is no match found
+} // WorldServer::GetNodeIDByName
+SmoresModulePtr WorldServer::GetModulePtrByName(string module_name)
+{
+  SmoresModulePtr exist_module;
+  for (unsigned int i = 0; i < moduleList.size(); ++i) {
+    if (module_name.compare(moduleList.at(i)->ModuleID)==0) {
+      exist_module = moduleList.at(i);
+      break;
+    }
+  }
+  return exist_module;
+} // WorldServer::GetModulePtrByName
+void WorldServer::EraseCommandPtrByModule(SmoresModulePtr module_ptr)
+{
+  for (unsigned int i = 0; i < moduleCommandContainer.size(); ++i) {
+    if (module_ptr == moduleCommandContainer.at(i)->WhichModule) {
+      moduleCommandContainer.erase(moduleCommandContainer.begin()+i);
+      break;
+    }
+  }
+} // WorldServer::EraseCommandPtrByModule
+int WorldServer::GetModuleIndexByName(string module_name)
+{
+  int exist_module = -1;
+  for (unsigned int i = 0; i < moduleList.size(); ++i) {
+    if (module_name.compare(moduleList.at(i)->ModuleID)==0) {
+      exist_module = i;
+      break;
+    }
+  }
+  return exist_module;
+} // WorldServer::GetModuleIndexByName
+bool WorldServer::AlreadyConnected(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2, int node1_ID, int node2_ID)
+{
+  bool having_a_connection;
+  if((bool)module_1->GetNode(node1_ID)->Edge 
+      && (bool)module_2->GetNode(node2_ID)->Edge) {
+    having_a_connection = true;
+  }else{
+    having_a_connection = false;
+  }
+  return having_a_connection;
+} // WorldServer::AlreadyConnected
+bool WorldServer::AlreadyConnected(SmoresModulePtr module_1, 
+    SmoresModulePtr module_2)
+{
+  bool having_a_connection = false;
+  for (int j = 0; j < 4; ++j) {
+    if (module_1->GetNode(j)->Edge) {
+      SmoresModulePtr connected_module = module_1->GetNode(j)->Edge
+          ->FindMatchingNode(module_1->GetNode(j))->Parent;
+      if (connected_module == module_2) {
+        having_a_connection = true;
+        break;
+      }
+    }
+  }
+  return having_a_connection;
+} // WorldServer::AlreadyConnected
+bool WorldServer::AlreadyConnected(SmoresModulePtr module, int node_ID)
+{
+  bool having_a_connection = false;
+  if (module->GetNode(node_ID)->Edge) {
+    having_a_connection = true;
+  }
+  return having_a_connection;
+} // WorldServer::AlreadyConnected
+// // This is a BFS (Breath First Search)
+// unsigned int WorldServer::CountModules(SmoresModulePtr module)
+// {
+//   vector<SmoresModulePtr> vector1;
+//   vector<SmoresModulePtr> vector2;
+//   vector<SmoresModulePtr> vector3;
+//   vector1.push_back(module);
+//   vector3.push_back(module);
+//   unsigned int module_count = 0;
+//   while(1)
+//   {
+//     if (vector1.size()>0)
+//     {
+//       module_count += vector1.size();
+//       for (unsigned int i = 0; i < vector1.size(); ++i)
+//       {
+//         for (int j = 0; j < 4; ++j)
+//         {
+//           if(vector1.at(i)->GetNode(j)->Edge)
+//           {
+            // SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge
+            //     ->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
+//             vector2.push_back(ConnectedModule);
+//           }
+//         }
+//       }
+//       vector1.clear();
+//       for (unsigned int i = 0; i < vector2.size(); ++i)
+//       {
+//         bool have_it = true;
+//         for (unsigned int j = 0; j < vector3.size(); ++j)
+//         {
+//           if (vector2.at(i) == vector3.at(j))
+//           {
+//             have_it = false;
+//             break;
+//           }
+//         }
+//         if (have_it)
+//         {
+//           vector1.push_back(vector2.at(i));
+//           vector3.push_back(vector2.at(i));
+//         }
+//       }
+//       vector2.clear();
+//     }else{
+//       break;
+//     }
+//   }
+//   return module_count;
+// }
+// A replacement of the old function, a BFS (Breath First Search)
+// TODO: Need to be tested
+unsigned int WorldServer::CountModules(SmoresModulePtr module)
+{
+  std::queue<SmoresModulePtr> frontier;
+  vector<SmoresModulePtr> cluster;
+  frontier.push(module);
+  while (frontier.size()>0) {
+    if (std::find(cluster.begin(), cluster.end(), frontier.front())
+        ==cluster.end()) {
+      cluster.push_back(frontier.front());
+      for (int i = 0; i < 4; ++i) {
+        if (frontier.front()->GetNode(i)->Edge) {
+          SmoresModulePtr connected_module = frontier.front()->GetNode(i)->Edge
+              ->FindMatchingNode(frontier.front()->GetNode(i))->Parent;
+          frontier.push(connected_module);
+        }
+      }
+    }
+    frontier.pop();
+  }
+  return cluster.size();
+} // WorldServer::CountModules
+unsigned int WorldServer::GetInitialJointSequenceSize(void)
+{
+  return initalJointValue.size();
+} // WorldServer::GetInitialJointSequenceSize
+// void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
+// {
+//   string output;
+//   ifstream infile;
+//   infile.open(fileName);
+//   int smallcount = 0;
+//   double joints_values[4] = {0,0,0,0};
+//   bool flags[4] = {true,true,true,true};
+//   int commandType[4] = {0,0,0,0};
+//   // int model_number;
+//   string model_name;
+//   // int group_num = 0;
+//   bool SpecialCommandFlag = false;
+//   bool timeBased = false;
+//   int SpecialCommandType = 0;
+//   unsigned int time_interval = 0;
+//   string condition = "";
+//   string dependency = "";
+//   // A temporary variable
+//   int commandTypeSwitch = 0;
+//   if (infile.is_open()) {
+//     while (!infile.eof()) 
+//     {
+//       infile >> output;
+//       // cout<<output<<endl;
+//       if (smallcount == 0 && output.compare("$") == 0)
+//       {
+//         SpecialCommandFlag = true;
+//         smallcount ++ ;
+//         continue;
+//       }
+//       if (SpecialCommandFlag)
+//       {
+//         if (output.compare("-") == 0)
+//         {
+//           SpecialCommandType = 1; // Disconnection
+//           // cout<<"World: Added a disconnection message"<<endl;
+//         }
+//         if (output.compare("+") == 0)
+//         {
+//           SpecialCommandType = 2; // Connection
+//         }
+//         // if (SpecialCommandType == 0)
+//         // {
+//         //   cout<<"World: Readcommands: Unrecoginized command"<<endl;
+//         // }
+//         bool findEnd = false;
+//         string modelname1 = "";
+//         string modelname2 = "";
+//         int node1 = 4;
+//         int node2 = 4;
+//         while(!findEnd)
+//         {
+//           infile >> output;
+//           if (output.find(";") != string::npos)
+//           {
+//             findEnd = true;
+//           }
+//           if (output.find("&") != string::npos)
+//           {
+//             if (modelname1.size() == 0)
+//             {
+//               modelname1 = output.substr(1);
+//             }else
+//             {
+//               if (modelname2.size() == 0)
+//               {
+//                 modelname2 = output.substr(1);
+//               }
+//             }
+//             continue;
+//           }
+//           if (output.find("#") != string::npos)
+//           {
+//             if (node1 == 4)
+//             {
+//               node1 = atoi(output.substr(1).c_str());
+//             }else
+//             {
+//               if (node2 == 4)
+//               {
+//                 node2 = atoi(output.substr(1).c_str());
+//               }
+//             }
+//             continue;
+//           }
+//           if (output.find("[") != string::npos)
+//           {
+//             output = output.substr(output.find("["));
+//             time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//             timeBased = true;
+//           }
+//           if (output.find("{") != string::npos)
+//           {
+//             output = output.substr(output.find("{"));
+//             condition = output.substr(1,output.find("}")-1);
+//             // AddCondition(condition);
+//             cout<<"World: condition is: "<<condition<<endl;
+//           }
+//           if (output.find("(") != string::npos)
+//           {
+//             output = output.substr(output.find("("));
+//             dependency = output.substr(1,output.find(")")-1);
+//             cout<<"World: dependency is: "<<dependency<<endl;
+//           }
+//         }
+//         // Gait table be sent
+//         if (SpecialCommandType == 1)
+//         {
+//           if (modelname1.size()>0 && modelname2.size()>0)
+//           {
+//             if (time_interval > 0)
+//             {
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 2,time_interval,condition,dependency);
+            // }else{
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 2,condition,dependency);
+//             }
+//           }
+//         }
+//         if (SpecialCommandType == 2)
+//         {
+//           if (modelname1.size()>0 && modelname2.size()>0 && node1<4 && node2<4)
+//           {
+//             if (time_interval > 0)
+//             {
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 1,time_interval,condition,dependency);
+            // }else{
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 1,condition,dependency);
+//             }
+//           }
+//         }
+//         smallcount = -1;
+//         time_interval = 0;
+//         condition = "";
+//         dependency = "";
+//         timeBased = false;
+//         SpecialCommandFlag = false;
+//       }else
+//       {
+//         switch(smallcount)
+//         {
+//           case 0:model_name = output;break;
+//           case 1:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[0] = false;
+//               commandType[0] = 0;
+//               joints_values[0] = 0;
+//             }else
+//             {
+//               flags[0] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 1;
+//                 commandTypeSwitch = 3;
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 2;
+//                 commandTypeSwitch = 4;
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 3;
+//                 flags[0] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[0] = 0;
+//                 commandType[0] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[0] = 0;
+//                 commandType[0] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 2:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[1] = false;
+//               commandType[1] = 0;
+//               joints_values[1] = 0;
+//             }else
+//             {
+//               flags[1] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[1] = false;
+//                   joints_values[1] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[1] = false;
+//                   joints_values[1] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 3;
+//                 flags[1] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[1] = 0;
+//                 commandType[1] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[1] = 0;
+//                 commandType[1] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 3:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[2] = false;
+//               commandType[2] = 0;
+//               joints_values[2] = 0;
+//             }else
+//             {
+//               flags[2] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[2] = false;
+//                   joints_values[2] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[2] = false;
+//                   joints_values[2] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 3;
+//                 flags[2] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[2] = 0;
+//                 commandType[2] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[2] = 0;
+//                 commandType[2] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 4:
+//           {
+//             bool commandEndHere = false;
+//             if (output.find(";") != string::npos)
+//             {
+//               commandEndHere = true;
+//               output = output.substr(0,output.find(";"));
+//             }
+//             if (output.compare("i") == 0)
+//             {
+//               flags[3] = false;
+//               commandType[3] = 0;
+//               joints_values[3] = 0;
+//             }else
+//             {
+//               flags[3] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[3] = false;
+//                   joints_values[3] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[3] = false;
+//                   joints_values[3] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 3;
+//                 flags[3] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[3] = 0;
+//                 commandType[3] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[3] = 0;
+//                 commandType[3] = 5;
+//               }
+//             }
+//             if (commandEndHere)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+              // SendGaitTable(GetModulePtrByName(model_name),flags, joints_values,
+              //     commandTypeSwitch);
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 5:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 6:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+//                 SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                      // commandTypeSwitch, time_interval, condition, dependency);
+//               }else{
+                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                //     commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 7:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                //     commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 8:
+//           {
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }else{
+//               cout<<"World: Readcommands: no semi-colon at all"<<endl;
+//             }
+//             break;
+//           }
+//         }
+//       }
+//       smallcount ++ ;
+//     }
+//   }
+//   infile.close();
+// }
+void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
+{
+  ifstream infile;
+  infile.open(fileName);
+  string output;
+  string candidate_str;
+  bool special_command = false;
+  if (infile.is_open()) {
+    while (!infile.eof()) {
+      infile >> output;
+      // Find special command
+      if (candidate_str.size() == 0) {
+        if (output.find("$") != string::npos) {
+          special_command = true;
+          if (output.size()>1 && output.at(output.size()-1) != '$') {
+            output = output.substr(output.find("$")+1);
+          }
+          if (output.size() == 1) {
+            continue;
+          }
+        }
+      }
+      if (output.find(";") != string::npos) {
+        if (output.find(";") != 0) {
+          candidate_str += output.substr(0,output.find(";"));
+        }else{
+          candidate_str = candidate_str.substr(0,candidate_str.size()-1);
+        }
+        if (special_command) {
+          InterpretSpecialString(candidate_str);
+        }else{
+          InterpretCommonGaitString(candidate_str);
+        }
+        special_command = false;
+        candidate_str.erase();
+      }else{
+        candidate_str += output + ' ';
+      }
+    }
+  }
+} // WorldServer::ReadFileAndGenerateCommands
+void WorldServer::InterpretCommonGaitString(string a_command_str)
+{
+  Color::Modifier yellow_log(Color::FG_YELLOW,true);
+  Color::Modifier def_log(Color::FG_DEFAULT);
+  cout<<yellow_log<<"World: Command str: "<<a_command_str<<def_log<<";"<<endl;
+  int time_interval = StripOffTimerInCommandString(a_command_str);
+  string condition = StripOffCondition(a_command_str);
+  string dependency = StripOffDependency(a_command_str);
+  string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
+  a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
+  bool flags[4] = {false, false, false, false};
+  double joints_values[4] = {0, 0, 0, 0};
+  FigureInterpret(a_command_str, flags, joints_values);
+  if (time_interval >=0 ) {
+    SendGaitTable(GetModulePtrByName(model_name), flags, joints_values, 
+        3, time_interval, condition, dependency);
+  }else{
+    SendGaitTable(GetModulePtrByName(model_name), flags, joints_values, 
+        3, condition, dependency);
+  }
+} // WorldServer::InterpretCommonGaitString
+void WorldServer::InterpretSpecialString(string a_command_str)
+{
+  Color::Modifier green_log(Color::FG_GREEN);
+  Color::Modifier def_log(Color::FG_DEFAULT);
+  cout<<green_log<<"World: Special command str: "
+      <<a_command_str<<def_log<<";"<<endl;
+  int time_interval = StripOffTimerInCommandString(a_command_str);
+  string condition = StripOffCondition(a_command_str);
+  string dependency = StripOffDependency(a_command_str);
+  int command_type = 0;
+  if (a_command_str.at(0) == '+')
+    command_type = 1;
+  if (a_command_str.at(0) == '-')
+    command_type = 2;
+  // Find all the Module names
+  vector<string> module_names;
+  while(a_command_str.find_first_of('&') != string::npos)
+  {
+    unsigned int symbol_pos = a_command_str.find_first_of('&');
+    unsigned int space_pos = a_command_str.find_first_of(' ', symbol_pos);
+    module_names.push_back(a_command_str.substr(symbol_pos+1,
+        space_pos-symbol_pos-1));
+    a_command_str = a_command_str.substr(0,symbol_pos)
+        +a_command_str.substr(space_pos+1);
+  }
+  // Find all the node number
+  vector<int> node_ids;
+  while(a_command_str.find_first_of('#') != string::npos)
+  {
+    unsigned int symbol_pos = a_command_str.find_first_of('#');
+    unsigned int space_pos = a_command_str.find_first_of(' ', symbol_pos);
+    node_ids.push_back(atoi(a_command_str.substr(symbol_pos+1,
+        space_pos-symbol_pos-1).c_str()));
+    a_command_str = a_command_str.substr(0,symbol_pos)
+        +a_command_str.substr(space_pos+1);
+  }
+  if (time_interval >=0 ) {
+    SendGaitTable(GetModulePtrByName(module_names.at(0)), module_names.at(0), 
+        module_names.at(1), node_ids.at(0), node_ids.at(1), command_type, 
+        time_interval, condition, dependency);
+  }else{
+    SendGaitTable(GetModulePtrByName(module_names.at(0)), module_names.at(0), 
+        module_names.at(1), node_ids.at(0), node_ids.at(1), command_type, 
+        condition, dependency);
+  }
+} // WorldServer::InterpretSpecialString
+// TODO: This is at a very low API level
+//       need to implement all the features in the future
+void WorldServer::FigureInterpret(string joints_spec, bool *type_flags, 
+    double *joint_values)
+{
+  int sequence_iter = 0;
+  while (joints_spec.size()>0 || sequence_iter < 4) {
+    unsigned int space_location = joints_spec.find_first_of(' ');
+    string mini_unit =  joints_spec.substr(0, space_location);
+    joints_spec = joints_spec.substr(space_location+1);
+    if (mini_unit.at(0) == 'p')
+      type_flags[sequence_iter] = true;
+    if (mini_unit.at(0) == 's')
+      type_flags[sequence_iter] = false;
+    if (mini_unit.at(0) == 't')
+      type_flags[sequence_iter] = false;
+    if (mini_unit.at(0) == 'i')
+      type_flags[sequence_iter] = false;
+    if (mini_unit.at(0) == 'c')
+      type_flags[sequence_iter] = false;
+    if (mini_unit.at(0) == 'd')
+      type_flags[sequence_iter] = false;
+    if (mini_unit.substr(1).size()>0)
+      joint_values[sequence_iter] = atof(mini_unit.substr(1).c_str());
+    ++sequence_iter;
+  }
+} // WorldServer::FigureInterpret
+int WorldServer::StripOffTimerInCommandString(string &command_string)
+{
+  if (command_string.find("[") != string::npos) {
+    unsigned int left_brace_pos = command_string.find("[");
+    unsigned int right_brace_pos = command_string.find("]");
+    string time_str = command_string.substr(left_brace_pos+1,
+        right_brace_pos-left_brace_pos-1);
+    command_string = command_string.substr(0,left_brace_pos-1)
+        + command_string.substr(right_brace_pos+1);
+    cout<<"World: command timer: "<<time_str<<endl;
+    return atoi(time_str.c_str());
+  }
+  return -1;
+} // WorldServer::StripOffTimerInCommandString
+string WorldServer::StripOffCondition(string &command_string)
+{
+  if (command_string.find("{") != string::npos) {
+    unsigned int left_brace_pos = command_string.find("{");
+    unsigned int right_brace_pos = command_string.find("}");
+    string condition = command_string.substr(left_brace_pos+1,
+        right_brace_pos-left_brace_pos-1);
+    command_string = command_string.substr(0,left_brace_pos-1)
+        + command_string.substr(right_brace_pos+1);
+    cout<<"World: command condition: "<<condition<<endl;
+    return condition;
+  }
+  return "";
+} // WorldServer::StripOffCondition
+string WorldServer::StripOffDependency(string &command_string)
+{
+  if (command_string.find("(") != string::npos) {
+    unsigned int left_brace_pos = command_string.find("(");
+    unsigned int right_brace_pos = command_string.find(")");
+    string dependency = command_string.substr(left_brace_pos+1,
+        right_brace_pos-left_brace_pos-1);
+    command_string = command_string.substr(0,left_brace_pos-1)
+        + command_string.substr(right_brace_pos+1);
+    cout<<"World: command dependency: "<<dependency<<endl;
+    return dependency;
+  }
+  return "";
+} // WorldServer::StripOffDependency
+void WorldServer::AddCondition(string condition_id)
+{
+  bool not_exist = true;
+  for (unsigned int i = 0; i < commandConditions.size(); ++i) {
+    if (commandConditions.at(i)->condition_id.compare(condition_id) == 0) {
+      commandConditions.at(i)->total_count += 1;
+      not_exist = false;
+      break;
+    }
+  }
+  if (not_exist) {
+    ConditionPtr new_condition(new Condition(condition_id));
+    commandConditions.push_back(new_condition);
+  }
+} // WorldServer::AddCondition
+void WorldServer::FinishOneConditionCommand(string condition_id)
+{
+  for (unsigned int i = 0; i < commandConditions.size(); ++i) {
+    if (commandConditions.at(i)->condition_id.compare(condition_id) == 0) {
+      commandConditions.at(i)->finished_count += 1;
+      if (commandConditions.at(i)->finished_count 
+          >= commandConditions.at(i)->total_count) {
+        commandConditions.at(i)->achieved = true;
+        cout<<"World: condition: "<<commandConditions.at(i)->condition_id
+            <<" :achieved"<<endl;
+      }
+      break;
+    }
+  }
+} // WorldServer::FinishOneConditionCommand
+bool WorldServer::CheckCondition(string condition_id)
+{
+  for (unsigned int i = 0; i < commandConditions.size(); ++i) {
+    if (commandConditions.at(i)->condition_id.compare(condition_id) == 0) {
+      return commandConditions.at(i)->achieved;
+    }
+  }
+  cout<<"World: didn't find the condition"<<endl;
+  return true;
+} // WorldServer::CheckCondition
+} // namespace gazebo

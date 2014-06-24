@@ -1,4 +1,4 @@
-package collision_message_plus.msgs;
+package collision_message.msgs;
 // import "gz_string.proto";
 import "pose.proto";
 

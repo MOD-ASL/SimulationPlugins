@@ -8,13 +8,20 @@ if (PKG_CONFIG_FOUND)
 endif()
 include_directories(
 	${GAZEBO_INCLUDE_DIRS}
-	${CMAKE_CURRENT_BINARY_DIR}/msgs
+	${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition
 	${CMAKE_CURRENT_BINARY_DIR}/../../Libraries/
 	${CMAKE_CURRENT_BINARY_DIR}/../
 	)
-link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/msgs)
-add_subdirectory(msgs)
+# Include all folders in Util folder
+FILE(GLOB _ALL_FILES ${CMAKE_CURRENT_BINARY_DIR}/../../Util/ ${CMAKE_CURRENT_BINARY_DIR}/../../Util/*)
+FOREACH(_FILE ${_ALL_FILES})
+  IF(IS_DIRECTORY ${_FILE})
+    INCLUDE_DIRECTORIES(${_FILE})
+  ENDIF()
+ENDFOREACH()
+link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition)
+add_subdirectory(../MessageDefinition MessageDefinition)
 
-add_library(SuperServer SHARED SuperServer.cc SmoresNode.cc SmoresEdge.cc SmoresModule.cc)
-target_link_libraries(SuperServer collision_message_plus command_message ${GAZEBO_libraries} ${Boost_LIBRARIES})
-add_dependencies(SuperServer collision_message_plus command_message)
+add_library(WorldServer SHARED WorldServer.cc SmoresNode.cc SmoresEdge.cc SmoresModule.cc CollisionInformation.cc Condition.cc CommandManagement.cc)
+target_link_libraries(WorldServer collision_message command_message ${GAZEBO_libraries} ${Boost_LIBRARIES})
+add_dependencies(WorldServer collision_message command_message)
