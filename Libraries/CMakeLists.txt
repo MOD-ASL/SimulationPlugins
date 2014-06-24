@@ -16,3 +16,6 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(LibraryTemplate SHARED LibraryTemplate.cc)
 target_link_libraries(LibraryTemplate ${GAZEBO_libraries} ${Boost_LIBRARIES})
+
+add_library(SpiderController SHARED SpiderController.cc)
+target_link_libraries(SpiderController ${GAZEBO_libraries} ${Boost_LIBRARIES})

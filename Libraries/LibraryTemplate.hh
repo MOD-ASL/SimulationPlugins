@@ -1,9 +1,14 @@
 #ifndef _LIBRARY_TEMPLATE_HH_
 #define _LIBRARY_TEMPLATE_HH_
 
-#include "SuperServer.hh"
+#include "WorldServer.hh"
 
 using namespace std;
+
+namespace gazebo
+{
+	class ControlCenter;
+}
 
 class LibraryTemplate
 {
