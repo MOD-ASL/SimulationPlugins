@@ -30,6 +30,7 @@ class SmoresModule(object):
         module is the root.  inactive_nodes is a list of numbers (again, 0-3)
         specifying which nodes should be considered inactive in this module.
         '''
+        self.W = 0.05  # width of a module (constant)
         # name:
         self.name = name
         # root node number:
@@ -68,7 +69,7 @@ class SmoresModule(object):
             for i in [0,2,4]:
                 n[1].add_child( n[i], bfInR*cInB(i), Joint(J(i)) )
         if root_node_number == 4:
-            n[4].add_child( n[1], Frame( Vector(1, 0, 0)), Joint(Joint.RotY) )
+            n[4].add_child( n[1], Frame( Vector(self.W, 0, 0)), Joint(Joint.RotY) )
             for i in [0, 2, 3]:
                 #n[1].add_child( n[i], bfInR*cInB(i), Joint(J(i)))
                 n[1].add_child( n[i], cInB(i), Joint(J(i)))
@@ -130,15 +131,15 @@ class SmoresModule(object):
         Returns the Frame transform from the root node to the base frame.
         '''
         if root_node_number is 0:
-            return Frame( Rotation.RPY(0, 0, pi), Vector(1, 0, 0) )
+            return Frame( Rotation.RPY(0, 0, pi), Vector(self.W, 0, 0) )
         elif root_node_number is 1:
             assert False, 'node 1 may not be root.'
         elif root_node_number is 2:
-            return Frame( Rotation.RPY(0, 0, pi/2), Vector(1, 0, 0) )
+            return Frame( Rotation.RPY(0, 0, pi/2), Vector(self.W, 0, 0) )
         elif root_node_number is 3:
-            return Frame( Rotation.RPY(0, 0, pi/2), Vector(1, 0, 0) )
+            return Frame( Rotation.RPY(0, 0, pi/2), Vector(self.W, 0, 0) )
         elif root_node_number is 4:
-            return Frame( Vector(1, 0, 0) )
+            return Frame( Vector(self.W, 0, 0) )
         else:
             assert False, 'node number ' + str(root_node_number) + ' is invalid.'
             
@@ -147,13 +148,13 @@ class SmoresModule(object):
         Returns Frame transform from base frame to a child node.
         '''
         if child_node_number is 0:
-            return Frame( Vector(1, 0, 0) )
+            return Frame( Vector(self.W, 0, 0) )
         elif child_node_number is 1:
             assert False, 'node 1 frame is determined by root.'
         elif child_node_number is 2:
-            return Frame( Rotation.RPY(0, 0, pi/2), Vector(0, 1, 0) )
+            return Frame( Rotation.RPY(0, 0, pi/2), Vector(0, self.W, 0) )
         elif child_node_number is 3:
-            return Frame( Rotation.RPY(0, 0, -pi/2), Vector(0, -1, 0) )
+            return Frame( Rotation.RPY(0, 0, -pi/2), Vector(0, -self.W, 0) )
         elif child_node_number is 4:
             return Frame( Rotation.RPY(0, 0, pi ) )
         else:

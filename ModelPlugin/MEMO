@@ -1,9 +1,0 @@
-MEMO
-Authur: Edward Cui
-
-Time: 11:40 9/6/2013
-1. The rotation rate in Gazebo has the unit of rad/s
-2. One wired thing is GetAngle() function in Joint, no matter what kind of index input, the output will always be the right angle!!!!!
-   In the following link: https://bitbucket.org/osrf/gazebo/src/a3b9596dc9e6ee289fe03c603102a4561ac1dc4f/gazebo/physics/ode/ODESliderJoint.cc?at=default#cl-62
-   indicate that GetAngle() will just ignore the input axis
-3. The frame defined model coordinates has 90 degree difference with the frame defined angle.

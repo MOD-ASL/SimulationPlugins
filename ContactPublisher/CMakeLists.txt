@@ -7,5 +7,5 @@ endif()
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(contact SHARED ContactSensor.cc)
+add_library(contact SHARED ContactPublisher.cc)
 target_link_libraries(contact ${GAZEBO_libraries})

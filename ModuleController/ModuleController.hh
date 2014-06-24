@@ -18,10 +18,10 @@
 #include <gazebo/common/common.hh>
 // Google protocol buffers
 // Classes for communication between different plugins
-#include "collision_message_plus.pb.h"
+#include "collision_message.pb.h"
 #include "command_message.pb.h"
 // The head file which contains the joint_plus structure
-#include "JointPlus.hh"
+#include "SmoresJoint.hh"
 
 #define PI 3.1415926
 #define EXECUTIONERROR 0.08
@@ -30,8 +30,8 @@ using std::vector;
 using std::string;
 
 // Useful pointer type declaration
-typedef const boost::shared_ptr<const msgs::GzString> GzStringPtr;
-typedef const boost::shared_ptr<const msgs::Pose> PosePtr;
+typedef const boost::shared_ptr<const gazebo::msgs::GzString> GzStringPtr;
+typedef const boost::shared_ptr<const gazebo::msgs::Pose> PosePtr;
 typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> 
     CommandMessagePtr;
 
@@ -40,13 +40,13 @@ namespace gazebo
 // This class programmed follows the gazebo model plugin standard
 // All the low level controllers of SMORES robot are in here
 // A graphic structure can be find here: 
-class ModelController : public ModelPlugin 
+class ModuleController : public ModelPlugin 
 {
  public:
   /// Constructor
-  ModelController();
+  ModuleController();
   /// Destructor
-  ~ModelController();
+  ~ModuleController();
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+  Useful functions to get model status and other tool functions  +
@@ -67,8 +67,8 @@ class ModelController : public ModelPlugin
   /// This function is used to apply a complementary filter
   /// With a default factor of 0.9
   double ComplementaryFilter(double filtering_value, double *value_history);
-  /// This function is used to return the JointPlus structure according to the node ID
-  JointPlus & GetJointPlus(int node_ID);
+  /// This function is used to return the SmoresJoint structure according to the node ID
+  SmoresJoint & GetJointPlus(int node_ID);
   /// This function is used to return the index of joint axis according to the node ID
   int GetJointAxis(int node_ID);
   /// This function will return the angle of the specified joint
@@ -103,8 +103,8 @@ class ModelController : public ModelPlugin
   /// This function apply a PID controller to control the joint speed 
   /// and to achieve the specified angle
   void JointPIDController(double angle_desired_radian, 
-      double desire_speed, JointPlus *current_joint);
-  void JointPIDController(double angle_desired_radian, JointPlus *current_joint);
+      double desire_speed, SmoresJoint *current_joint);
+  void JointPIDController(double angle_desired_radian, SmoresJoint *current_joint);
   /// Joint Plus member update function
   void JointAngleUpdateInJointPlus(void);
   /// This function will set the rotation rate of the joint
@@ -156,10 +156,10 @@ class ModelController : public ModelPlugin
   physics::JointPtr jointWF;
   physics::JointPtr jointCB;
   // An enhanced struct which is useful when apply PID controllers
-  JointPlus jointWRP;
-  JointPlus jointWLP;
-  JointPlus jointWFP;
-  JointPlus jointCBP;
+  SmoresJoint jointWRP;
+  SmoresJoint jointWLP;
+  SmoresJoint jointWFP;
+  SmoresJoint jointCBP;
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                     Model plugin events                         +
@@ -185,7 +185,7 @@ class ModelController : public ModelPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                 Model Execution Variables                       +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  int executionSate; // 0 for waiting mode, 
+  int executionState; // 0 for waiting mode, 
                      // 1 for planar motion mode, 
                      // 2 for joint control mode, 
                      // 3 for direct control mode 
@@ -197,6 +197,6 @@ class ModelController : public ModelPlugin
   // DEPRECATED: This is no longer needed
   // TODO: command id should be implemented in the future
   int commandPriority;
-}; // class ModelController
+}; // class ModuleController
 } // namespace gazebo
 #endif

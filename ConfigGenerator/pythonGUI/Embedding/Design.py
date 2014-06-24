@@ -11,6 +11,7 @@ import roslib
 roslib.load_manifest('kdl')
 from PyKDL import *
 from math import pi
+import pdb
 
 class Design(object):
     '''

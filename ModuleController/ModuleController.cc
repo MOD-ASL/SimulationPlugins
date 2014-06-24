@@ -1,4 +1,4 @@
-#include "ModelController.hh"
+#include "ModuleController.hh"
 
 using std::vector;
 using std::string;
@@ -6,7 +6,7 @@ using std::cout;
 using std::endl;
 
 namespace gazebo{
-ModelController::ModelController() 
+ModuleController::ModuleController() 
     : ModelPlugin(), jointAngleKPID(5.5,0,0.75), modelAngleKPID(1,0,0)
 {
   // Variables Initialization
@@ -17,7 +17,7 @@ ModelController::ModelController()
   planarMotionStopThreshold = 0.016;
   wheelRadius =  0.045275;
   // Execution Parameter Initialization
-  executionSate = 0;
+  executionState = 0;
   for (unsigned i = 0; i < 4; ++i) jointAngleShouldBe[i] = 0;
   lftWheelSpeed = 0;
   rgtWheelSpeed = 0;
@@ -25,29 +25,29 @@ ModelController::ModelController()
   commandPriority = 0;
   // A hint of model been initialized
   cout<<"Model Initiated\n";
-} // ModelController::ModelController
-ModelController::~ModelController()
+} // ModuleController::ModuleController
+ModuleController::~ModuleController()
 {
   this->model.reset();
   this->jointWR.reset();
   this->jointWL.reset();
   this->jointWF.reset();
   this->jointCB.reset();
-} // ModelController::~ModelController
-double ModelController::RevolutionSpeedCal(physics::JointPtr joint, 
+} // ModuleController::~ModuleController
+double ModuleController::RevolutionSpeedCal(physics::JointPtr joint, 
     const int axis_index)
 {
   // The unit of this rotation rate is "rad/s"
   double rev_speed = joint->GetVelocity(axis_index);
   return rev_speed;
-} // ModelController::RevolutionSpeedCal
-math::Pose ModelController::GetModelCentralCoor(void)
+} // ModuleController::RevolutionSpeedCal
+math::Pose ModuleController::GetModelCentralCoor(void)
 {
   physics::ModelState current_model_state(model);
   math::Pose model_position = current_model_state.GetPose();
   return model_position;
-} // ModelController::GetModelCentralCoor
-math::Angle ModelController::AngleCalculation2Points(
+} // ModuleController::GetModelCentralCoor
+math::Angle ModuleController::AngleCalculation2Points(
     math::Vector2d start_point, math::Vector2d end_point)
 {
   double displacement_X = end_point.x - start_point.x;
@@ -55,8 +55,8 @@ math::Angle ModelController::AngleCalculation2Points(
   double angle_C = atan2(displacement_Y,displacement_X);
   math::Angle return_angle(angle_C + PI/2);
   return return_angle;
-} // ModelController::AngleCalculation2Points
-double ModelController::ComplementaryFilter(double filtering_value, 
+} // ModuleController::AngleCalculation2Points
+double ModuleController::ComplementaryFilter(double filtering_value, 
     double complement_filter_par, double *value_history)
 {
   double filtered_value;
@@ -64,13 +64,13 @@ double ModelController::ComplementaryFilter(double filtering_value,
       + complement_filter_par*(*value_history);
   *value_history = filtered_value;
   return filtered_value;
-} // ModelController::ComplementaryFilter
-double ModelController::ComplementaryFilter(double filtering_value, 
+} // ModuleController::ComplementaryFilter
+double ModuleController::ComplementaryFilter(double filtering_value, 
     double *value_history)
 {
   return ComplementaryFilter(filtering_value, 0.9, value_history);
-} // ModelController::ComplementaryFilter
-JointPlus & ModelController::GetJointPlus(int node_ID)
+} // ModuleController::ComplementaryFilter
+SmoresJoint & ModuleController::GetJointPlus(int node_ID)
 {
   if (node_ID == 1){
     return jointWLP;
@@ -82,8 +82,8 @@ JointPlus & ModelController::GetJointPlus(int node_ID)
     return jointCBP;
   }
   return jointWFP;
-} // ModelController::GetJointPlus
-int ModelController::GetJointAxis(int node_ID)
+} // ModuleController::GetJointPlus
+int ModuleController::GetJointAxis(int node_ID)
 {
   int axis_idx = 0;
   switch(node_ID){
@@ -93,14 +93,14 @@ int ModelController::GetJointAxis(int node_ID)
     case 3:axis_idx = 0;break;
   }
   return axis_idx;
-} // ModelController::GetJointAxis
-math::Angle ModelController::GetJointAngle(
+} // ModuleController::GetJointAxis
+math::Angle ModuleController::GetJointAngle(
     physics::JointPtr current_joint, int rot_axis)
 {
   math::Angle current_joint_angle = current_joint->GetAngle(rot_axis);
   return current_joint_angle;
-} // ModelController::GetJointAngle
-void ModelController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
+} // ModuleController::GetJointAngle
+void ModuleController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
   // Model plugin initialization, mainly for joints
   SystemInitialization(_parent);
@@ -108,17 +108,17 @@ void ModelController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   node->Init();
   this->welcomeInfoSub = node->Subscribe(
-      "~/Welcome",&ModelController::WelcomInfoProcessor, this);  
+      "~/Welcome",&ModuleController::WelcomInfoProcessor, this);  
   // Bind function which will be executed in each iteration
   this->updateConnection = event::Events::ConnectWorldUpdateBegin(
-      boost::bind(&ModelController::OnSystemRunning, this, _1));
-} // ModelController::Load
-void ModelController::WelcomInfoProcessor(GzStringPtr &msg)
+      boost::bind(&ModuleController::OnSystemRunning, this, _1));
+} // ModuleController::Load
+void ModuleController::WelcomInfoProcessor(GzStringPtr &msg)
 {
   string info_received = msg->data();
   // TODO: currently there is no reaction for receiving welcome information
-} // ModelController::WelcomInfoProcessor
-void ModelController::SystemInitialization(physics::ModelPtr parent_model)
+} // ModuleController::WelcomInfoProcessor
+void ModuleController::SystemInitialization(physics::ModelPtr parent_model)
 {
   // Get all the pointers set
   this->model = parent_model;
@@ -165,7 +165,7 @@ void ModelController::SystemInitialization(physics::ModelPtr parent_model)
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   node->Init(model->GetName());
   this->commandSub = node->Subscribe(
-      topic_name,&ModelController::CommandDecoding, this);
+      topic_name,&ModuleController::CommandDecoding, this);
   this->commandPub = node->Advertise<command_message::msgs::CommandMessage>(
       topic_name_pub);
   CollisionPubAndSubInitialization();
@@ -174,14 +174,14 @@ void ModelController::SystemInitialization(physics::ModelPtr parent_model)
   feed_back_message.set_messagetype(5);
   feed_back_message.set_stringmessage(model->GetName());
   commandPub->Publish(feed_back_message);
-} // ModelController::SystemInitialization
-void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
+} // ModuleController::SystemInitialization
+void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
 {
   // Update the states that are stored in joint plus
   // It is mainly for joint angle PID controller
   JointAngleUpdateInJointPlus();
   // Command execution
-  if (executionSate == 1){
+  if (executionState == 1){
     math::Vector2d final_position(targetPosition.pos.x,targetPosition.pos.y);
     math::Angle final_orientation(targetPosition.pos.z);
     Move2Point(final_position,final_orientation);
@@ -189,7 +189,7 @@ void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
       PositionTracking(); // A feedback message will be sent after acheiving the goal
     }
   }
-  if (executionSate == 2){
+  if (executionState == 2){
     for (int i = 0; i < 4; ++i){
       JointPIDController(jointAngleShouldBe[i], &GetJointPlus(i));
     }
@@ -197,42 +197,42 @@ void ModelController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
       JointAngleTracking(); // A feedback message will be sent after acheiving the goal
     }
   }
-  if (executionSate == 3){
+  if (executionState == 3){
     JointPIDController(jointAngleShouldBe[0], &GetJointPlus(0));
     JointPIDController(jointAngleShouldBe[3], &GetJointPlus(3));
     SetJointSpeed(jointWL, 0, lftWheelSpeed);
     SetJointSpeed(jointWR, 0, rgtWheelSpeed);
   }
-} // ModelController::OnSystemRunning
-void ModelController::CollisionPubAndSubInitialization(void)
+} // ModuleController::OnSystemRunning
+void ModuleController::CollisionPubAndSubInitialization(void)
 {
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   // Initialize the node with the model name
   node->Init(model->GetName());
   string topic_name = "~/" + model->GetName() + "::FrontWheel::front_contact";
   this->linkCollisonSub[0] = node->Subscribe(
-      topic_name,&ModelController::CollisionReceivingCallback,this);
+      topic_name,&ModuleController::CollisionReceivingCallback,this);
   topic_name = "~/" + model->GetName() + "::UHolderBody::UHolder_contact";
   this->linkCollisonSub[1] = node->Subscribe(
-      topic_name,&ModelController::CollisionReceivingCallback,this);
+      topic_name,&ModuleController::CollisionReceivingCallback,this);
   topic_name = "~/" + model->GetName() + "::LeftWheel::LeftWheel_contact";
   this->linkCollisonSub[2] = node->Subscribe(
-      topic_name,&ModelController::CollisionReceivingCallback,this);
+      topic_name,&ModuleController::CollisionReceivingCallback,this);
   topic_name = "~/" + model->GetName() + "::RightWheel::RightWheel_contact";
   this->linkCollisonSub[3] = node->Subscribe(
-      topic_name,&ModelController::CollisionReceivingCallback,this);
+      topic_name,&ModuleController::CollisionReceivingCallback,this);
 
   string collision_pub_name = "~/"+model->GetName()+"_Collision";
   collisionInfoToServer = node
-      ->Advertise<collision_message_plus::msgs::CollisionMessage>(collision_pub_name);
-} // ModelController::CollisionPubAndSubInitialization
-void ModelController::CollisionReceivingCallback(GzStringPtr &msg)
+      ->Advertise<collision_message::msgs::CollisionMessage>(collision_pub_name);
+} // ModuleController::CollisionPubAndSubInitialization
+void ModuleController::CollisionReceivingCallback(GzStringPtr &msg)
 {
   string msgs_info = msg->data();
   // Get the names of the links that involve in the collision
   string collison1 = msgs_info.substr(0,msgs_info.find(","));
   string collison2 = msgs_info.substr(msgs_info.find(",")+1,-1);
-  collision_message_plus::msgs::CollisionMessage forward_collision_msgs;
+  collision_message::msgs::CollisionMessage forward_collision_msgs;
   string link_name;
   // Changed the order of reported collisions
   // Make the link of the current model at the first
@@ -256,8 +256,8 @@ void ModelController::CollisionReceivingCallback(GzStringPtr &msg)
       ->CopyFrom(position_of_collision_link);
   // Publish this information to world plugin
   collisionInfoToServer->Publish(forward_collision_msgs);
-} // ModelController::CollisionReceivingCallback
-void ModelController::CommandDecoding(CommandMessagePtr &msg)
+} // ModuleController::CollisionReceivingCallback
+void ModuleController::CommandDecoding(CommandMessagePtr &msg)
 {
   int command_type = msg->messagetype();
   command_message::msgs::CommandMessage feed_back_message;
@@ -268,13 +268,13 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
     //             due to the new representation
     case 1:{nameOfConnectedModels.push_back(msg->stringmessage());break;}
     case 2:{
-      this->executionSate = 1;
+      this->executionState = 1;
       this->targetPosition = gazebo::msgs::Convert(msg->positionneedtobe());
       commandPub->Publish(feed_back_message);
       break;
     }
     case 3:{
-      this->executionSate = 2;
+      this->executionState = 2;
       for (int i = 0; i < 4; ++i){
         if (msg->jointgaittablestatus(i)){
           this->jointAngleShouldBe[i] = msg->jointgaittable(i);
@@ -293,7 +293,7 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
       break;
     }
     case 4:{
-      this->executionSate = 3;
+      this->executionState = 3;
       for (int i = 0; i < 4; ++i){
         if (i==0 || i==3){
           if (msg->jointgaittablestatus(i)){
@@ -320,14 +320,14 @@ void ModelController::CommandDecoding(CommandMessagePtr &msg)
     startExecution = true;
     commandPriority = msg->priority();
   }
-} // ModelController::CommandDecoding
-void ModelController::SetJointAngleForce(physics::JointPtr current_joint, 
+} // ModuleController::CommandDecoding
+void ModuleController::SetJointAngleForce(physics::JointPtr current_joint, 
     int rot_axis, math::Angle angle_desired)
 {
   current_joint->SetAngle(rot_axis, angle_desired);
-} // ModelController::SetJointAngleForce
-void ModelController::JointPIDController(double angle_desired_radian, 
-    double desire_speed, JointPlus *current_joint) 
+} // ModuleController::SetJointAngleForce
+void ModuleController::JointPIDController(double angle_desired_radian, 
+    double desire_speed, SmoresJoint *current_joint) 
     // Desired Speed is a percentage of the maximum speed
 {
   double angle_error = 0, angle_diff_error = 0;
@@ -346,20 +346,20 @@ void ModelController::JointPIDController(double angle_desired_radian,
   }
   SetJointSpeed(current_joint->jointPtr,rot_axis,speed);
   current_joint->jointErrorHis = angle_error;
-} // ModelController::JointPIDController
-void ModelController::JointPIDController(double angle_desired_radian, 
-    JointPlus *current_joint)
+} // ModuleController::JointPIDController
+void ModuleController::JointPIDController(double angle_desired_radian, 
+    SmoresJoint *current_joint)
 {
   JointPIDController(angle_desired_radian, 0.8, current_joint);
-} // ModelController::JointPIDController
-void ModelController::JointAngleUpdateInJointPlus(void)
+} // ModuleController::JointPIDController
+void ModuleController::JointAngleUpdateInJointPlus(void)
 {
   jointWRP.jointAngleNow = GetJointAngle(jointWR,0);
   jointWLP.jointAngleNow = GetJointAngle(jointWL,0);
   jointWFP.jointAngleNow = GetJointAngle(jointWF,0);
   jointCBP.jointAngleNow = GetJointAngle(jointCB,0);
-} // ModelController::JointAngleUpdateInJointPlus
-void ModelController::SetJointSpeed(physics::JointPtr current_joint, 
+} // ModuleController::JointAngleUpdateInJointPlus
+void ModuleController::SetJointSpeed(physics::JointPtr current_joint, 
     int rot_axis, double speed_desired)
     // TODO: The first PID may not be necessary
 {
@@ -367,8 +367,8 @@ void ModelController::SetJointSpeed(physics::JointPtr current_joint,
     speed_desired = speed_desired>0?maxiRotationRate:-maxiRotationRate;
   }
   current_joint->SetVelocity(rot_axis,speed_desired);
-} // ModelController::SetJointSpeed
-void ModelController::JointAngleTracking(void)
+} // ModuleController::SetJointSpeed
+void ModuleController::JointAngleTracking(void)
 {
   bool execution_finished_flag = true;
   if (abs(GetJointAngle(jointWF,0).Radian()-jointAngleShouldBe[0])>EXECUTIONERROR){
@@ -390,8 +390,8 @@ void ModelController::JointAngleTracking(void)
     feed_back_message.set_stringmessage(model->GetName()+":finished");
     commandPub->Publish(feed_back_message);
   }
-} // ModelController::JointAngleTracking
-void ModelController::PositionTracking(void)
+} // ModuleController::JointAngleTracking
+void ModuleController::PositionTracking(void)
 {
   bool execution_finished_flag = true;
   math::Vector2d module_pos(
@@ -414,8 +414,8 @@ void ModelController::PositionTracking(void)
     feed_back_message.set_stringmessage(model->GetName()+":finished");
     commandPub->Publish(feed_back_message);
   }
-} // ModelController::PositionTracking
-void ModelController::AnglePIDController(math::Angle desired_angle, 
+} // ModuleController::PositionTracking
+void ModuleController::AnglePIDController(math::Angle desired_angle, 
     math::Angle current_angle, math::Vector2d current_speed)
 {
   double angle_error = 0, angle_error_diff = 0, diff_speed_control = 0;
@@ -443,8 +443,8 @@ void ModelController::AnglePIDController(math::Angle desired_angle,
   SetJointSpeed(jointWR, 0, right_wheel_speed);
   SetJointSpeed(jointWL, 0, left_wheel_speed);
   angle_error_his = angle_error;
-} // ModelController::AnglePIDController
-void ModelController::Move2Point(math::Vector2d desired_point, 
+} // ModuleController::AnglePIDController
+void ModuleController::Move2Point(math::Vector2d desired_point, 
     math::Angle desired_orientation)
 {
   math::Pose current_position = GetModelCentralCoor();
@@ -463,6 +463,6 @@ void ModelController::Move2Point(math::Vector2d desired_point,
     AnglePIDController(
         desired_orientation, current_position.rot.GetYaw(), current_speed);
   }
-} // ModelController::Move2Point
-GZ_REGISTER_MODEL_PLUGIN(ModelController)
+} // ModuleController::Move2Point
+GZ_REGISTER_MODEL_PLUGIN(ModuleController)
 } // namespace gazebo

@@ -29,7 +29,7 @@ class GzCommunicator(object):
 
         self.TCP_BUFFER_SIZE = 40960
 
-    def StartCommunicator(self):
+    def StartCommunicator(self,topic,messagetype):
         """Start the communication through gztopic"""
         # Listen for Subscribers
         s_sub = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,8 +45,8 @@ class GzCommunicator(object):
         pk.type       = "advertise"
 
         pub           = Publish()
-        pub.topic     = "/gazebo/Configuration/configSubscriber"
-        pub.msg_type  = 'config_message.msgs.ConfigMessage'
+        pub.topic     = topic       #"/gazebo/Configuration/configSubscriber"
+        pub.msg_type  = messagetype #'config_message.msgs.ConfigMessage'
         pub.host      = self.NODE_TCP_IP
         pub.port      = self.NODE_TCP_PORT
 

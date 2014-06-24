@@ -1,4 +1,4 @@
-#include "ContactSensor.hh"
+#include "ContactPublisher.hh"
 // Declaration of the objects used from standard libraries
 using std::string;
 using std::cout;
@@ -53,12 +53,13 @@ void ContactSensor::OnUpdate()
         // Get rid of the collision with ground plane
     {
       // Publish the topic to model
-      string collision_msgs = contacts.contact(i).collision1() + "," + contacts.contact(i).collision2();
+      string collision_msgs = 
+          contacts.contact(i).collision1() + "," + contacts.contact(i).collision2();
       msgs::GzString gzstr_collision_message;
       gzstr_collision_message.set_data(collision_msgs);
       collisionPub->Publish(gzstr_collision_message);
 
-      //+++++++++++++++ Showing the position of the contact points +++++++++++++++++++++++
+      //+++++++++++++++ Showing the position of the contact points +++++++++++++++
       // for (unsigned int j = 0; j < contacts.contact(i).position_size(); ++j)
       // {
       //   cout << j << "  Position:"
@@ -71,7 +72,7 @@ void ContactSensor::OnUpdate()
       //        << contacts.contact(i).normal(j).z() << "\n";
       //   cout << "   Depth:" << contacts.contact(i).depth(j) << "\n";
       // }
-      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       break;
     }
   }

@@ -1,11 +1,11 @@
-#ifndef _GAZEBO_JOINT_PLUS_HH_
-#define _GAZEBO_JOINT_PLUS_HH_
+#ifndef _GAZEBO_SMORES_JOINT_HH_
+#define _GAZEBO_SMORES_JOINT_HH_
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 
 namespace gazebo{
-struct JointPlus
+struct SmoresJoint
 {
 	physics::JointPtr jointPtr;
 	math::Angle jointAngleNow;

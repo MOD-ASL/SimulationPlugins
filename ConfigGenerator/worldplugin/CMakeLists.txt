@@ -8,11 +8,28 @@ if (PKG_CONFIG_FOUND)
 endif()
 include_directories(
 	${GAZEBO_INCLUDE_DIRS}
-	${CMAKE_CURRENT_BINARY_DIR}/msgs
+	${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition
+	${CMAKE_CURRENT_BINARY_DIR}/../../../Libraries/
+	${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/
 	)
-link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/msgs)
-add_subdirectory(msgs)
+# Include all folders in Util folder
+FILE(GLOB _ALL_FILES ${CMAKE_CURRENT_BINARY_DIR}/../../../Util/ ${CMAKE_CURRENT_BINARY_DIR}/../../../Util/*)
+FOREACH(_FILE ${_ALL_FILES})
+  IF(IS_DIRECTORY ${_FILE})
+    INCLUDE_DIRECTORIES(${_FILE})
+  ENDIF()
+ENDFOREACH()
+link_directories(${GAZEBO_LIBRARY_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition)
+add_subdirectory(../../MessageDefinition MessageDefinition)
+# add_subdirectory(../../WorldPlugin WorldPlugin)
 
-add_library(ConfigGenerator SHARED ConfigGenerator.cc SmoresNode.cc SmoresEdge.cc SmoresModule.cc)
-target_link_libraries(ConfigGenerator collision_message_plus command_message config_message ${GAZEBO_libraries} ${Boost_LIBRARIES})
-add_dependencies(ConfigGenerator collision_message_plus command_message config_message)
+add_library(ConfigEditor SHARED ConfigEditor.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/WorldServer.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/SmoresNode.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/SmoresEdge.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/SmoresModule.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/CollisionInformation.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/Condition.cc 
+		${CMAKE_CURRENT_BINARY_DIR}/../../../WorldPlugin/CommandManagement.cc)
+target_link_libraries(ConfigEditor collision_message command_message config_message ${GAZEBO_libraries} ${Boost_LIBRARIES})
+add_dependencies(ConfigEditor collision_message command_message config_message)
