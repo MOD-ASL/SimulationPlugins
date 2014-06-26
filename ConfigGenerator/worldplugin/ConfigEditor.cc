@@ -14,10 +14,9 @@ void ConfigEditor::InsertModel(string name, math::Pose position)
     sdf::readFile(MODULEPATH, model_sdf);
     sdf::ElementPtr model_element = model_sdf->root->GetElement("model");
     math::Pose position_calibrate(
-        math::Vector3(position.pos.x, position.pos.y, position.pos.z-0.05), 
-        position.rot);
+        math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
     model_element->GetAttribute("name")->Set(name);
-    model_element->GetElement("pose")->Set(position_calibrate);
+    model_element->GetElement("pose")->Set(position_calibrate*position);
     currentWorld->InsertModelSDF(*model_sdf);
     AddInitialPosition(position);
   }else{
@@ -38,10 +37,9 @@ void ConfigEditor::InsertModel(string name, math::Pose position,
     sdf::readFile(MODULEPATH, model_sdf);
     sdf::ElementPtr model_element = model_sdf->root->GetElement("model");
     math::Pose position_calibrate(
-        math::Vector3(position.pos.x, position.pos.y, position.pos.z-0.05), 
-        position.rot);
+        math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
     model_element->GetAttribute("name")->Set(name);
-    model_element->GetElement("pose")->Set(position_calibrate);
+    model_element->GetElement("pose")->Set(position_calibrate*position);
     currentWorld->InsertModelSDF(*model_sdf);
     AddInitialJoints(joint_angles);
     AddInitialPosition(position);
