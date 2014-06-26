@@ -1,3 +1,7 @@
+#--------------- System related ----------------------
+import time
+from subprocess import call, Popen, PIPE
+import sys
 #--------------- GUI Modules -------------------------
 from Tkinter import *
 import ttk
@@ -8,6 +12,7 @@ from Module import *
 from Connection import *
 import xml.etree.ElementTree as ET   # XML parser
 #--------------- Communiation related ----------------
+sys.path.append("/home/edward/Simulation Plugins/Util/python_util")
 from config_message_pb2 import *
 # import eventlet  # need to install: $:sudo pip install eventlet
 # from pygazebo import *  #need to install: $: sudo pip install pygazebo
@@ -21,10 +26,6 @@ import kinematics
 from numpy import pi
 #--------------- Debuggin Tools ----------------------
 import pdb
-#--------------- System related ----------------------
-import time
-from subprocess import call, Popen, PIPE
-import sys
 
 window_width = 800
 window_height = 520
