@@ -3,6 +3,8 @@
 
 #include "WorldServer.hh"
 
+#define INTIALCONFIGURATION "InitialConfiguration"
+
 namespace gazebo{
 class WorldController : public WorldServer
 {

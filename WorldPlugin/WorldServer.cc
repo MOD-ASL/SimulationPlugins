@@ -1747,6 +1747,7 @@ void WorldServer::InterpretCommonGaitString(string a_command_str)
   string dependency = StripOffDependency(a_command_str);
   string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
   a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
+  cout<<"World: The command string is: "<<a_command_str<<endl;
   bool flags[4] = {false, false, false, false};
   double joints_values[4] = {0, 0, 0, 0};
   FigureInterpret(a_command_str, flags, joints_values);
@@ -1774,6 +1775,7 @@ void WorldServer::InterpretSpecialString(string a_command_str)
     command_type = 2;
   // Find all the Module names
   vector<string> module_names;
+  a_command_str += " ";
   while(a_command_str.find_first_of('&') != string::npos)
   {
     unsigned int symbol_pos = a_command_str.find_first_of('&');
@@ -1794,6 +1796,10 @@ void WorldServer::InterpretSpecialString(string a_command_str)
     a_command_str = a_command_str.substr(0,symbol_pos)
         +a_command_str.substr(space_pos+1);
   }
+  // TODO: This is not an elegant solution
+  while (node_ids.size()<2) {
+    node_ids.push_back(0);
+  }
   if (time_interval >=0 ) {
     SendGaitTable(GetModulePtrByName(module_names.at(0)), module_names.at(0), 
         module_names.at(1), node_ids.at(0), node_ids.at(1), command_type, 
@@ -1804,16 +1810,20 @@ void WorldServer::InterpretSpecialString(string a_command_str)
         condition, dependency);
   }
 } // WorldServer::InterpretSpecialString
-// TODO: This is at a very low API level
+// TODO: This is at a very low API level of SGST
 //       need to implement all the features in the future
 void WorldServer::FigureInterpret(string joints_spec, bool *type_flags, 
     double *joint_values)
 {
   int sequence_iter = 0;
-  while (joints_spec.size()>0 || sequence_iter < 4) {
+  while (joints_spec.size()>0 && sequence_iter < 4) {
     unsigned int space_location = joints_spec.find_first_of(' ');
-    string mini_unit =  joints_spec.substr(0, space_location);
-    joints_spec = joints_spec.substr(space_location+1);
+    string mini_unit;
+    if (sequence_iter < 3) {
+      mini_unit =  joints_spec.substr(0, space_location);
+      joints_spec = joints_spec.substr(space_location+1);
+    }else
+      mini_unit =  joints_spec.substr(0);
     if (mini_unit.at(0) == 'p')
       type_flags[sequence_iter] = true;
     if (mini_unit.at(0) == 's')
@@ -1828,7 +1838,7 @@ void WorldServer::FigureInterpret(string joints_spec, bool *type_flags,
       type_flags[sequence_iter] = false;
     if (mini_unit.substr(1).size()>0)
       joint_values[sequence_iter] = atof(mini_unit.substr(1).c_str());
-    ++sequence_iter;
+    sequence_iter++;
   }
 } // WorldServer::FigureInterpret
 int WorldServer::StripOffTimerInCommandString(string &command_string)
