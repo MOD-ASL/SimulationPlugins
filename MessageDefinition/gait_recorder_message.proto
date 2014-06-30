@@ -1,0 +1,18 @@
+package gait_recorder_message.msgs;
+
+message GaitRecMessage
+{
+	// NewFrame: true: Worldplugin will need to record the current localation of robot
+	// PlayStatus: true: command need to be executed through gaittable
+	// 						 false: command need to be executed through directly manipulation
+	required string ModelName = 1;
+	required bool NewFrame = 2;
+	required bool PlayStatus = 3;
+	repeated double JointAngles = 4 [packed=true];
+	optional int32 Timer = 5;
+	optional string Condition = 6;
+	optional string Dependency = 7;
+	optional string ExtrInfo = 8;
+	repeated bool Flags = 9 [packed=true];
+	optional bool ResetFlag = 10;
+}

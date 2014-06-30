@@ -2,6 +2,7 @@
 import time
 from subprocess import call, Popen, PIPE
 import sys
+from os.path import expanduser
 #--------------- GUI Modules -------------------------
 from Tkinter import *
 import ttk
@@ -35,7 +36,7 @@ PI = pi           #3.1415926 this value is close to the pi they used in the simu
 
 class App(Frame):
   
-  def __init__(self, parent,flag):
+  def __init__(self, parent, flag):
     Frame.__init__(self, parent)   
     
     #------------ Variables Initialization -------------------
@@ -65,6 +66,7 @@ class App(Frame):
     self.del_confirm = IntVar()
     self.initflag = flag
     self.ServerConnected = 0
+    self.home = expanduser("~")
 
     #------------ File Options -------------------------------
     self.file_opt = options = {}
@@ -587,6 +589,8 @@ class App(Frame):
     apathstr = self.savepathstr.get()
     if apathstr[-1] != '/':
       apathstr += '/'
+    if apathstr[0] == '~':
+        apathstr = self.home + apathstr[1:]
     f = open(apathstr+"InitialConfiguration", 'w')
     lines = ['<?xml version="1.0" encoding="UTF-8"?>\n']
     lines.append('<configuration>\n')

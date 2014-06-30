@@ -169,9 +169,12 @@ void WorldServer::BuildConnectionFromXML(string file_name)
     double angle = atof(angle_string.c_str());
     SmoresModulePtr model1_ptr = GetModulePtrByName(module1_name);
     SmoresModulePtr model2_ptr = GetModulePtrByName(module2_name);
+    math::Pose module1_pose = model1_ptr->ModuleObject->GetWorldPose();
+    math::Pose module2_pose = model2_ptr->ModuleObject->GetWorldPose();
     ActiveConnect(model1_ptr,model2_ptr,node1_ID,node2_ID, angle, distance);
     connection_node = connection_node->next_sibling();
   }
+  cout<<"World: Finishing up."<<endl;
 } // WorldServer::BuildConnectionFromXML
 void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
 {
@@ -321,12 +324,20 @@ void WorldServer::ConnectAndDynamicJointGeneration(
 {
   math::Pose ContactLinkPos = module_1->GetLinkPtr(node1_ID)->GetWorldPose();
   math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node2_ID)->GetWorldPose();
-  cout<<"World: Post position of the module 1: ("
+  cout<<"World: Pre position of the module 1:"
+      <<module_1->ModuleObject->GetName()<<": ("
       <<ContactLinkPos.pos.x<<","<<ContactLinkPos.pos.y<<","
-      <<ContactLinkPos.pos.z<<")"<<endl;
-  cout<<"World: Post position of the module 2: ("
+      <<ContactLinkPos.pos.z<<","
+      <<ContactLinkPos.rot.GetRoll()<<","
+      <<ContactLinkPos.rot.GetPitch()<<","
+      <<ContactLinkPos.rot.GetYaw()<<")"<<endl;
+  cout<<"World: Pre position of the module 2:"
+      <<module_2->ModuleObject->GetName()<<": ("
       <<PosOfTheOtherModel.pos.x<<","<<PosOfTheOtherModel.pos.y<<","
-      <<PosOfTheOtherModel.pos.z<<")"<<endl;
+      <<PosOfTheOtherModel.pos.z<<","
+      <<PosOfTheOtherModel.rot.GetRoll()<<","
+      <<PosOfTheOtherModel.rot.GetPitch()<<","
+      <<PosOfTheOtherModel.rot.GetYaw()<<")"<<endl;
   physics::LinkPtr Link1, Link2;
   math::Vector3 axis;
   math::Pose position_of_module1(math::Vector3(0,0,0),math::Quaternion(0,0,0,0));
@@ -346,6 +357,20 @@ void WorldServer::ConnectAndDynamicJointGeneration(
   module_1->ModuleObject->SetLinkWorldPose(position_of_module1,Link1);
   module_2->ModuleObject->SetLinkWorldPose(position_of_module2,Link2);
 
+  cout<<"World: Post position of the module 1:"
+      <<module_1->ModuleObject->GetName()<<": ("
+      <<position_of_module1.pos.x<<","<<position_of_module1.pos.y<<","
+      <<position_of_module1.pos.z<<","
+      <<position_of_module1.rot.GetRoll()<<","
+      <<position_of_module1.rot.GetPitch()<<","
+      <<position_of_module1.rot.GetYaw()<<")"<<endl;
+  cout<<"World: Post position of the module 2:"
+      <<module_2->ModuleObject->GetName()<<": ("
+      <<position_of_module2.pos.x<<","<<position_of_module2.pos.y<<","
+      <<position_of_module2.pos.z<<","
+      <<position_of_module2.rot.GetRoll()<<","
+      <<position_of_module2.rot.GetPitch()<<","
+      <<position_of_module2.rot.GetYaw()<<")"<<endl;
   //++++ This part of the code generate the dynamic joint +++++++++++++++++++++
   physics::JointPtr DynamicJoint;
   DynamicJoint = currentWorld->GetPhysicsEngine()->CreateJoint(
@@ -397,7 +422,7 @@ void WorldServer::NewPositionCalculation(SmoresEdgePtr an_edge,
       .Dot(x_axis_of_new_direction)*x_axis_of_new_direction;
   if (node1_ID == 1 || node1_ID == 2) {
     for (int i = 0; i < 3; ++i) {
-      z_rotation[i] = ConversionForAngleOverPi(z_rotation[i] - 3/2*PI);
+      z_rotation[i] = ConversionForAngleOverPi(z_rotation[i] - 3.0/2.0*PI);
     }
     new_position_of_link2 = old_pose_of_module1.pos 
         + (0.1+an_edge->Distance)*old_pose_of_module1.rot.GetXAxis();
@@ -993,6 +1018,18 @@ SmoresModulePtr WorldServer::GetModulePtrByName(string module_name)
   }
   return exist_module;
 } // WorldServer::GetModulePtrByName
+SmoresModulePtr WorldServer::GetModulePtrByIDX(unsigned int idx)
+{
+  SmoresModulePtr exist_module;
+  if (idx < moduleList.size()) {
+    exist_module = moduleList.at(idx);
+  }
+  return exist_module;
+} // WorldServer::GetModulePtrByIDX
+unsigned int WorldServer::GetModuleListSize(void)
+{
+  return moduleList.size();
+} // WorldServer::GetModuleListSize
 void WorldServer::EraseCommandPtrByModule(SmoresModulePtr module_ptr)
 {
   for (unsigned int i = 0; i < moduleCommandContainer.size(); ++i) {
@@ -1049,6 +1086,57 @@ bool WorldServer::AlreadyConnected(SmoresModulePtr module, int node_ID)
   }
   return having_a_connection;
 } // WorldServer::AlreadyConnected
+// // This is a BFS (Breath First Search)
+// unsigned int WorldServer::CountModules(SmoresModulePtr module)
+// {
+//   vector<SmoresModulePtr> vector1;
+//   vector<SmoresModulePtr> vector2;
+//   vector<SmoresModulePtr> vector3;
+//   vector1.push_back(module);
+//   vector3.push_back(module);
+//   unsigned int module_count = 0;
+//   while(1)
+//   {
+//     if (vector1.size()>0)
+//     {
+//       module_count += vector1.size();
+//       for (unsigned int i = 0; i < vector1.size(); ++i)
+//       {
+//         for (int j = 0; j < 4; ++j)
+//         {
+//           if(vector1.at(i)->GetNode(j)->Edge)
+//           {
+            // SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge
+            //     ->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
+//             vector2.push_back(ConnectedModule);
+//           }
+//         }
+//       }
+//       vector1.clear();
+//       for (unsigned int i = 0; i < vector2.size(); ++i)
+//       {
+//         bool have_it = true;
+//         for (unsigned int j = 0; j < vector3.size(); ++j)
+//         {
+//           if (vector2.at(i) == vector3.at(j))
+//           {
+//             have_it = false;
+//             break;
+//           }
+//         }
+//         if (have_it)
+//         {
+//           vector1.push_back(vector2.at(i));
+//           vector3.push_back(vector2.at(i));
+//         }
+//       }
+//       vector2.clear();
+//     }else{
+//       break;
+//     }
+//   }
+//   return module_count;
+// }
 // A replacement of the old function, a BFS (Breath First Search)
 // TODO: Need to be tested
 unsigned int WorldServer::CountModules(SmoresModulePtr module)
@@ -1076,6 +1164,538 @@ unsigned int WorldServer::GetInitialJointSequenceSize(void)
 {
   return initalJointValue.size();
 } // WorldServer::GetInitialJointSequenceSize
+// void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
+// {
+//   string output;
+//   ifstream infile;
+//   infile.open(fileName);
+//   int smallcount = 0;
+//   double joints_values[4] = {0,0,0,0};
+//   bool flags[4] = {true,true,true,true};
+//   int commandType[4] = {0,0,0,0};
+//   // int model_number;
+//   string model_name;
+//   // int group_num = 0;
+//   bool SpecialCommandFlag = false;
+//   bool timeBased = false;
+//   int SpecialCommandType = 0;
+//   unsigned int time_interval = 0;
+//   string condition = "";
+//   string dependency = "";
+//   // A temporary variable
+//   int commandTypeSwitch = 0;
+//   if (infile.is_open()) {
+//     while (!infile.eof()) 
+//     {
+//       infile >> output;
+//       // cout<<output<<endl;
+//       if (smallcount == 0 && output.compare("$") == 0)
+//       {
+//         SpecialCommandFlag = true;
+//         smallcount ++ ;
+//         continue;
+//       }
+//       if (SpecialCommandFlag)
+//       {
+//         if (output.compare("-") == 0)
+//         {
+//           SpecialCommandType = 1; // Disconnection
+//           // cout<<"World: Added a disconnection message"<<endl;
+//         }
+//         if (output.compare("+") == 0)
+//         {
+//           SpecialCommandType = 2; // Connection
+//         }
+//         // if (SpecialCommandType == 0)
+//         // {
+//         //   cout<<"World: Readcommands: Unrecoginized command"<<endl;
+//         // }
+//         bool findEnd = false;
+//         string modelname1 = "";
+//         string modelname2 = "";
+//         int node1 = 4;
+//         int node2 = 4;
+//         while(!findEnd)
+//         {
+//           infile >> output;
+//           if (output.find(";") != string::npos)
+//           {
+//             findEnd = true;
+//           }
+//           if (output.find("&") != string::npos)
+//           {
+//             if (modelname1.size() == 0)
+//             {
+//               modelname1 = output.substr(1);
+//             }else
+//             {
+//               if (modelname2.size() == 0)
+//               {
+//                 modelname2 = output.substr(1);
+//               }
+//             }
+//             continue;
+//           }
+//           if (output.find("#") != string::npos)
+//           {
+//             if (node1 == 4)
+//             {
+//               node1 = atoi(output.substr(1).c_str());
+//             }else
+//             {
+//               if (node2 == 4)
+//               {
+//                 node2 = atoi(output.substr(1).c_str());
+//               }
+//             }
+//             continue;
+//           }
+//           if (output.find("[") != string::npos)
+//           {
+//             output = output.substr(output.find("["));
+//             time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//             timeBased = true;
+//           }
+//           if (output.find("{") != string::npos)
+//           {
+//             output = output.substr(output.find("{"));
+//             condition = output.substr(1,output.find("}")-1);
+//             // AddCondition(condition);
+//             cout<<"World: condition is: "<<condition<<endl;
+//           }
+//           if (output.find("(") != string::npos)
+//           {
+//             output = output.substr(output.find("("));
+//             dependency = output.substr(1,output.find(")")-1);
+//             cout<<"World: dependency is: "<<dependency<<endl;
+//           }
+//         }
+//         // Gait table be sent
+//         if (SpecialCommandType == 1)
+//         {
+//           if (modelname1.size()>0 && modelname2.size()>0)
+//           {
+//             if (time_interval > 0)
+//             {
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 2,time_interval,condition,dependency);
+            // }else{
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 2,condition,dependency);
+//             }
+//           }
+//         }
+//         if (SpecialCommandType == 2)
+//         {
+//           if (modelname1.size()>0 && modelname2.size()>0 && node1<4 && node2<4)
+//           {
+//             if (time_interval > 0)
+//             {
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 1,time_interval,condition,dependency);
+            // }else{
+            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
+            //       node1, node2, 1,condition,dependency);
+//             }
+//           }
+//         }
+//         smallcount = -1;
+//         time_interval = 0;
+//         condition = "";
+//         dependency = "";
+//         timeBased = false;
+//         SpecialCommandFlag = false;
+//       }else
+//       {
+//         switch(smallcount)
+//         {
+//           case 0:model_name = output;break;
+//           case 1:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[0] = false;
+//               commandType[0] = 0;
+//               joints_values[0] = 0;
+//             }else
+//             {
+//               flags[0] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 1;
+//                 commandTypeSwitch = 3;
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 2;
+//                 commandTypeSwitch = 4;
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[0] = atof(output.substr(1).c_str());
+//                 commandType[0] = 3;
+//                 flags[0] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[0] = 0;
+//                 commandType[0] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[0] = 0;
+//                 commandType[0] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 2:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[1] = false;
+//               commandType[1] = 0;
+//               joints_values[1] = 0;
+//             }else
+//             {
+//               flags[1] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[1] = false;
+//                   joints_values[1] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[1] = false;
+//                   joints_values[1] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[1] = atof(output.substr(1).c_str());
+//                 commandType[1] = 3;
+//                 flags[1] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[1] = 0;
+//                 commandType[1] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[1] = 0;
+//                 commandType[1] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 3:
+//           {
+//             if (output.compare("i") == 0)
+//             {
+//               flags[2] = false;
+//               commandType[2] = 0;
+//               joints_values[2] = 0;
+//             }else
+//             {
+//               flags[2] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[2] = false;
+//                   joints_values[2] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[2] = false;
+//                   joints_values[2] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[2] = atof(output.substr(1).c_str());
+//                 commandType[2] = 3;
+//                 flags[2] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[2] = 0;
+//                 commandType[2] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[2] = 0;
+//                 commandType[2] = 5;
+//               }
+//             }
+//             break;
+//           }
+//           case 4:
+//           {
+//             bool commandEndHere = false;
+//             if (output.find(";") != string::npos)
+//             {
+//               commandEndHere = true;
+//               output = output.substr(0,output.find(";"));
+//             }
+//             if (output.compare("i") == 0)
+//             {
+//               flags[3] = false;
+//               commandType[3] = 0;
+//               joints_values[3] = 0;
+//             }else
+//             {
+//               flags[3] = true;
+//               if (output.substr(0,1).compare("p") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 1;
+//                 if (commandTypeSwitch == 4)
+//                 {
+//                   flags[3] = false;
+//                   joints_values[3] = 0;
+//                 }else{
+//                   commandTypeSwitch = 3;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("s") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 2;
+//                 if (commandTypeSwitch == 3)
+//                 {
+//                   flags[3] = false;
+//                   joints_values[3] = 0;
+//                 }else{
+//                   commandTypeSwitch = 4;
+//                 }
+//               }
+//               if (output.substr(0,1).compare("t") == 0)
+//               {
+//                 joints_values[3] = atof(output.substr(1).c_str());
+//                 commandType[3] = 3;
+//                 flags[3] = true;
+//               }
+//               if (output.compare("c") == 0)
+//               {
+//                 joints_values[3] = 0;
+//                 commandType[3] = 4;
+//               }
+//               if (output.compare("d") == 0)
+//               {
+//                 joints_values[3] = 0;
+//                 commandType[3] = 5;
+//               }
+//             }
+//             if (commandEndHere)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+              // SendGaitTable(GetModulePtrByName(model_name),flags, joints_values,
+              //     commandTypeSwitch);
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 5:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 6:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+//                 SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                      // commandTypeSwitch, time_interval, condition, dependency);
+//               }else{
+                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                //     commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 7:
+//           {
+//             if (output.find("[") != string::npos)
+//             {
+//               output = output.substr(output.find("["));
+//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
+//               timeBased = true;
+//             }
+//             if (output.find("{") != string::npos)
+//             {
+//               output = output.substr(output.find("{"));
+//               condition = output.substr(1,output.find("}")-1);
+//               // AddCondition(condition);
+//               cout<<"World: condition is: "<<condition<<endl;
+//             }
+//             if (output.find("(") != string::npos)
+//             {
+//               output = output.substr(output.find("("));
+//               dependency = output.substr(1,output.find(")")-1);
+//               cout<<"World: dependency is: "<<dependency<<endl;
+//             }
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+                //     commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }
+//             break;
+//           }
+//           case 8:
+//           {
+//             if (output.compare(";") == 0 || output.find(";") != string::npos)
+//             {
+//               if (commandTypeSwitch == 0 )
+//               {
+//                 commandTypeSwitch = 3;
+//               }
+//               if (timeBased)
+//               {
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, time_interval, condition, dependency);
+              // }else{
+              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
+              //       commandTypeSwitch, condition, dependency);
+//               }
+//               smallcount = -1;
+//               time_interval = 0;
+//               condition = "";
+//               dependency = "";
+//               timeBased = false;
+//               commandTypeSwitch = 0;
+//             }else{
+//               cout<<"World: Readcommands: no semi-colon at all"<<endl;
+//             }
+//             break;
+//           }
+//         }
+//       }
+//       smallcount ++ ;
+//     }
+//   }
+//   infile.close();
+// }
 void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
 {
   ifstream infile;

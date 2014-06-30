@@ -12,6 +12,7 @@ set (msgs
   collision_message.proto
   command_message.proto
   config_message.proto
+  gait_recorder_message.proto
   ${PROTOBUF_IMPORT_DIRS}/pose.proto
   ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
   ${PROTOBUF_IMPORT_DIRS}/quaternion.proto
@@ -27,3 +28,6 @@ target_link_libraries(command_message ${PROTOBUF_LIBRARY})
 
 add_library(config_message SHARED ${PROTO_SRCS})
 target_link_libraries(config_message ${PROTOBUF_LIBRARY})
+
+add_library(gait_recorder_message SHARED ${PROTO_SRCS})
+target_link_libraries(gait_recorder_message ${PROTOBUF_LIBRARY})
