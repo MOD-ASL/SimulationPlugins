@@ -14,6 +14,7 @@ WorldServer::WorldServer()
 {
   needToSetPtr = 0;
   autoMagneticConnectionFlag = false;
+  configurationFile = "";
   // All code below this line is for testing
 } // WorldServer::WorldServer
 WorldServer::~WorldServer(){}
@@ -148,6 +149,7 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
     InsertModel(module_name, model_position, joints_string);
     modlue_node = modlue_node->next_sibling();
   }
+  configurationFile = file_name;
 } // WorldServer::BuildConfigurationFromXML
 void WorldServer::BuildConnectionFromXML(string file_name)
 {
@@ -175,6 +177,7 @@ void WorldServer::BuildConnectionFromXML(string file_name)
     connection_node = connection_node->next_sibling();
   }
   cout<<"World: Finishing up."<<endl;
+  configurationFile = "";
 } // WorldServer::BuildConnectionFromXML
 void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
 {
@@ -242,6 +245,13 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
           currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
       SendGaitTableInstance(
           GetModulePtrByName(msg->stringmessage()), flags, joint_angles,3);
+      if (GetInitialJointSequenceSize() == 1) {
+        if (configurationFile.size() > 0) {
+          // Confiuration connection initialized
+          BuildConnectionFromXML(configurationFile);
+          cout<<"World: Build the connection"<<endl;
+        }
+      }
       ExtraWorkWhenModelInserted(msg);
       initalJointValue.erase(initalJointValue.begin());
       initialPosition.erase(initialPosition.begin());
@@ -374,15 +384,18 @@ void WorldServer::ConnectAndDynamicJointGeneration(
   //++++ This part of the code generate the dynamic joint +++++++++++++++++++++
   physics::JointPtr DynamicJoint;
   DynamicJoint = currentWorld->GetPhysicsEngine()->CreateJoint(
-      "revolute",  module_1->ModuleObject);
+      "prismatic", module_1->ModuleObject);
   DynamicJoint->Attach(Link1, Link2);
   DynamicJoint->Load(
       Link1, Link2, math::Pose(math::Vector3(0,-0.00,0),math::Quaternion()));
+  cout<<"World: this line has been executed"<<endl;
   DynamicJoint->SetAxis(0, axis);
+  string joint_name = "DynamicJoint" + Int2String((int)dynamicConnections.size());
+  DynamicJoint->SetName(joint_name);
   module_1->ModuleObject->GetJointController()->AddJoint(DynamicJoint);
-  DynamicJoint->SetAngle(0,math::Angle(0));
-  DynamicJoint->SetHighStop(0,math::Angle(0.01));
-  DynamicJoint->SetLowStop(0,math::Angle(-0.01));
+  DynamicJoint->SetHighStop(0,math::Angle(0.0000001));
+  DynamicJoint->SetLowStop(0,math::Angle(-0.0000001));
+  DynamicJoint->SetAngle(0,math::Angle(0.0));
   dynamicConnections.push_back(DynamicJoint);
   // This is necessary for easy access of the dynamic joint
   an_edge->DynamicJointPtr = dynamicConnections.back();
@@ -1164,538 +1177,6 @@ unsigned int WorldServer::GetInitialJointSequenceSize(void)
 {
   return initalJointValue.size();
 } // WorldServer::GetInitialJointSequenceSize
-// void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
-// {
-//   string output;
-//   ifstream infile;
-//   infile.open(fileName);
-//   int smallcount = 0;
-//   double joints_values[4] = {0,0,0,0};
-//   bool flags[4] = {true,true,true,true};
-//   int commandType[4] = {0,0,0,0};
-//   // int model_number;
-//   string model_name;
-//   // int group_num = 0;
-//   bool SpecialCommandFlag = false;
-//   bool timeBased = false;
-//   int SpecialCommandType = 0;
-//   unsigned int time_interval = 0;
-//   string condition = "";
-//   string dependency = "";
-//   // A temporary variable
-//   int commandTypeSwitch = 0;
-//   if (infile.is_open()) {
-//     while (!infile.eof()) 
-//     {
-//       infile >> output;
-//       // cout<<output<<endl;
-//       if (smallcount == 0 && output.compare("$") == 0)
-//       {
-//         SpecialCommandFlag = true;
-//         smallcount ++ ;
-//         continue;
-//       }
-//       if (SpecialCommandFlag)
-//       {
-//         if (output.compare("-") == 0)
-//         {
-//           SpecialCommandType = 1; // Disconnection
-//           // cout<<"World: Added a disconnection message"<<endl;
-//         }
-//         if (output.compare("+") == 0)
-//         {
-//           SpecialCommandType = 2; // Connection
-//         }
-//         // if (SpecialCommandType == 0)
-//         // {
-//         //   cout<<"World: Readcommands: Unrecoginized command"<<endl;
-//         // }
-//         bool findEnd = false;
-//         string modelname1 = "";
-//         string modelname2 = "";
-//         int node1 = 4;
-//         int node2 = 4;
-//         while(!findEnd)
-//         {
-//           infile >> output;
-//           if (output.find(";") != string::npos)
-//           {
-//             findEnd = true;
-//           }
-//           if (output.find("&") != string::npos)
-//           {
-//             if (modelname1.size() == 0)
-//             {
-//               modelname1 = output.substr(1);
-//             }else
-//             {
-//               if (modelname2.size() == 0)
-//               {
-//                 modelname2 = output.substr(1);
-//               }
-//             }
-//             continue;
-//           }
-//           if (output.find("#") != string::npos)
-//           {
-//             if (node1 == 4)
-//             {
-//               node1 = atoi(output.substr(1).c_str());
-//             }else
-//             {
-//               if (node2 == 4)
-//               {
-//                 node2 = atoi(output.substr(1).c_str());
-//               }
-//             }
-//             continue;
-//           }
-//           if (output.find("[") != string::npos)
-//           {
-//             output = output.substr(output.find("["));
-//             time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
-//             timeBased = true;
-//           }
-//           if (output.find("{") != string::npos)
-//           {
-//             output = output.substr(output.find("{"));
-//             condition = output.substr(1,output.find("}")-1);
-//             // AddCondition(condition);
-//             cout<<"World: condition is: "<<condition<<endl;
-//           }
-//           if (output.find("(") != string::npos)
-//           {
-//             output = output.substr(output.find("("));
-//             dependency = output.substr(1,output.find(")")-1);
-//             cout<<"World: dependency is: "<<dependency<<endl;
-//           }
-//         }
-//         // Gait table be sent
-//         if (SpecialCommandType == 1)
-//         {
-//           if (modelname1.size()>0 && modelname2.size()>0)
-//           {
-//             if (time_interval > 0)
-//             {
-            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
-            //       node1, node2, 2,time_interval,condition,dependency);
-            // }else{
-            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
-            //       node1, node2, 2,condition,dependency);
-//             }
-//           }
-//         }
-//         if (SpecialCommandType == 2)
-//         {
-//           if (modelname1.size()>0 && modelname2.size()>0 && node1<4 && node2<4)
-//           {
-//             if (time_interval > 0)
-//             {
-            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
-            //       node1, node2, 1,time_interval,condition,dependency);
-            // }else{
-            //   SendGaitTable(GetModulePtrByName(modelname1), modelname1, modelname2,
-            //       node1, node2, 1,condition,dependency);
-//             }
-//           }
-//         }
-//         smallcount = -1;
-//         time_interval = 0;
-//         condition = "";
-//         dependency = "";
-//         timeBased = false;
-//         SpecialCommandFlag = false;
-//       }else
-//       {
-//         switch(smallcount)
-//         {
-//           case 0:model_name = output;break;
-//           case 1:
-//           {
-//             if (output.compare("i") == 0)
-//             {
-//               flags[0] = false;
-//               commandType[0] = 0;
-//               joints_values[0] = 0;
-//             }else
-//             {
-//               flags[0] = true;
-//               if (output.substr(0,1).compare("p") == 0)
-//               {
-//                 joints_values[0] = atof(output.substr(1).c_str());
-//                 commandType[0] = 1;
-//                 commandTypeSwitch = 3;
-//               }
-//               if (output.substr(0,1).compare("s") == 0)
-//               {
-//                 joints_values[0] = atof(output.substr(1).c_str());
-//                 commandType[0] = 2;
-//                 commandTypeSwitch = 4;
-//               }
-//               if (output.substr(0,1).compare("t") == 0)
-//               {
-//                 joints_values[0] = atof(output.substr(1).c_str());
-//                 commandType[0] = 3;
-//                 flags[0] = true;
-//               }
-//               if (output.compare("c") == 0)
-//               {
-//                 joints_values[0] = 0;
-//                 commandType[0] = 4;
-//               }
-//               if (output.compare("d") == 0)
-//               {
-//                 joints_values[0] = 0;
-//                 commandType[0] = 5;
-//               }
-//             }
-//             break;
-//           }
-//           case 2:
-//           {
-//             if (output.compare("i") == 0)
-//             {
-//               flags[1] = false;
-//               commandType[1] = 0;
-//               joints_values[1] = 0;
-//             }else
-//             {
-//               flags[1] = true;
-//               if (output.substr(0,1).compare("p") == 0)
-//               {
-//                 joints_values[1] = atof(output.substr(1).c_str());
-//                 commandType[1] = 1;
-//                 if (commandTypeSwitch == 4)
-//                 {
-//                   flags[1] = false;
-//                   joints_values[1] = 0;
-//                 }else{
-//                   commandTypeSwitch = 3;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("s") == 0)
-//               {
-//                 joints_values[1] = atof(output.substr(1).c_str());
-//                 commandType[1] = 2;
-//                 if (commandTypeSwitch == 3)
-//                 {
-//                   flags[1] = false;
-//                   joints_values[1] = 0;
-//                 }else{
-//                   commandTypeSwitch = 4;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("t") == 0)
-//               {
-//                 joints_values[1] = atof(output.substr(1).c_str());
-//                 commandType[1] = 3;
-//                 flags[1] = true;
-//               }
-//               if (output.compare("c") == 0)
-//               {
-//                 joints_values[1] = 0;
-//                 commandType[1] = 4;
-//               }
-//               if (output.compare("d") == 0)
-//               {
-//                 joints_values[1] = 0;
-//                 commandType[1] = 5;
-//               }
-//             }
-//             break;
-//           }
-//           case 3:
-//           {
-//             if (output.compare("i") == 0)
-//             {
-//               flags[2] = false;
-//               commandType[2] = 0;
-//               joints_values[2] = 0;
-//             }else
-//             {
-//               flags[2] = true;
-//               if (output.substr(0,1).compare("p") == 0)
-//               {
-//                 joints_values[2] = atof(output.substr(1).c_str());
-//                 commandType[2] = 1;
-//                 if (commandTypeSwitch == 4)
-//                 {
-//                   flags[2] = false;
-//                   joints_values[2] = 0;
-//                 }else{
-//                   commandTypeSwitch = 3;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("s") == 0)
-//               {
-//                 joints_values[2] = atof(output.substr(1).c_str());
-//                 commandType[2] = 2;
-//                 if (commandTypeSwitch == 3)
-//                 {
-//                   flags[2] = false;
-//                   joints_values[2] = 0;
-//                 }else{
-//                   commandTypeSwitch = 4;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("t") == 0)
-//               {
-//                 joints_values[2] = atof(output.substr(1).c_str());
-//                 commandType[2] = 3;
-//                 flags[2] = true;
-//               }
-//               if (output.compare("c") == 0)
-//               {
-//                 joints_values[2] = 0;
-//                 commandType[2] = 4;
-//               }
-//               if (output.compare("d") == 0)
-//               {
-//                 joints_values[2] = 0;
-//                 commandType[2] = 5;
-//               }
-//             }
-//             break;
-//           }
-//           case 4:
-//           {
-//             bool commandEndHere = false;
-//             if (output.find(";") != string::npos)
-//             {
-//               commandEndHere = true;
-//               output = output.substr(0,output.find(";"));
-//             }
-//             if (output.compare("i") == 0)
-//             {
-//               flags[3] = false;
-//               commandType[3] = 0;
-//               joints_values[3] = 0;
-//             }else
-//             {
-//               flags[3] = true;
-//               if (output.substr(0,1).compare("p") == 0)
-//               {
-//                 joints_values[3] = atof(output.substr(1).c_str());
-//                 commandType[3] = 1;
-//                 if (commandTypeSwitch == 4)
-//                 {
-//                   flags[3] = false;
-//                   joints_values[3] = 0;
-//                 }else{
-//                   commandTypeSwitch = 3;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("s") == 0)
-//               {
-//                 joints_values[3] = atof(output.substr(1).c_str());
-//                 commandType[3] = 2;
-//                 if (commandTypeSwitch == 3)
-//                 {
-//                   flags[3] = false;
-//                   joints_values[3] = 0;
-//                 }else{
-//                   commandTypeSwitch = 4;
-//                 }
-//               }
-//               if (output.substr(0,1).compare("t") == 0)
-//               {
-//                 joints_values[3] = atof(output.substr(1).c_str());
-//                 commandType[3] = 3;
-//                 flags[3] = true;
-//               }
-//               if (output.compare("c") == 0)
-//               {
-//                 joints_values[3] = 0;
-//                 commandType[3] = 4;
-//               }
-//               if (output.compare("d") == 0)
-//               {
-//                 joints_values[3] = 0;
-//                 commandType[3] = 5;
-//               }
-//             }
-//             if (commandEndHere)
-//             {
-//               if (commandTypeSwitch == 0 )
-//               {
-//                 commandTypeSwitch = 3;
-//               }
-              // SendGaitTable(GetModulePtrByName(model_name),flags, joints_values,
-              //     commandTypeSwitch);
-//               smallcount = -1;
-//               time_interval = 0;
-//               condition = "";
-//               dependency = "";
-//               commandTypeSwitch = 0;
-//             }
-//             break;
-//           }
-//           case 5:
-//           {
-//             if (output.find("[") != string::npos)
-//             {
-//               output = output.substr(output.find("["));
-//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
-//               timeBased = true;
-//             }
-//             if (output.find("{") != string::npos)
-//             {
-//               output = output.substr(output.find("{"));
-//               condition = output.substr(1,output.find("}")-1);
-//               // AddCondition(condition);
-//               cout<<"World: condition is: "<<condition<<endl;
-//             }
-//             if (output.find("(") != string::npos)
-//             {
-//               output = output.substr(output.find("("));
-//               dependency = output.substr(1,output.find(")")-1);
-//               cout<<"World: dependency is: "<<dependency<<endl;
-//             }
-//             if (output.compare(";") == 0 || output.find(";") != string::npos)
-//             {
-//               if (commandTypeSwitch == 0 )
-//               {
-//                 commandTypeSwitch = 3;
-//               }
-//               if (timeBased)
-//               {
-              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-              //       commandTypeSwitch, time_interval, condition, dependency);
-              // }else{
-              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-              //       commandTypeSwitch, condition, dependency);
-//               }
-//               smallcount = -1;
-//               time_interval = 0;
-//               condition = "";
-//               dependency = "";
-//               timeBased = false;
-//               commandTypeSwitch = 0;
-//             }
-//             break;
-//           }
-//           case 6:
-//           {
-//             if (output.find("[") != string::npos)
-//             {
-//               output = output.substr(output.find("["));
-//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
-//               timeBased = true;
-//             }
-//             if (output.find("{") != string::npos)
-//             {
-//               output = output.substr(output.find("{"));
-//               condition = output.substr(1,output.find("}")-1);
-//               // AddCondition(condition);
-//               cout<<"World: condition is: "<<condition<<endl;
-//             }
-//             if (output.find("(") != string::npos)
-//             {
-//               output = output.substr(output.find("("));
-//               dependency = output.substr(1,output.find(")")-1);
-//               cout<<"World: dependency is: "<<dependency<<endl;
-//             }
-//             if (output.compare(";") == 0 || output.find(";") != string::npos)
-//             {
-//               if (commandTypeSwitch == 0 )
-//               {
-//                 commandTypeSwitch = 3;
-//               }
-//               if (timeBased)
-//               {
-//                 SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-                      // commandTypeSwitch, time_interval, condition, dependency);
-//               }else{
-                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-                //     commandTypeSwitch, condition, dependency);
-//               }
-//               smallcount = -1;
-//               time_interval = 0;
-//               condition = "";
-//               dependency = "";
-//               timeBased = false;
-//               commandTypeSwitch = 0;
-//             }
-//             break;
-//           }
-//           case 7:
-//           {
-//             if (output.find("[") != string::npos)
-//             {
-//               output = output.substr(output.find("["));
-//               time_interval = atoi(output.substr(1,output.find("]")-1).c_str());
-//               timeBased = true;
-//             }
-//             if (output.find("{") != string::npos)
-//             {
-//               output = output.substr(output.find("{"));
-//               condition = output.substr(1,output.find("}")-1);
-//               // AddCondition(condition);
-//               cout<<"World: condition is: "<<condition<<endl;
-//             }
-//             if (output.find("(") != string::npos)
-//             {
-//               output = output.substr(output.find("("));
-//               dependency = output.substr(1,output.find(")")-1);
-//               cout<<"World: dependency is: "<<dependency<<endl;
-//             }
-//             if (output.compare(";") == 0 || output.find(";") != string::npos)
-//             {
-//               if (commandTypeSwitch == 0 )
-//               {
-//                 commandTypeSwitch = 3;
-//               }
-//               if (timeBased)
-//               {
-                // SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-                //     commandTypeSwitch, time_interval, condition, dependency);
-              // }else{
-              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-              //       commandTypeSwitch, condition, dependency);
-//               }
-//               smallcount = -1;
-//               time_interval = 0;
-//               condition = "";
-//               dependency = "";
-//               timeBased = false;
-//               commandTypeSwitch = 0;
-//             }
-//             break;
-//           }
-//           case 8:
-//           {
-//             if (output.compare(";") == 0 || output.find(";") != string::npos)
-//             {
-//               if (commandTypeSwitch == 0 )
-//               {
-//                 commandTypeSwitch = 3;
-//               }
-//               if (timeBased)
-//               {
-              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-              //       commandTypeSwitch, time_interval, condition, dependency);
-              // }else{
-              //   SendGaitTable(GetModulePtrByName(model_name), flags, joints_values,
-              //       commandTypeSwitch, condition, dependency);
-//               }
-//               smallcount = -1;
-//               time_interval = 0;
-//               condition = "";
-//               dependency = "";
-//               timeBased = false;
-//               commandTypeSwitch = 0;
-//             }else{
-//               cout<<"World: Readcommands: no semi-colon at all"<<endl;
-//             }
-//             break;
-//           }
-//         }
-//       }
-//       smallcount ++ ;
-//     }
-//   }
-//   infile.close();
-// }
 void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
 {
   ifstream infile;

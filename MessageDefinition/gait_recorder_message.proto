@@ -15,4 +15,5 @@ message GaitRecMessage
 	optional string ExtrInfo = 8;
 	repeated bool Flags = 9 [packed=true];
 	optional bool ResetFlag = 10;
+	optional bool LoadConfiguration = 11;
 }

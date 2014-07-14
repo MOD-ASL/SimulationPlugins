@@ -1,0 +1,1 @@
+protoc --proto_path=../../MessageDefinition/ --python_out=./ ../../MessageDefinition/gait_recorder_message.proto

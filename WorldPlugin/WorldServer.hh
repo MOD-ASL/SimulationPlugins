@@ -21,6 +21,7 @@
 #include <fstream>
 #include <boost/bind.hpp>
 #include <queue>
+#include <unistd.h>
 
 #include <sdf/sdf.hh>
 #include "gazebo/gazebo.hh"
@@ -281,6 +282,8 @@ class WorldServer : public WorldPlugin
   vector<transport::SubscriberPtr> WorldColSubscriber;
   /// Auto Magnetic Connection Enable Flag
   bool autoMagneticConnectionFlag;
+  /// The path of the file of configuration
+  string configurationFile;
 //+++++++++ testing ++++++++++++++++++++++++++++
 };
 } // namespace gazebo
