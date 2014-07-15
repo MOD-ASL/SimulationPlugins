@@ -32,7 +32,7 @@ class Section:
 				occupy_gait = GaitEntry("",[0.0,0.0,0.0,0.0],0)
 				self.GaitObjListOfModule.append([occupy_gait]*(idx+1)+[a_gait])
 				self.GaitStrListOfModule.append([""]*(idx+1)+[a_gait.GaitToStr()])
-				print "GaitStrListOfModule: ",self.GaitStrListOfModule
+				# print "GaitStrListOfModule: ",self.GaitStrListOfModule
 			else:
 				self.GaitObjListOfModule.append([a_gait])
 				self.GaitStrListOfModule.append([a_gait.GaitToStr()])
@@ -52,7 +52,7 @@ class Section:
 		for each_list in self.GaitObjListOfModule:
 			for idx, each_entry in enumerate(each_list):
 				if each_entry.condition_id == a_condition:
-					print "Find a condition match"
+					# print "Find a condition match"
 					if idx >indx:
 						indx = idx
 		return indx
