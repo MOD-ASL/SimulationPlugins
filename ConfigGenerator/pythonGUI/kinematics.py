@@ -1,5 +1,6 @@
 import pdb
 from numpy import matrix, deg2rad, rad2deg, cos, sin, hstack, vstack, eye, pi, arcsin, arccos, arctan2, sqrt
+from math import copysign
 c = cos
 s = sin
 
@@ -40,6 +41,46 @@ def rotZYX2rpy(R):
 	roll = arctan2( R[2,1], R[2,2] )
 	return (roll, pitch, yaw)
 
+def rotToQuat(R):
+	''' Adapted from function written by Daniel Mellinger
+	from the following website, deals with the case when tr<0
+	http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixT
+	oQuaternion/index.htm '''
+
+	#takes in W_R_B rotation matrix
+
+	tr = R[0,0] + R[1,1] + R[2,2]
+
+	if (tr > 0):
+		S = sqrt(tr+1.0) * 2; # S=4*qw 
+		qw = 0.25 * S
+		qx = (R[2,1] - R[1,2]) / S
+		qy = (R[0,2] - R[2,0]) / S 
+		qz = (R[1,0] - R[0,1]) / S 
+	elif ((R[0,0] > R[1,1]) and (R[0,0] > R[2,2])):
+		S = sqrt(1.0 + R[0,0] - R[1,1] - R[2,2]) * 2 # S=4*qx 
+		qw = (R[2,1] - R[1,2]) / S
+		qx = 0.25 * S
+		qy = (R[0,1] + R[1,0]) / S 
+		qz = (R[0,2] + R[2,0]) / S 
+	elif (R[1,1] > R[2,2]):
+		S = sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]) * 2 # S=4*qy
+		qw = (R[0,2] - R[2,0]) / S
+		qx = (R[0,1] + R[1,0]) / S 
+		qy = 0.25 * S
+		qz = (R[1,2] + R[2,1]) / S 
+	else: 
+		S = sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]) * 2 # S=4*qz
+		qw = (R[1,0] - R[0,1]) / S
+		qx = (R[0,2] + R[2,0]) / S
+		qy = (R[1,2] + R[2,1]) / S
+		qz = 0.25 * S
+
+	sgn = copysign(1,qw)
+	q = (qw*sgn, qx*sgn, qy*sgn, qz*sgn)
+	#q = q*sign(qw);
+	return q
+
 #########
 L = 0.05
 
@@ -56,7 +97,11 @@ def get_new_position(parent_module, new_module_angles, parent_face, new_face):
         new_wrt_world = se3(p_rot, p_pos)*new_wrt_old
         n_pos = tuple(new_wrt_world[0:3,3].ravel().tolist()[0])
         n_rpy = rotZYX2rpy( new_wrt_world[0:3,0:3] )
-        return ( n_pos+n_rpy, new_wrt_world[0:3,0:3] )
+        print n_rpy
+        if cos(n_rpy[1]) < 0.01:
+        	print 'WARNING: Gymbal lock detected!'
+        n_quat = rotToQuat( new_wrt_world[0:3,0:3] )
+        return ( n_pos+n_rpy, new_wrt_world[0:3,0:3], n_quat )
 
 def get_xform(angles1, angles2, face1, face2):
 	''' Returns the se3 transform from the center of module1 to the center of module2, given their

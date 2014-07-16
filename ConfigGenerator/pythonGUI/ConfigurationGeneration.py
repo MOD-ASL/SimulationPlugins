@@ -433,11 +433,12 @@ class App(Frame):
         #-- Get module position and orientation.
         parent_face = self.Node2.get()
         new_module_face = self.Node1.get()
-        (module_position, rotation_matrix) = kinematics.get_new_position(theOtherModule, module_jointangle, parent_face, new_module_face)
+        (module_position, rotation_matrix, quaternion) = kinematics.get_new_position(theOtherModule, module_jointangle, parent_face, new_module_face)
         print 'XYZ: ' + str(module_position[0:3])
         print 'RPY: ' + str(module_position[3:6])
+        print 'Quat: ' + str(quaternion)
         # --
-        new_module = Module(self.modelname.get(),module_position,module_jointangle)
+        new_module = Module(self.modelname.get(),tuple(list(module_position[0:3])+list(quaternion)),module_jointangle, True)
         # Add rotation matrix to new_module (necessary for kinematics)
         new_module.rotation_matrix = rotation_matrix
         self.ModuleList.append(new_module)
@@ -522,8 +523,13 @@ class App(Frame):
   def PublishMessage(self,amodule):
     newmessage = ConfigMessage()
     newmessage.ModelName = amodule.ModelName
-    for i in xrange(6):
-      newmessage.ModelPosition.append(amodule.Position[i])
+    if amodule.Quaternion:
+        for i in xrange(7):
+          newmessage.ModelPosition.append(amodule.Position[i])
+        newmessage.QuaternionPos = True
+    else:
+        for i in xrange(6):
+          newmessage.ModelPosition.append(amodule.Position[i])
     print "Coor info",newmessage.ModelPosition
     for i in xrange(4):
       newmessage.JointAngles.append(amodule.JointAngle[i])

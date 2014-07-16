@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='config_message.proto',
   package='config_message.msgs',
-  serialized_pb='\n\x14\x63onfig_message.proto\x12\x13\x63onfig_message.msgs\"\xce\x01\n\rConfigMessage\x12\x11\n\tModelName\x18\x01 \x02(\t\x12\x19\n\rModelPosition\x18\x02 \x03(\x01\x42\x02\x10\x01\x12\x17\n\x0bJointAngles\x18\x03 \x03(\x01\x42\x02\x10\x01\x12\x16\n\x0e\x43onnectedModel\x18\x04 \x01(\t\x12\x13\n\x0b\x43onnectedOn\x18\x05 \x01(\x05\x12\x13\n\x0b\x43onnectedTo\x18\x06 \x01(\x05\x12\x0f\n\x07\x45\x64geDis\x18\x07 \x01(\x01\x12\x0f\n\x07\x45\x64geAng\x18\x08 \x01(\x01\x12\x12\n\nDeleteFlag\x18\t \x01(\x08')
+  serialized_pb='\n\x14\x63onfig_message.proto\x12\x13\x63onfig_message.msgs\"\xe5\x01\n\rConfigMessage\x12\x11\n\tModelName\x18\x01 \x02(\t\x12\x19\n\rModelPosition\x18\x02 \x03(\x01\x42\x02\x10\x01\x12\x17\n\x0bJointAngles\x18\x03 \x03(\x01\x42\x02\x10\x01\x12\x16\n\x0e\x43onnectedModel\x18\x04 \x01(\t\x12\x13\n\x0b\x43onnectedOn\x18\x05 \x01(\x05\x12\x13\n\x0b\x43onnectedTo\x18\x06 \x01(\x05\x12\x0f\n\x07\x45\x64geDis\x18\x07 \x01(\x01\x12\x0f\n\x07\x45\x64geAng\x18\x08 \x01(\x01\x12\x12\n\nDeleteFlag\x18\t \x01(\x08\x12\x15\n\rQuaternionPos\x18\n \x01(\x08')
 
 
 
@@ -86,6 +86,13 @@ _CONFIGMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='QuaternionPos', full_name='config_message.msgs.ConfigMessage.QuaternionPos', index=9,
+      number=10, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -96,7 +103,7 @@ _CONFIGMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=46,
-  serialized_end=252,
+  serialized_end=275,
 )
 
 DESCRIPTOR.message_types_by_name['ConfigMessage'] = _CONFIGMESSAGE

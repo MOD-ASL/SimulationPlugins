@@ -72,13 +72,29 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
   for (int i = 0; i < 3; ++i) {
     coordinates[i] = msg->modelposition(i);
   }
-  double orientation[3] = {0,0,0};
-  for (int i = 0; i < 3; ++i) {
-    orientation[i] = msg->modelposition(i+3);
+  double orientation[4] = {0,0,0,0};
+  math::Quaternion orientation_pos;
+  bool qua_pos_flag = false;
+  if (msg->has_quaternionpos()) {
+    if (msg->quaternionpos()) {
+      qua_pos_flag = true;
+    }
+  }
+  if (qua_pos_flag) {
+    for (int i = 0; i < 4; ++i) {
+      orientation[i] = msg->modelposition(i+3);
+    }
+    orientation_pos.Set(orientation[0], orientation[1], orientation[2],
+        orientation[3]);
+  }else{
+    for (int i = 0; i < 3; ++i) {
+      orientation[i] = msg->modelposition(i+3);
+    }
+    orientation_pos.SetFromEuler(orientation[0], orientation[1], orientation[2]);
   }
   math::Pose position_tmp(
   		math::Vector3(coordinates[0], coordinates[1], coordinates[2]), 
-  		math::Quaternion(orientation[0], orientation[1], orientation[2]));
+      orientation_pos);
   double joints_angles[4] = {0,0,0,0};
   for (int i = 0; i < 4; ++i) {
     joints_angles[i] = msg->jointangles(i);
