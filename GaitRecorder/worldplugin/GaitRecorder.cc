@@ -2,6 +2,7 @@
 
 using std::string;
 using std::cout;
+using util::to_string;
 
 namespace gazebo{
 PoseRecord::PoseRecord()
@@ -78,7 +79,7 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
   bool begin_a_new_frame = msg->newframe();
   bool play_mode = msg->playstatus();
   if (begin_a_new_frame) {
-    string new_frame_name = "frame"+util::to_string((int)frames.size());
+    string new_frame_name = "frame"+to_string((int)frames.size());
     Frame new_frame(new_frame_name);
     RecordCurrentPose(new_frame);
     frames.push_back(new_frame);
