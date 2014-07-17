@@ -7,6 +7,7 @@ WIPEOUT=0
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ $# -eq 1 ]; then
   if [ "$1" = "-s" ]; then
+    echo "[Installing] gazebo-2.2 ..."
     STATUS=2
     if [ $DISTRIB_RELEASE = "12.04" ]; then
       sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
@@ -41,6 +42,8 @@ if [ $# -eq 1 ]; then
       apt-get install build-essential
       echo "[Installing] cmake ..."
       apt-get install cmake
+      echo "[Installing] tinyxml ..."
+      apt-get install libtinyxml-dev
       echo "[Installing] extra python packages ..."
       apt-get install python-pip
       pip install -U pip
