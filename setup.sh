@@ -53,6 +53,7 @@ if [ $# -eq 1 ]; then
       echo "[Installing] google protobuf compiler ..."
       apt-get install protobuf-compiler
     fi
+    sudo -k
   fi
   if [ "$1" = "-u" ]; then
     STATUS=2
