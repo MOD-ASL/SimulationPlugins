@@ -10,53 +10,52 @@ if [ $# -eq 1 ]; then
     echo "[Installing] gazebo-2.2 ..."
     STATUS=2
     if [ $DISTRIB_RELEASE = "12.04" ]; then
-      sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
+      sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
     elif [ $DISTRIB_RELEASE = "12.10" ]; then
-      sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu quantal main" > /etc/apt/sources.list.d/gazebo-latest.list'
+      sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu quantal main" > /etc/apt/sources.list.d/gazebo-latest.list'
     elif [ $DISTRIB_RELEASE = "13.04" ]; then
-      sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu raring main" > /etc/apt/sources.list.d/gazebo-latest.list'
+      sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu raring main" > /etc/apt/sources.list.d/gazebo-latest.list'
     elif [ $DISTRIB_RELEASE = "13.10" ]; then
-      sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu saucy main" > /etc/apt/sources.list.d/gazebo-latest.list'
+      sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu saucy main" > /etc/apt/sources.list.d/gazebo-latest.list'
     else
       echo "[WARNING] Cannot execute automatically setup for this OS distribution"
       STATUS=0
     fi
-    wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
-    apt-get update
+    wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+    sudo apt-get update
     if [ $DISTRIB_RELEASE = "12.04" ]; then
-      apt-get install gazebo-current
+      sudo apt-get install gazebo-current
     elif [ $DISTRIB_RELEASE = "12.10" ]; then
-      apt-get install gazebo-current
+      sudo apt-get install gazebo-current
     elif [ $DISTRIB_RELEASE = "13.04" ]; then
-      apt-get install gazebo-current
+      sudo apt-get install gazebo-current
     elif [ $DISTRIB_RELEASE = "13.10" ]; then
-      apt-get install gazebo2
+      sudo apt-get install gazebo2
     else
       echo "[WARNING] Mission abort"
       STATUS=0
     fi
     if [ $STATUS -ne 0 ]; then
       echo "[Installing] python ..."
-      apt-get install python
+      sudo apt-get install python
       echo "[Installing] gcc & g++ ..."
-      apt-get install build-essential
+      sudo apt-get install build-essential
       echo "[Installing] cmake ..."
-      apt-get install cmake
+      sudo apt-get install cmake
       echo "[Installing] tinyxml ..."
-      apt-get install libtinyxml-dev
+      sudo apt-get install libtinyxml-dev
       echo "[Installing] extra python packages ..."
-      apt-get install python-pip
-      pip install -U pip
-      pip install eventlet
-      pip install pygazebo
-      apt-get install python-imaging-tk
-      apt-get install python-numpy python-scipy
+      sudo apt-get install python-pip
+      sudo pip install -U pip
+      sudo pip install eventlet
+      sudo pip install pygazebo
+      sudo apt-get install python-imaging-tk
+      sudo apt-get install python-numpy python-scipy
       echo "[Installing] boost library ..."
-      apt-get install libboost-all-dev
+      sudo apt-get install libboost-all-dev
       echo "[Installing] google protobuf compiler ..."
-      apt-get install protobuf-compiler
+      sudo apt-get install protobuf-compiler
     fi
-    sudo -k
   fi
   if [ "$1" = "-u" ]; then
     STATUS=2
@@ -72,7 +71,19 @@ fi
 
 if [ "$STATUS" = 2 ]; then
   echo "Pulling models from github repo ..."
-  cd ~/.gazebo/models
+  cd ~/
+  if [ ! -d .gazebo/ ]; then
+    mkdir .gazebo
+    cd .gazebo
+    mkdir models
+    cd models
+  else
+    cd .gazebo
+    if [ ! -d .models/ ]; then
+      mkdir models
+    fi
+    cd models
+  fi
   git init
   git add .
   git commit -m "Model backup"
