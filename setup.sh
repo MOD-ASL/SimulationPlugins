@@ -72,19 +72,21 @@ fi
 if [ "$STATUS" = 2 ]; then
   echo "Pulling models from github repo ..."
   cd ~/
-  if [ ! -d .gazebo/ ]; then
+  if [ ! -d .gazebo ]; then
     mkdir .gazebo
     cd .gazebo
     mkdir models
     cd models
   else
     cd .gazebo
-    if [ ! -d .models/ ]; then
+    if [ ! -d models ]; then
       mkdir models
     fi
     cd models
   fi
-  git init
+  if [ ! -d .git ]; then
+    git init
+  fi
   git add .
   git commit -m "Model backup"
   git pull git@github.com:princeedward/GAZEBO_model.git master
