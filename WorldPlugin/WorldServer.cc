@@ -71,7 +71,7 @@ void WorldServer::AddEntityToWorld(std::string & _info)
   int model_number = this->currentWorld->GetModelCount();
   string current_message = "Model"+Int2String(model_number);
   // A log line, which can be deleted in the future
-  cout<<"World: Number of models: "<<model_number<<endl;
+  // cout<<"World: Number of models: "<<model_number<<endl;
   msgs::GzString welcome_msgs;
   welcome_msgs.set_data(current_message);
   welcomePub->Publish(welcome_msgs);
@@ -214,8 +214,8 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
     // Initalization functions
     moduleList.at(needToSetPtr)->SetModulePtr(
         currentWorld->GetModel(moduleList.at(needToSetPtr)->ModuleID));
-    cout<<"World: Asign the pointer to module: "
-        <<moduleList.at(needToSetPtr)->ModuleID<<endl;
+    // cout<<"World: Asign the pointer to module: "
+    //     <<moduleList.at(needToSetPtr)->ModuleID<<endl;
     // Need a function when delete a entity, this value needs to be decrease
     needToSetPtr += 1;
     if (initalJointValue.size()>0) {
@@ -334,20 +334,6 @@ void WorldServer::ConnectAndDynamicJointGeneration(
 {
   math::Pose ContactLinkPos = module_1->GetLinkPtr(node1_ID)->GetWorldPose();
   math::Pose PosOfTheOtherModel = module_2->GetLinkPtr(node2_ID)->GetWorldPose();
-  cout<<"World: Pre position of the module 1:"
-      <<module_1->ModuleObject->GetName()<<": ("
-      <<ContactLinkPos.pos.x<<","<<ContactLinkPos.pos.y<<","
-      <<ContactLinkPos.pos.z<<","
-      <<ContactLinkPos.rot.GetRoll()<<","
-      <<ContactLinkPos.rot.GetPitch()<<","
-      <<ContactLinkPos.rot.GetYaw()<<")"<<endl;
-  cout<<"World: Pre position of the module 2:"
-      <<module_2->ModuleObject->GetName()<<": ("
-      <<PosOfTheOtherModel.pos.x<<","<<PosOfTheOtherModel.pos.y<<","
-      <<PosOfTheOtherModel.pos.z<<","
-      <<PosOfTheOtherModel.rot.GetRoll()<<","
-      <<PosOfTheOtherModel.rot.GetPitch()<<","
-      <<PosOfTheOtherModel.rot.GetYaw()<<")"<<endl;
   physics::LinkPtr Link1, Link2;
   math::Vector3 axis;
   math::Pose position_of_module1(math::Vector3(0,0,0),math::Quaternion(0,0,0,0));
@@ -367,20 +353,6 @@ void WorldServer::ConnectAndDynamicJointGeneration(
   module_1->ModuleObject->SetLinkWorldPose(position_of_module1,Link1);
   module_2->ModuleObject->SetLinkWorldPose(position_of_module2,Link2);
 
-  cout<<"World: Post position of the module 1:"
-      <<module_1->ModuleObject->GetName()<<": ("
-      <<position_of_module1.pos.x<<","<<position_of_module1.pos.y<<","
-      <<position_of_module1.pos.z<<","
-      <<position_of_module1.rot.GetRoll()<<","
-      <<position_of_module1.rot.GetPitch()<<","
-      <<position_of_module1.rot.GetYaw()<<")"<<endl;
-  cout<<"World: Post position of the module 2:"
-      <<module_2->ModuleObject->GetName()<<": ("
-      <<position_of_module2.pos.x<<","<<position_of_module2.pos.y<<","
-      <<position_of_module2.pos.z<<","
-      <<position_of_module2.rot.GetRoll()<<","
-      <<position_of_module2.rot.GetPitch()<<","
-      <<position_of_module2.rot.GetYaw()<<")"<<endl;
   //++++ This part of the code generate the dynamic joint +++++++++++++++++++++
   physics::JointPtr DynamicJoint;
   DynamicJoint = currentWorld->GetPhysicsEngine()->CreateJoint(
@@ -388,7 +360,6 @@ void WorldServer::ConnectAndDynamicJointGeneration(
   DynamicJoint->Attach(Link1, Link2);
   DynamicJoint->Load(
       Link1, Link2, math::Pose(math::Vector3(0,-0.00,0),math::Quaternion()));
-  cout<<"World: this line has been executed"<<endl;
   DynamicJoint->SetAxis(0, axis);
   string joint_name = "DynamicJoint" + Int2String((int)dynamicConnections.size());
   DynamicJoint->SetName(joint_name);
@@ -507,8 +478,10 @@ void WorldServer::DynamicJointDestroy(SmoresEdgePtr edge)
 {
   edge->DynamicJointPtr->Detach();
   for (unsigned int i = 0; i < dynamicConnections.size(); ++i) {
-    if (edge->DynamicJointPtr==dynamicConnections.at(i)) {
+    if (edge->DynamicJointPtr == dynamicConnections.at(i)) {
       dynamicConnections.at(i).reset();
+      edge->DynamicJointPtr->Fini();
+      edge->DynamicJointPtr.reset();
       dynamicConnections.erase(dynamicConnections.begin()+i);
       break;
     }
@@ -772,10 +745,10 @@ void WorldServer::CommandExecution(ModuleCommandsPtr current_command_container)
     current_command_container->WhichModule->ModulePublisher->Publish(
         *(current_command_container->CommandSquence.at(0).ActualCommandMessage));
   }
-  cout<<"World: Model: "<<current_command_container->WhichModule->ModuleID
-      <<": command sent"<<endl;
-  cout<<"World: Size of the message is "
-      <<current_command_container->CommandSquence.size()<<endl;
+  // cout<<"World: Model: "<<current_command_container->WhichModule->ModuleID
+  //     <<": command sent"<<endl;
+  // cout<<"World: Size of the message is "
+  //     <<current_command_container->CommandSquence.size()<<endl;
   current_command_container->ExecutionFlag = true;
 } // WorldServer::CommandExecution
 void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
@@ -905,8 +878,8 @@ void WorldServer::SendGaitTable(SmoresModulePtr module,
   new_message.SetTimer(time_stamp);
   SpecialCommand special_command(command_type, module1, module2, node1, node2);
   new_message.SetSpecialCommand(special_command);
-  cout<<"World: Special Command: condition: "<<condition_str
-      <<"; dependency: "<<dependency_str<<endl;
+  // cout<<"World: Special Command: condition: "<<condition_str
+  //     <<"; dependency: "<<dependency_str<<endl;
   if (condition_str.size()>0) {
     new_message.SetCondition(condition_str);
     AddCondition(condition_str);
@@ -937,8 +910,8 @@ void WorldServer::SendGaitTable(SmoresModulePtr module,
   CommandPro new_message;
   SpecialCommand special_command(command_type, module1, module2, node1, node2);
   new_message.SetSpecialCommand(special_command);
-  cout<<"World: Special Command: condition: "<<condition_str
-      <<"; dependency: "<<dependency_str<<endl;
+  // cout<<"World: Special Command: condition: "<<condition_str
+  //     <<"; dependency: "<<dependency_str<<endl;
   if (condition_str.size()>0) {
     new_message.SetCondition(condition_str);
     AddCondition(condition_str);
@@ -1222,13 +1195,13 @@ void WorldServer::InterpretCommonGaitString(string a_command_str)
 {
   Color::Modifier yellow_log(Color::FG_YELLOW,true);
   Color::Modifier def_log(Color::FG_DEFAULT);
-  cout<<yellow_log<<"World: Command str: "<<a_command_str<<def_log<<";"<<endl;
+  // cout<<yellow_log<<"World: Command str: "<<a_command_str<<def_log<<";"<<endl;
   int time_interval = StripOffTimerInCommandString(a_command_str);
   string condition = StripOffCondition(a_command_str);
   string dependency = StripOffDependency(a_command_str);
   string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
   a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
-  cout<<"World: The command string is: "<<a_command_str<<endl;
+  // cout<<"World: The command string is: "<<a_command_str<<endl;
   bool flags[4] = {false, false, false, false};
   double joints_values[4] = {0, 0, 0, 0};
   FigureInterpret(a_command_str, flags, joints_values);
@@ -1242,10 +1215,10 @@ void WorldServer::InterpretCommonGaitString(string a_command_str)
 } // WorldServer::InterpretCommonGaitString
 void WorldServer::InterpretSpecialString(string a_command_str)
 {
-  Color::Modifier green_log(Color::FG_GREEN);
-  Color::Modifier def_log(Color::FG_DEFAULT);
-  cout<<green_log<<"World: Special command str: "
-      <<a_command_str<<def_log<<";"<<endl;
+  // Color::Modifier green_log(Color::FG_GREEN);
+  // Color::Modifier def_log(Color::FG_DEFAULT);
+  // cout<<green_log<<"World: Special command str: "
+  //     <<a_command_str<<def_log<<";"<<endl;
   int time_interval = StripOffTimerInCommandString(a_command_str);
   string condition = StripOffCondition(a_command_str);
   string dependency = StripOffDependency(a_command_str);
@@ -1331,7 +1304,6 @@ int WorldServer::StripOffTimerInCommandString(string &command_string)
         right_brace_pos-left_brace_pos-1);
     command_string = command_string.substr(0,left_brace_pos-1)
         + command_string.substr(right_brace_pos+1);
-    cout<<"World: command timer: "<<time_str<<endl;
     return atoi(time_str.c_str());
   }
   return -1;
@@ -1345,7 +1317,6 @@ string WorldServer::StripOffCondition(string &command_string)
         right_brace_pos-left_brace_pos-1);
     command_string = command_string.substr(0,left_brace_pos-1)
         + command_string.substr(right_brace_pos+1);
-    cout<<"World: command condition: "<<condition<<endl;
     return condition;
   }
   return "";
@@ -1359,7 +1330,6 @@ string WorldServer::StripOffDependency(string &command_string)
         right_brace_pos-left_brace_pos-1);
     command_string = command_string.substr(0,left_brace_pos-1)
         + command_string.substr(right_brace_pos+1);
-    cout<<"World: command dependency: "<<dependency<<endl;
     return dependency;
   }
   return "";
@@ -1401,7 +1371,21 @@ bool WorldServer::CheckCondition(string condition_id)
       return commandConditions.at(i)->achieved;
     }
   }
-  cout<<"World: didn't find the condition"<<endl;
   return true;
 } // WorldServer::CheckCondition
+SmoresEdgePtr WorldServer::GetEdgePtrByIDX(unsigned int idx)
+{
+  return connectionEdges.at(idx);
+} // WorldServer::GetEdgePtrByIDX
+unsigned int WorldServer::GetEdgeCounts(void)
+{
+  return connectionEdges.size();
+} // WorldServer::GetEdgeCounts
+void WorldServer::ReBuildDynamicJoint(SmoresEdgePtr a_edge)
+{
+  ConnectAndDynamicJointGeneration(
+        a_edge->model_1->Parent, a_edge->model_2->Parent, 
+        a_edge->model_1->NodeID, a_edge->model_2->NodeID, 
+        a_edge);
+} // WorldServer::ReBuildDynamicJoint
 } // namespace gazebo

@@ -23,8 +23,6 @@ ModuleController::ModuleController()
   rgtWheelSpeed = 0;
   startExecution = false;
   commandPriority = 0;
-  // A hint of model been initialized
-  cout<<"Model Initiated\n";
 } // ModuleController::ModuleController
 ModuleController::~ModuleController()
 {
@@ -120,6 +118,8 @@ void ModuleController::WelcomInfoProcessor(GzStringPtr &msg)
 } // ModuleController::WelcomInfoProcessor
 void ModuleController::SystemInitialization(physics::ModelPtr parent_model)
 {
+  // A hint of model been initialized
+  cout<<parent_model->GetName()<<" Initiated\n";
   // Get all the pointers set
   this->model = parent_model;
   this->jointWR = model->GetJoint("Right_wheel_hinge");
@@ -281,14 +281,14 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
         }
       }
       // Joint setting log
-      cout<<"Model: "
-          <<model->GetName()<<":joint0:"<<jointAngleShouldBe[0]<<endl;
-      cout<<"Model: "
-          <<model->GetName()<<":joint1:"<<jointAngleShouldBe[1]<<endl;
-      cout<<"Model: "
-          <<model->GetName()<<":joint2:"<<jointAngleShouldBe[2]<<endl;
-      cout<<"Model: "
-          <<model->GetName()<<":joint3:"<<jointAngleShouldBe[3]<<endl;
+      // cout<<"Model: "
+      //     <<model->GetName()<<":joint0:"<<jointAngleShouldBe[0]<<endl;
+      // cout<<"Model: "
+      //     <<model->GetName()<<":joint1:"<<jointAngleShouldBe[1]<<endl;
+      // cout<<"Model: "
+      //     <<model->GetName()<<":joint2:"<<jointAngleShouldBe[2]<<endl;
+      // cout<<"Model: "
+      //     <<model->GetName()<<":joint3:"<<jointAngleShouldBe[3]<<endl;
       commandPub->Publish(feed_back_message);
       break;
     }
@@ -399,13 +399,13 @@ void ModuleController::PositionTracking(void)
   math::Vector2d desired_pos(targetPosition.pos.x,targetPosition.pos.y);
   if (module_pos.Distance(desired_pos)>2*EXECUTIONERROR){
     execution_finished_flag = false;
-    cout<<"Model: distance is : "<<module_pos.Distance(desired_pos)<<endl;
+    // cout<<"Model: distance is : "<<module_pos.Distance(desired_pos)<<endl;
   }
   if (abs(targetPosition.pos.z-GetModelCentralCoor().rot.GetYaw())
       >(EXECUTIONERROR+0.002)){
     execution_finished_flag = false;
-    cout<<"Model: angle difference is : "
-        <<abs(targetPosition.pos.z-GetModelCentralCoor().rot.GetYaw())<<endl;
+    // cout<<"Model: angle difference is : "
+    //     <<abs(targetPosition.pos.z-GetModelCentralCoor().rot.GetYaw())<<endl;
   }
   if (execution_finished_flag){
     command_message::msgs::CommandMessage feed_back_message;

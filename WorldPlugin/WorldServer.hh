@@ -109,7 +109,7 @@ class WorldServer : public WorldPlugin
   /// Default: disabled
   void EnableAutoMagneticConnection(void);
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  // These functions are used to connect or deconnect modules
+  // These functions are used to connect or disconnect modules
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   /// Connect two modules by pointers and node_ID
   void PassiveConnect(SmoresModulePtr module_1, SmoresModulePtr module_2, 
@@ -175,6 +175,11 @@ class WorldServer : public WorldPlugin
   /// Erase all the existing commands of a specific module
   /// TODO: Need to be tested
   void EraseComaands(SmoresModulePtr module);
+  /// Destroyer of the connection between different modules,
+  /// which is dynamic joint here
+  void DynamicJointDestroy(SmoresEdgePtr aEdge);
+  /// Rebuild the dynamic joint using the information in the edge object
+  void ReBuildDynamicJoint(SmoresEdgePtr a_edge);
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // These functions are utility functions
@@ -207,6 +212,10 @@ class WorldServer : public WorldPlugin
   unsigned int CountModules(SmoresModulePtr module);
   /// Get the length of the initial joint value setting sequence
   unsigned int GetInitialJointSequenceSize(void);
+  /// Get the total counts of the edges that stored in the program
+  unsigned int GetEdgeCounts(void);
+  /// Get SmoresEdge object by specifying the index in the vector connectionEdges
+  SmoresEdgePtr GetEdgePtrByIDX(unsigned int idx);
 
  private: 
   void Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf);
@@ -236,9 +245,6 @@ class WorldServer : public WorldPlugin
     math::Pose old_pose_of_module1, math::Pose old_pose_of_module2, 
     int node1_ID, int node2_ID, 
     math::Pose *new_pose_of_module1, math::Pose *new_pose_of_module2);
-  /// Destroyer of the connection between different modules,
-  /// which is dynamic joint here
-  void DynamicJointDestroy(SmoresEdgePtr aEdge);
   /// These functions are used to manage and send message to model
   void CommandManager(void); 
   void CommandExecution(ModuleCommandsPtr current_command_container);

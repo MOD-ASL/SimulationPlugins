@@ -49,6 +49,7 @@ class App(Frame):
     self.nodeSelect1 = IntVar()
     self.nodeSelect2 = IntVar()
     self.module2Select = StringVar()
+    self.jointAngleDifferenceTracking = [0]*4
     #----------- Extra Information Section --------------
     self.condition = StringVar()
     self.dependency = StringVar()
@@ -422,6 +423,7 @@ class App(Frame):
     moduleObj = self.GetModuleByName(modelname)
     self.UpdateJointValue()
     # self.elapstime.set(0.0)
+    self.jointAngleDifferenceTracking = [0]*4
     self.Addcommand["state"] = NORMAL
     self.ResetAssociateWindow()
     # self.Disconnect["state"] = NORMAL
@@ -504,6 +506,8 @@ class App(Frame):
       self.DisconnectSend(currenttimer)
     self.RefreshDependencyList()
     #self.RefreshGaitRecorder()
+    self.jointAngleDifferenceTracking = [0]*4
+    self.name["state"] = NORMAL
     self.saveButton["state"] = NORMAL
     self.saveButton2["state"] = NORMAL
     self.Addframe["state"] = NORMAL
@@ -694,7 +698,30 @@ class App(Frame):
     if self.initflag==0 or self.initflag==2:
       self.communicator.publish(newmessage)
     self.Playframe["state"] = NORMAL
-    self.Resetframe["state"] = DISABLED
+    # self.Resetframe["state"] = DISABLED
+    if self.commandType.get() == 0:
+      self.GetModuleByName(self.modelname.get()).JointAngle[0] \
+          -= self.jointAngleDifferenceTracking[0]
+      for each_associate in self.frontWheelAssociates:
+        self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
+            -= self.jointAngleDifferenceTracking[0]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+      self.GetModuleByName(self.modelname.get()).JointAngle[1] \
+          -= self.jointAngleDifferenceTracking[1]
+      for each_associate in self.lftWheelAssociates:
+        self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
+            -= self.jointAngleDifferenceTracking[1]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+      self.GetModuleByName(self.modelname.get()).JointAngle[2] \
+          -= self.jointAngleDifferenceTracking[2]
+      for each_associate in self.rgtWheelAssociates:
+        self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
+            -= self.jointAngleDifferenceTracking[2]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+      self.GetModuleByName(self.modelname.get()).JointAngle[3] \
+          -= self.jointAngleDifferenceTracking[3]
+      for each_associate in self.centralBendAssociates:
+        self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
+            -= self.jointAngleDifferenceTracking[3]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+      self.UpdateJointValue()
+    module_obj = self.GetModuleByName(each_module_name)
     print "Reset message sent"
 
   def PlayFrame(self):
@@ -1035,6 +1062,12 @@ class App(Frame):
           self.communicator.publish(each_message)
       print "Angle Updating"
       self.Addcommand["state"] = NORMAL
+      self.jointAngleDifferenceTracking[self.jointSelection.get()] += diff
+      if sum([abs(x) for x in self.jointAngleDifferenceTracking]) > 1.0/180.0*PI:
+        print "Angle difference is ", diff
+        self.name["state"] = DISABLED
+      else:
+        self.name["state"] = NORMAL
       if self.jointSelection.get() != 3 and self.typeSelection.get() == 0:
         if self.valueSetting.get() == self.valueSetting["to"]:
           self.valueSetting["to"] = self.valueSetting["to"] + 90

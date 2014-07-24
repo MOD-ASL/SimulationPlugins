@@ -9,6 +9,7 @@ if [ $# -eq 1 ]; then
   if [ "$1" = "-s" ]; then
     echo "[Installing] gazebo-2.2 ..."
     STATUS=2
+    WIPEOUT=1
     if [ $DISTRIB_RELEASE = "12.04" ]; then
       sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
     elif [ $DISTRIB_RELEASE = "12.10" ]; then

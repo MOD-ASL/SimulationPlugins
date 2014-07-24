@@ -231,11 +231,12 @@ void GaitRecorder::RecordCurrentPose(Frame &current_frame)
 void GaitRecorder::SetPose(const Frame *a_frame)
 {
   this->currentWorld->DisableAllModels();
-  // common::Time::MSleep(1000);
+  cout<<"World: All model disabled"<<endl;
+  for (unsigned int i = 0; i < GetEdgeCounts(); ++i) {
+    DynamicJointDestroy(GetEdgePtrByIDX(i));
+  }
   for (unsigned int i = 0; i < a_frame->GetPositionSize(); ++i) {
     bool flags[4] = {true,true,true,true};
-    SendGaitTableInstance(
-        GetModulePtrByIDX(i), flags, a_frame->GetPosition(i).JointAngles, 3);
     GetModulePtrByIDX(i)->ModuleObject->GetJoint("Front_wheel_hinge")->SetAngle(
         0,a_frame->GetPosition(i).JointAngles[0]);
     GetModulePtrByIDX(i)->ModuleObject->GetJoint("Left_wheel_hinge")->SetAngle(
@@ -245,10 +246,15 @@ void GaitRecorder::SetPose(const Frame *a_frame)
     GetModulePtrByIDX(i)->ModuleObject->GetJoint("Center_hinge")->SetAngle(
         0,a_frame->GetPosition(i).JointAngles[3]);
     GetModulePtrByIDX(i)->ModuleObject->SetWorldPose(a_frame->GetPosition(i).Position);
+    SendGaitTableInstance(
+        GetModulePtrByIDX(i), flags, a_frame->GetPosition(i).JointAngles, 3);
   }
+  for (unsigned int i = 0; i < GetEdgeCounts(); ++i) {
+    ReBuildDynamicJoint(GetEdgePtrByIDX(i));
+  }
+  // common::Time::MSleep(1000);
+  // this->currentWorld->DisableAllModels();
   this->currentWorld->EnableAllModels();
-  // common::Time::MSleep(5000);
-  // this->currentWorld->EnablePhysicsEngine(true);
 } // GaitRecorder::SetPose
 // Register this plugin with the simulator
 GZ_REGISTER_WORLD_PLUGIN(GaitRecorder)
