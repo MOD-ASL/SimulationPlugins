@@ -13,13 +13,13 @@ void WorldController::ExtraInitializationInLoad(physics::WorldPtr _parent,
 
   // Here is the test for dynamic shared libraries
   // TODO: Need to be removed after testing
-  string lib_path 
-      = "/home/edward/.gazebo/models/SMORES6Uriah/plugins/libSpiderController.so";
-  void *current_handle = NULL;
-  LibraryTemplate *spider = DynamicallyLoadedLibrary(
-      lib_path.c_str(),current_handle);
-  spider->WhenRunning();
-  CloseLoadedLibrary(&current_handle);
+  // string lib_path 
+  //     = "/home/edward/.gazebo/models/SMORES6Uriah/plugins/libSpiderController.so";
+  // void *current_handle = NULL;
+  // LibraryTemplate *spider = DynamicallyLoadedLibrary(
+  //     lib_path.c_str(),current_handle);
+  // spider->WhenRunning();
+  // CloseLoadedLibrary(&current_handle);
 } // WorldController::ExtraInitializationInLoad
 void WorldController::ExtraWorkWhenModelInserted(CommandMessagePtr &msg)
 {
