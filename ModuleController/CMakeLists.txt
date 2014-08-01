@@ -8,6 +8,7 @@ if (PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
 endif()
 include_directories(
+	/usr/include/sdformat-2.0/
 	${GAZEBO_INCLUDE_DIRS}
 	${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition
 	)

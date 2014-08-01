@@ -233,13 +233,13 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
         }
       }
       currentWorld->GetModel(msg->stringmessage())
-          ->GetJoint("Front_wheel_hinge")->SetAngle(0,joint_angles[0]);
+          ->GetJoint("Front_wheel_hinge")->SetPosition(0,joint_angles[0]);
       currentWorld->GetModel(msg->stringmessage())
-          ->GetJoint("Left_wheel_hinge")->SetAngle(0,joint_angles[1]);
+          ->GetJoint("Left_wheel_hinge")->SetPosition(0,joint_angles[1]);
       currentWorld->GetModel(msg->stringmessage())
-          ->GetJoint("Right_wheel_hinge")->SetAngle(0,joint_angles[2]);
+          ->GetJoint("Right_wheel_hinge")->SetPosition(0,joint_angles[2]);
       currentWorld->GetModel(msg->stringmessage())
-          ->GetJoint("Center_hinge")->SetAngle(0,joint_angles[3]);
+          ->GetJoint("Center_hinge")->SetPosition(0,joint_angles[3]);
       currentWorld->GetModel(msg->stringmessage())
           ->SetLinkWorldPose(initialPosition.at(0),
           currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
@@ -366,7 +366,7 @@ void WorldServer::ConnectAndDynamicJointGeneration(
   module_1->ModuleObject->GetJointController()->AddJoint(DynamicJoint);
   DynamicJoint->SetHighStop(0,math::Angle(0.0000001));
   DynamicJoint->SetLowStop(0,math::Angle(-0.0000001));
-  DynamicJoint->SetAngle(0,math::Angle(0.0));
+  DynamicJoint->SetPosition(0,0.0);
   dynamicConnections.push_back(DynamicJoint);
   // This is necessary for easy access of the dynamic joint
   an_edge->DynamicJointPtr = dynamicConnections.back();

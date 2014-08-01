@@ -322,9 +322,9 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
   }
 } // ModuleController::CommandDecoding
 void ModuleController::SetJointAngleForce(physics::JointPtr current_joint, 
-    int rot_axis, math::Angle angle_desired)
+    int rot_axis, double position)
 {
-  current_joint->SetAngle(rot_axis, angle_desired);
+  current_joint->SetPosition (rot_axis, position);
 } // ModuleController::SetJointAngleForce
 void ModuleController::JointPIDController(double angle_desired_radian, 
     double desire_speed, SmoresJoint *current_joint) 

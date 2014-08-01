@@ -4,7 +4,7 @@ include (FindPkgConfig)
 if (PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
 endif()
-include_directories(${GAZEBO_INCLUDE_DIRS})
+include_directories(/usr/include/sdformat-2.0/ ${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(contact SHARED ContactPublisher.cc)

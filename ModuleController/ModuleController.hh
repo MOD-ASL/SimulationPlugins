@@ -98,7 +98,7 @@ class ModuleController : public ModelPlugin
   /// This function force to set joint to a specific angle
   /// Only used in simulation
   void SetJointAngleForce(physics::JointPtr current_joint, int rot_axis, 
-      math::Angle angle_desired);
+      double position);
   /// This function is the actuall joint control function used now
   /// This function apply a PID controller to control the joint speed 
   /// and to achieve the specified angle
