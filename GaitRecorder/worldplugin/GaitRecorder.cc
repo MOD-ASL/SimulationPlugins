@@ -144,6 +144,11 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
         joints_values[1] = msg->jointangles(1);
         joints_values[2] = msg->jointangles(2);
         joints_values[3] = msg->jointangles(3);
+        for (int i = 0; i < 4; ++i) {
+          if (flags[i] != 0) {
+            flags[i] = false;
+          }
+        }
         string condition = msg->condition();
         string dependency = msg->dependency();
         unsigned int time_interval = msg->timer();

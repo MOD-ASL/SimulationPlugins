@@ -6,7 +6,7 @@ STATUS=1
 WIPEOUT=0
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ $# -eq 1 ]; then
-  if [ "$1" = "-s" ]; then
+  if [ "$1" = "-s2" ]; then
     echo "[Installing] gazebo-2.2 ..."
     STATUS=2
     WIPEOUT=1

@@ -706,22 +706,22 @@ class App(Frame):
           -= self.jointAngleDifferenceTracking[0]
       for each_associate in self.frontWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[0]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[0]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
       self.GetModuleByName(self.modelname.get()).JointAngle[1] \
           -= self.jointAngleDifferenceTracking[1]
       for each_associate in self.lftWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[1]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[1]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
       self.GetModuleByName(self.modelname.get()).JointAngle[2] \
           -= self.jointAngleDifferenceTracking[2]
       for each_associate in self.rgtWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[2]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[2]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
       self.GetModuleByName(self.modelname.get()).JointAngle[3] \
           -= self.jointAngleDifferenceTracking[3]
       for each_associate in self.centralBendAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[3]*each_associate.ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
       self.UpdateJointValue()
     module_obj = self.GetModuleByName(each_module_name)
     print "Reset message sent"
@@ -887,7 +887,7 @@ class App(Frame):
     newmessage.Timer = eachgaittable.Timer
     newmessage.Condition = eachgaittable.condition_id
     newmessage.Dependency = eachgaittable.dependency_id
-    for i in xrange(3):
+    for i in xrange(4):
       newmessage.Flags.append(eachgaittable.AngleFlags[i])
     # print "Listeners are ",self.publisher.showlisteners()
     # self.newconnection.sendData(newmessage)
