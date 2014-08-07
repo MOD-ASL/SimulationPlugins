@@ -25,7 +25,7 @@ For more information about Autonomous Systems Lab at Cornell, please visit [Auto
 
 Installation and Quick Start
 ----------------------------
-**Gazebo**
+**Gazebo** (API level 4.0)
 
 To use the simulator, you will first need to install Gazebo. Both precompiled binaries and source codes are available. Please follow the instruction on their [website](http://gazebosim.org/wiki/Main_Page) for installation.
 
