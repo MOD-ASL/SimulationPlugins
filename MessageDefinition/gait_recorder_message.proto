@@ -13,7 +13,7 @@ message GaitRecMessage
 	optional string Condition = 6;
 	optional string Dependency = 7;
 	optional string ExtrInfo = 8;
-	repeated bool Flags = 9 [packed=true];
+	repeated int32 Flags = 9 [packed=true];
 	optional bool ResetFlag = 10;
 	optional bool LoadConfiguration = 11;
 }

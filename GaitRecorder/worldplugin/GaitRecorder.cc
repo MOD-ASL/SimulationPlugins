@@ -145,7 +145,7 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
         joints_values[2] = msg->jointangles(2);
         joints_values[3] = msg->jointangles(3);
         for (int i = 0; i < 4; ++i) {
-          if (flags[i] != 0) {
+          if (msg->flags(i) != 0) {
             flags[i] = false;
           }
         }
