@@ -348,8 +348,8 @@ class App(Frame):
     # open file on your own
     if filename:
       self.BuildConfigurationFromFile(filename)
-    self.loadButton["state"] = DISABLED
-    self.loadButton2["state"] = DISABLED
+      self.loadButton["state"] = DISABLED
+      self.loadButton2["state"] = DISABLED
 
   def BuildConfigurationFromFile(self, filename):
     # Delete the exiting configuration first
@@ -599,6 +599,8 @@ class App(Frame):
     gait_file_opt['parent'] = self.parent
     gait_file_opt['title'] = 'Save Configuration File'
     f = tkFileDialog.asksaveasfile(mode='w', **gait_file_opt)
+    if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        return
     lines = ['<?xml version="1.0" encoding="UTF-8"?>\n']
     lines.append('<configuration>\n')
     lines.append('<modules>\n')

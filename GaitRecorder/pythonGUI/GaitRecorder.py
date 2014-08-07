@@ -62,7 +62,7 @@ class App(Frame):
     #------------ Command Recorder -----------------------
     self.selectedkeyFrame = StringVar()
     #------------ Save Path Selection --------------------
-    self.savePath = "./"
+    self.savePath = "~/"
     #------------ Joint Associated Joints ----------------
     self.frontWheelAssociates = []
     self.lftWheelAssociates = []
@@ -357,6 +357,8 @@ class App(Frame):
 #---------------- Open Configurations ----------------------
   def AskOpenFile(self):
     filename = tkFileDialog.askopenfilename(**self.file_opt)
+    if filename == "":
+        return
     # filename = "/home/edward/.gazebo/models/SMORES8Jack/InitialConfiguration"
 
     # open file on your own
@@ -919,11 +921,20 @@ class App(Frame):
 #----------------- Save & Load Gait Table -------------------
   def SaveGaitTable(self):
     # Need a regular expression
-    commandpath = self.savepath.get()
-    if commandpath[-1] != "/":
-      f = open(commandpath, 'w')
-    else:
-      f = open(commandpath+"Commands", 'w')
+    # commandpath = self.savepath.get()
+    # if commandpath[-1] != "/":
+    #   f = open(commandpath, 'w')
+    # else:
+    #   f = open(commandpath+"Commands", 'w')
+    command_file_opt = {}
+    command_file_opt['filetypes'] = [('smart gait table', '.gait'),('text files', '.txt'),('all files', '*')]
+    command_file_opt["defaultextension"] = ".gait"
+    command_file_opt['initialdir'] = self.savePath
+    command_file_opt['parent'] = self.parent
+    command_file_opt['title'] = 'Save Gait Command'
+    f = tkFileDialog.asksaveasfile(mode='w', **command_file_opt)
+    if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        return
     GaitStringList = []
     for eachframe in self.keyFrames:
       for eachentry in eachframe.GaitEntries:
@@ -936,7 +947,8 @@ class App(Frame):
 
   def OpenGaitFile(self):
     filename = tkFileDialog.askopenfilename(**self.file_opt)
-    # print filename
+    if filename == '':
+        return
     # filename = "/home/edward/Simulation Plugins/GaitRecorder/pythonGUI/Commands"
     gaitfile = open(filename, 'r')
     # print gaitfile.readlines()
@@ -1012,7 +1024,18 @@ class App(Frame):
           jointsflags.append(0)
         elif gaitstring[0] == "s" :
           jointsflags.append(1)
-        joints.append(float(gaitstring[1:idx]))
+        elif gaitstring[0] == "t" :
+          jointsflags.append(2)
+        elif gaitstring[0] == "i" :
+          jointsflags.append(3)
+        elif gaitstring[0] == "c" :
+          jointsflags.append(4)
+        elif gaitstring[0] == "d" :
+          jointsflags.append(5)
+        if gaitstring[1:idx] == "":
+          joints.append(0.0)
+        else:
+          joints.append(float(gaitstring[1:idx]))
         gaitstring = gaitstring[idx+1:]
       return GaitEntry(modelname,joints,timer,dependency,condition, \
           False,jointsflags[0:4])
@@ -1141,6 +1164,8 @@ class App(Frame):
     select_dir_options['parent'] = self.parent
     select_dir_options['title'] = 'Select Save Path'
     self.savePath = tkFileDialog.askdirectory(**select_dir_options)
+    if self.savePath == "":
+        return
     self.savepath.set(self.savePath+"/")
 
 #---------------- Add Common Command -----------------------

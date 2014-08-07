@@ -11,7 +11,7 @@ class GaitEntry:
 
   def GaitToStr(self):
     if self.SpecialEntry :
-      gaitstr = self.ExtraInfo
+      gaitstr = self.ExtraInfo+";"
       return gaitstr
     else:
       gaitstr = ""
@@ -22,8 +22,17 @@ class GaitEntry:
         elif self.AngleFlags[i] == 1:
           gaitstr+= "s"
         elif self.AngleFlags[i] == 2:
-          gaitstr+= "t"        
-        gaitstr+= str(self.Joints[i])+" "
+          gaitstr+= "t"
+        elif self.AngleFlags[i] == 3:
+          gaitstr+= "i"
+        elif self.AngleFlags[i] == 4:
+          gaitstr+= "c"
+        elif self.AngleFlags[i] == 5:
+          gaitstr+= "d"
+        if self.AngleFlags[i] < 3 :
+          gaitstr+= str(self.Joints[i])+" "
+        else:
+          gaitstr+= " "
       if self.Timer > 0:
         gaitstr+= "["+str(self.Timer)+"] "
       if len(self.condition_id) > 0 :
