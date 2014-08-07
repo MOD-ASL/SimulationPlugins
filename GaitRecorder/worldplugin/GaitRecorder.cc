@@ -105,6 +105,7 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
         // Disconnect Two Model
         if (msg->has_extrinfo()) {
           string extrainfo = msg->extrinfo();
+          cout<<"World: extra info: "<<extrainfo<<endl;
           if (extrainfo.substr(2,1).compare("+")==0 || 
               extrainfo.substr(2,1).compare("-")==0) {
             bool connect = true;
@@ -135,8 +136,8 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
               SendGaitTable(GetModulePtrByName(modulename1), modulename1, 
                   modulename2, 4, 4, 2,condition,dependency);
             }
-            return;
           }
+          return;
         }
         bool flags[4] = {true,true,true,true};
         double joints_values[4] = {0,0,0,0};

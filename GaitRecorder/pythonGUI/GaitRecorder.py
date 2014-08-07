@@ -356,6 +356,7 @@ class App(Frame):
 
 #---------------- Open Configurations ----------------------
   def AskOpenFile(self):
+    self.file_opt['title'] = 'Open Configuration File'
     filename = tkFileDialog.askopenfilename(**self.file_opt)
     if filename == "":
         return
@@ -907,7 +908,7 @@ class App(Frame):
     newmessage.Timer = eachgaittable.Timer
     newmessage.Condition = eachgaittable.condition_id
     newmessage.Dependency = eachgaittable.dependency_id
-    newmessage.ExtrInfo = eachgaittable.ModuleName
+    newmessage.ExtrInfo = eachgaittable.ExtraInfo
     # for i in xrange(3):
     #   newmessage.Flags.append(eachgaittable.AngleFlags[i])
     # print "Listeners are ",self.publisher.showlisteners()
@@ -946,6 +947,7 @@ class App(Frame):
     self.saveButton2["state"] = DISABLED
 
   def OpenGaitFile(self):
+    self.file_opt['title'] = 'Open Gait Command'
     filename = tkFileDialog.askopenfilename(**self.file_opt)
     if filename == '':
         return
@@ -990,6 +992,7 @@ class App(Frame):
     self.Addframe["state"] = NORMAL
 
   def InterpretGaitString(self,gaitstring):
+    # print "gait string: ",gaitstring
     if gaitstring.find("[") != -1:
       timer = int(gaitstring[gaitstring.find("[")+1:gaitstring.find("]")])
     else:
@@ -1037,6 +1040,7 @@ class App(Frame):
         else:
           joints.append(float(gaitstring[1:idx]))
         gaitstring = gaitstring[idx+1:]
+      # print "joint size: ", len(joints)
       return GaitEntry(modelname,joints,timer,dependency,condition, \
           False,jointsflags[0:4])
 
