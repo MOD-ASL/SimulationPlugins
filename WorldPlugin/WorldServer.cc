@@ -132,19 +132,28 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
           = atof(position_string.substr(0,position_string.find(" ")).c_str());
       position_string = position_string.substr(position_string.find(" ")+1);
     }
-    double orientation[3] = {0,0,0};
-    for (int i = 0; i < 3; ++i) {
-      if (i==2) {
-        orientation[i] = atof(position_string.substr(0).c_str());
-      }else {
-        orientation[i] 
-            = atof(position_string.substr(0,position_string.find(" ")).c_str());
-        position_string = position_string.substr(position_string.find(" ")+1);
+    vector<double> orientation;
+    while(position_string.length()>0){
+      string::size_type next_space = position_string.find_first_of(" ");
+      orientation.push_back(atof(position_string.substr(0,next_space).c_str()));
+      if (next_space == string::npos) {
+        position_string = position_string.substr(position_string.length());
+      }else{
+        position_string = position_string.substr(next_space+1);
       }
+    }
+    math::Quaternion model_orientation;
+    if (orientation.size() == 3) {
+      model_orientation.SetFromEuler(orientation.at(0),orientation.at(1),
+          orientation.at(2));
+    }
+    if (orientation.size() == 4) {
+      model_orientation.Set(orientation.at(0),orientation.at(1),orientation.at(2),
+          orientation.at(3));
     }
     math::Pose model_position(
         math::Vector3(coordinates[0], coordinates[1], coordinates[2]), 
-        math::Quaternion(orientation[0], orientation[1], orientation[2]));
+        model_orientation);
     string joints_string = modlue_node->first_node("joints")->value();
     InsertModel(module_name, model_position, joints_string);
     modlue_node = modlue_node->next_sibling();

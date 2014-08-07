@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-FIND_PACKAGE( Boost 1.40 COMPONENTS system REQUIRED )
+FIND_PACKAGE( Boost COMPONENTS system REQUIRED )
 set (CMAKE_CXX_FLAGS "-g -Wall")
 
 include (FindPkgConfig)
@@ -7,7 +7,6 @@ if (PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
 endif()
 include_directories(
-	/usr/include/sdformat-2.0/
 	${GAZEBO_INCLUDE_DIRS}
 	${CMAKE_CURRENT_BINARY_DIR}/MessageDefinition
 	${CMAKE_CURRENT_BINARY_DIR}/../../Libraries/

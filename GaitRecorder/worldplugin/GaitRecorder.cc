@@ -201,13 +201,13 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
         SendGaitTableInstance(GetModulePtrByName(modelname), flags, joints_values,3);
         cout<<"World: model problem: "<<modelname<<endl;
         currentWorld->GetModel(modelname)->GetJoint("Front_wheel_hinge")
-            ->SetAngle(0,msg->jointangles(0));
+            ->SetPosition(0,msg->jointangles(0));
         currentWorld->GetModel(modelname)->GetJoint("Left_wheel_hinge")
-            ->SetAngle(0,msg->jointangles(1));
+            ->SetPosition(0,msg->jointangles(1));
         currentWorld->GetModel(modelname)->GetJoint("Right_wheel_hinge")
-            ->SetAngle(0,msg->jointangles(2));
+            ->SetPosition(0,msg->jointangles(2));
         currentWorld->GetModel(modelname)->GetJoint("Center_hinge")
-            ->SetAngle(0,msg->jointangles(3));
+            ->SetPosition(0,msg->jointangles(3));
       }
     }
   }
@@ -237,13 +237,13 @@ void GaitRecorder::SetPose(const Frame *a_frame)
   }
   for (unsigned int i = 0; i < a_frame->GetPositionSize(); ++i) {
     bool flags[4] = {true,true,true,true};
-    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Front_wheel_hinge")->SetAngle(
+    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Front_wheel_hinge")->SetPosition(
         0,a_frame->GetPosition(i).JointAngles[0]);
-    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Left_wheel_hinge")->SetAngle(
+    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Left_wheel_hinge")->SetPosition(
         0,a_frame->GetPosition(i).JointAngles[1]);
-    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Right_wheel_hinge")->SetAngle(
+    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Right_wheel_hinge")->SetPosition(
         0,a_frame->GetPosition(i).JointAngles[2]);
-    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Center_hinge")->SetAngle(
+    GetModulePtrByIDX(i)->ModuleObject->GetJoint("Center_hinge")->SetPosition(
         0,a_frame->GetPosition(i).JointAngles[3]);
     GetModulePtrByIDX(i)->ModuleObject->SetWorldPose(a_frame->GetPosition(i).Position);
     SendGaitTableInstance(

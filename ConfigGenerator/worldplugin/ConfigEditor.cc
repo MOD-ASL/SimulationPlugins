@@ -106,13 +106,13 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
       }
     }else{
       currentWorld->GetModel(module_name)->GetJoint("Front_wheel_hinge")
-      		->SetAngle(0,joints_angles[0]);
+      		->SetPosition(0,joints_angles[0]);
       currentWorld->GetModel(module_name)->GetJoint("Left_wheel_hinge")
-      		->SetAngle(0,joints_angles[1]);
+      		->SetPosition(0,joints_angles[1]);
       currentWorld->GetModel(module_name)->GetJoint("Right_wheel_hinge")
-      		->SetAngle(0,joints_angles[2]);
+      		->SetPosition(0,joints_angles[2]);
       currentWorld->GetModel(module_name)->GetJoint("Center_hinge")
-      		->SetAngle(0,joints_angles[3]);
+      		->SetPosition(0,joints_angles[3]);
       this->configPub->Publish(*msg);
     }
   }else{

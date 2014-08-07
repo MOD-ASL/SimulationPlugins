@@ -604,7 +604,17 @@ class App(Frame):
     for eachmodule in self.ModuleList:
       lines.append('\t<module>\n')
       lines.append('\t\t<name>'+eachmodule.ModelName+'</name>\n')
-      lines.append('\t\t<position>'+str(eachmodule.Position[0])+' '+str(eachmodule.Position[1])+' '+str(eachmodule.Position[2])+' '+str(eachmodule.Position[3])+' '+str(eachmodule.Position[4])+' '+str(eachmodule.Position[5])+'</position>\n')
+      if len(eachmodule.Position) == 6:
+        lines.append('\t\t<position>'+str(eachmodule.Position[0])+' '+ \
+            str(eachmodule.Position[1])+' '+str(eachmodule.Position[2])+' '+ \
+            str(eachmodule.Position[3])+' '+str(eachmodule.Position[4])+' '+ \
+            str(eachmodule.Position[5])+'</position>\n')
+      elif len(eachmodule.Position) == 7:
+        lines.append('\t\t<position>'+str(eachmodule.Position[0])+' '+ \
+            str(eachmodule.Position[1])+' '+str(eachmodule.Position[2])+' '+ \
+            str(eachmodule.Position[3])+' '+str(eachmodule.Position[4])+' '+ \
+            str(eachmodule.Position[5])+' '+str(eachmodule.Position[6])+ \
+            '</position>\n')
       lines.append('\t\t<joints>'+str(eachmodule.JointAngle[0])+' '+str(eachmodule.JointAngle[1])+' '+str(eachmodule.JointAngle[2])+' '+str(eachmodule.JointAngle[3])+'</joints>\n')
       lines.append('\t</module>\n')
     lines.append('</modules>\n\n')
