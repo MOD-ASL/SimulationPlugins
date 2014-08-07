@@ -323,15 +323,15 @@ class App(Frame):
     InsertButton.place(x = 5, y = window_height-Border_hieht-5, anchor = SW)
 
     #---------------- Save Button --------------------------------
-    savepathlabel = Label(f1, text='Save path: ')
-    savepathlabel.place(x = window_width-Border_width-475, y = window_height-Border_hieht-7, anchor = SE)
-    savepathlabel2 = Label(f2, text='Save path: ')
-    savepathlabel2.place(x = window_width-Border_width-475, y = window_height-Border_hieht-7, anchor = SE)
-    self.savepathstr.set("~/.gazebo/models/SMORES7Stella/");
-    self.savepath1 = Entry(f1, textvariable=self.savepathstr, width = 35)
-    self.savepath1.place(x = window_width-Border_width-190, y = window_height-Border_hieht-7, anchor = SE)
-    self.savepath2 = Entry(f2, textvariable=self.savepathstr, width = 35)
-    self.savepath2.place(x = window_width-Border_width-190, y = window_height-Border_hieht-7, anchor = SE)
+    # savepathlabel = Label(f1, text='Save path: ')
+    # savepathlabel.place(x = window_width-Border_width-475, y = window_height-Border_hieht-7, anchor = SE)
+    # savepathlabel2 = Label(f2, text='Save path: ')
+    # savepathlabel2.place(x = window_width-Border_width-475, y = window_height-Border_hieht-7, anchor = SE)
+    # self.savepathstr.set("~/.gazebo/models/SMORES7Stella/");
+    # self.savepath1 = Entry(f1, textvariable=self.savepathstr, width = 35)
+    # self.savepath1.place(x = window_width-Border_width-190, y = window_height-Border_hieht-7, anchor = SE)
+    # self.savepath2 = Entry(f2, textvariable=self.savepathstr, width = 35)
+    # self.savepath2.place(x = window_width-Border_width-190, y = window_height-Border_hieht-7, anchor = SE)
     self.saveButton = Button(f1, text="Save", command = self.WriteFile)
     self.saveButton.place(x = window_width-Border_width-125, y = window_height-Border_hieht-5, anchor = SE)
     self.saveButton2 = Button(f2, text="Save", command = self.WriteFile)
@@ -592,12 +592,13 @@ class App(Frame):
       self.SaveEnable()
 
   def WriteFile(self):
-    apathstr = self.savepathstr.get()
-    if apathstr[-1] != '/':
-      apathstr += '/'
-    if apathstr[0] == '~':
-        apathstr = self.home + apathstr[1:]
-    f = open(apathstr+"InitialConfiguration", 'w')
+    gait_file_opt = {}
+    gait_file_opt['filetypes'] = [('configuration file', '.conf'),('XML file', '.xml'),('text files', '.txt'),('all files', '*')]
+    gait_file_opt["defaultextension"] = ".conf"
+    gait_file_opt['initialdir'] = '~/.gazebo/models/'
+    gait_file_opt['parent'] = self.parent
+    gait_file_opt['title'] = 'Save Configuration File'
+    f = tkFileDialog.asksaveasfile(mode='w', **gait_file_opt)
     lines = ['<?xml version="1.0" encoding="UTF-8"?>\n']
     lines.append('<configuration>\n')
     lines.append('<modules>\n')
