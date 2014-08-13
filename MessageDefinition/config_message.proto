@@ -12,4 +12,5 @@ message ConfigMessage
 	optional double EdgeAng = 8;
 	optional bool DeleteFlag = 9;
 	optional bool QuaternionPos = 10;
+	optional string ModelPath = 11;
 }

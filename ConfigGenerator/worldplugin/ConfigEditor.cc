@@ -5,9 +5,11 @@ ConfigEditor::ConfigEditor()
 		:WorldServer()
 {}
 ConfigEditor::~ConfigEditor(){}
-void ConfigEditor::InsertModel(string name, math::Pose position)
+void ConfigEditor::InsertModel(string name, math::Pose position, 
+    string joint_angles)
 {
-  if (!currentWorld->GetModel(name)) {
+  if (!currentWorld->GetModel(name))
+  {
     sdf::SDFPtr model_sdf;
     model_sdf.reset(new sdf::SDF);
     sdf::init(model_sdf);
@@ -18,6 +20,7 @@ void ConfigEditor::InsertModel(string name, math::Pose position)
     model_element->GetAttribute("name")->Set(name);
     model_element->GetElement("pose")->Set(position_calibrate*position);
     currentWorld->InsertModelSDF(*model_sdf);
+    AddInitialJoints(joint_angles);
     AddInitialPosition(position);
   }else{
     Color::Modifier red_log(Color::FG_RED);
@@ -27,14 +30,14 @@ void ConfigEditor::InsertModel(string name, math::Pose position)
   }
 }
 void ConfigEditor::InsertModel(string name, math::Pose position, 
-    string joint_angles)
+    string joint_angles, string model_path)
 {
   if (!currentWorld->GetModel(name))
   {
     sdf::SDFPtr model_sdf;
     model_sdf.reset(new sdf::SDF);
     sdf::init(model_sdf);
-    sdf::readFile(MODULEPATH, model_sdf);
+    sdf::readFile(model_path.c_str(), model_sdf);
     sdf::ElementPtr model_element = model_sdf->root->GetElement("model");
     math::Pose position_calibrate(
         math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
@@ -121,7 +124,12 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
     		<< joints_angles[3];
     string joints_string = strs.str();
     cout<<"World: Joint angles: "<<joints_string<<endl;
-    InsertModel(module_name, position_tmp, joints_string);
+    if (msg->has_modelpath())
+    {
+      InsertModel(module_name, position_tmp, joints_string, msg->modelpath());
+    }else{
+      InsertModel(module_name, position_tmp, joints_string);
+    }
     this->configPub->Publish(*msg);
   }
 }

@@ -1,5 +1,5 @@
 class Module:
-  def __init__(self, modelname,position,jointangle, quapos = False):
+  def __init__(self, modelname,position,jointangle, path, quapos = False):
     self.ModelName = modelname
     try:
       self.Position = position
@@ -10,6 +10,7 @@ class Module:
     except ValueError:
       pass
     self.nodes = {0:[],1:[],2:[],3:[]}
+    self.Path = path
     self.Quaternion = quapos
 
   def connection(self,node,connection):

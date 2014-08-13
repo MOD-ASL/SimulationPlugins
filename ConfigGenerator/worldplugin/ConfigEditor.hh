@@ -26,8 +26,9 @@ class ConfigEditor : public WorldServer
   ~ConfigEditor();
   /// A slightly different insertion function that will get around 
   /// simulation graphic not updating issue
-  virtual void InsertModel(string name, math::Pose position);
   virtual void InsertModel(string name, math::Pose position, string joint_angles);
+  virtual void InsertModel(string name, math::Pose position, string joint_angles, 
+      string model_path);
   /// The function that perform extra initialization
   /// In the base class, configuration wil be built in this function
   /// Which means we need to diable it here

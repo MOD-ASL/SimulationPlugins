@@ -86,10 +86,11 @@ class WorldServer : public WorldPlugin
   /// Close the loaded libraries
   void CloseLoadedLibrary(void **lib_handle);
   virtual void OnSystemRunningExtra(const common::UpdateInfo & _info);
-  /// Insert a model to the current world
-  virtual void InsertModel(string name, math::Pose position);
   /// Insert a model to the current world, with joint angles specified
   virtual void InsertModel(string name, math::Pose position, string joint_angles);
+  /// Insert a model to the current world, with joint angles and model path specified
+  virtual void InsertModel(string name, math::Pose position, string joint_angles, 
+      string model_path);
   /// Add a new position to set at the end of 'intialPosition' vector
   void AddInitialPosition(math::Pose position);
   /// Add new initial joint values to set at the end of 'initalJointValue' vector

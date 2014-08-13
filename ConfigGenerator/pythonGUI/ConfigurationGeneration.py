@@ -39,13 +39,18 @@ class App(Frame):
   def __init__(self, parent, flag):
     Frame.__init__(self, parent)   
     
+    self.DEFAULT_TYPE = 'muscle'
+    self.DEFAULT_PATH = 'SMORE.sdf'
     #------------ Variables Initialization -------------------
     self.parent = parent
     self.ModuleList = []
     self.ConnectionList = []
+    self.ModuleNameList = []
     self.modelname = StringVar()
+    self.current_model_type = self.DEFAULT_TYPE
+    self.current_suggest_name = "Module"
+    self.current_modeule_path = self.DEFAULT_PATH
     self.modelname.set('Module_0')
-    self.modulenameincrementrecorder = 0
     self.InsertMethod = StringVar()
     self.InsertMethod.set('Connection')
     self.connectedmodelvar = StringVar()
@@ -71,7 +76,7 @@ class App(Frame):
     #------------ File Options -------------------------------
     self.file_opt = options = {}
     # options['defaultextension'] = '.txt'
-    options['filetypes'] = [('all files', '*'), ('text files', '.txt')]
+    options['filetypes'] = [('all files', '*'), ('Configuration file files', '.conf')]
     options['initialdir'] = '~/'
     options['parent'] = parent
     options['title'] = 'Open Configuration File'
@@ -124,8 +129,16 @@ class App(Frame):
     #---------------- Model Name ---------------------------------
     label = Label(f1, text='ModelName: ')
     label.place(x = 10, y = 5)
-    name = Entry(f1, textvariable=self.modelname)
+    name = Entry(f1, textvariable=self.modelname, width = 15)
     name.place(x = 90, y = 5)
+    label_type = Label(f1, text='Model Type: ')
+    label_type.place(x = 230, y = 5)
+    self.type_name = Label(f1, text=self.current_model_type)
+    self.type_name.place(x = 310, y = 5)
+    selectModelButton = Button(f1, text="Select Model Type", command = self.SelectModelType)
+    selectModelButton.place(x = 370, y = 2)
+    defaultButton = Button(f1,text="Default", command = self.SetTypeDefault)
+    defaultButton.place(x = 506, y = 2)
 
     #--------------- Insert by Connection configuration box ------
     insertByConn = ttk.Labelframe(f1, text='Insert By Connecting to Existing Models', width = 580, height = 240)
@@ -364,9 +377,14 @@ class App(Frame):
       # print "position: ",self.StringToTuple(positionstr)
       module_position = self.StringToTuple(positionstr)
       jointanglestr = eachmodule.find('joints').text
+      try:
+        module_path = eachmodule.find('path').text
+      except Exception, e:
+        module_path = self.DEFAULT_PATH
+      print "module path: ",module_path
       # print "joint angles: ",self.StringToTuple(jointanglestr)
       module_jointangle = self.StringToTuple(jointanglestr)
-      new_module = Module(model_name,module_position,module_jointangle)
+      new_module = Module(model_name,module_position,module_jointangle,module_path)
       new_module.rotation_matrix = kinematics.rotz(module_position[5])* \
                                    kinematics.roty(module_position[4])* \
                                    kinematics.rotx(module_position[3])
@@ -384,7 +402,6 @@ class App(Frame):
     print "Total connections: ",len(self.ConnectionList)
 
     self.updateModuleList()
-    self.modulenameincrementrecorder = int(''.join(c for c in self.ModuleList[-1].ModelName if c.isdigit()))
     self.nameIncrement()
     self.Rel_pos.select()
     self.DisableXYZInput()
@@ -407,6 +424,30 @@ class App(Frame):
     models = [eachmodel for eachmodel in self.ModuleList if eachmodel.ModelName == name]
     return models[0]
 
+  def SelectModelType(self):
+    fileoptions = {}
+    fileoptions['filetypes'] = [('Model type files', '.modeltype'),('all files', '*')]
+    fileoptions['initialdir'] = '~/'
+    fileoptions["defaultextension"] = ".modeltype"
+    fileoptions['parent'] = self.parent
+    fileoptions['title'] = 'Select Module Type'
+    filename = tkFileDialog.askopenfilename(**fileoptions)
+    if filename:
+      self.tree = ET.parse(filename)
+      root = self.tree.getroot()
+      self.current_model_type = root.find("type").text
+      self.current_suggest_name = root.find("suggested_name").text
+      self.current_modeule_path = root.find("file").text
+      self.type_name['text'] = self.current_model_type
+      self.nameIncrement()
+
+  def SetTypeDefault(self):
+    self.current_model_type = self.DEFAULT_TYPE
+    self.current_suggest_name = "Module"
+    self.current_modeule_path = self.DEFAULT_PATH
+    self.type_name['text'] = self.current_model_type
+    self.nameIncrement()
+
   def InsertModel(self,*args):
     print "frob called with {} arguments".format(len(args))
     insertedModel = False
@@ -416,7 +457,7 @@ class App(Frame):
       print "Position tuple is ",module_position
       module_jointangle = (degree2rad(self.Joint0.get()),degree2rad(self.Joint1.get()),degree2rad(self.Joint2.get()),degree2rad(self.Joint3.get()))
       print "Joint angle tuple is ",module_jointangle
-      new_module = Module(self.modelname.get(),module_position,module_jointangle)
+      new_module = Module(self.modelname.get(),module_position,module_jointangle,self.current_modeule_path)
       # Assign rotation matrix to new_module based on euler angles:
       new_module.rotation_matrix = kinematics.rotz(module_position[5])* \
                                    kinematics.roty(module_position[4])* \
@@ -438,7 +479,7 @@ class App(Frame):
         print 'RPY: ' + str(module_position[3:6])
         print 'Quat: ' + str(quaternion)
         # --
-        new_module = Module(self.modelname.get(),tuple(list(module_position[0:3])+list(quaternion)),module_jointangle, True)
+        new_module = Module(self.modelname.get(),tuple(list(module_position[0:3])+list(quaternion)),module_jointangle, self.current_modeule_path,True)
         # Add rotation matrix to new_module (necessary for kinematics)
         new_module.rotation_matrix = rotation_matrix
         self.ModuleList.append(new_module)
@@ -480,12 +521,19 @@ class App(Frame):
     a_model_list = []
     for eachmodel in self.ModuleList:
       a_model_list.append(eachmodel.ModelName)
+    self.ModuleNameList = a_model_list
     self.modelselect['values'] = tuple(a_model_list)
     self.connectmodel['values'] = tuple(a_model_list)
 
-  def  nameIncrement(self):
-    self.modulenameincrementrecorder += 1
-    self.modelname.set('Module_'+str(self.modulenameincrementrecorder))
+  def nameIncrement(self):
+    incr_num = 0
+    while 1:
+      module_name_tmp = self.current_suggest_name+'_'+str(incr_num)
+      if module_name_tmp in self.ModuleNameList:
+        incr_num += 1
+      else:
+        self.modelname.set(module_name_tmp)
+        break
 
   # Put the position calculation code here
   def CalculatePosition(self):
@@ -533,6 +581,7 @@ class App(Frame):
     print "Coor info",newmessage.ModelPosition
     for i in xrange(4):
       newmessage.JointAngles.append(amodule.JointAngle[i])
+    newmessage.ModelPath = amodule.Path
     # self.communicator.publish(newmessage)
     self.configPub.Publish(newmessage)
     # ++++++++ These Lines for pygazebo +++++++++++++
@@ -619,6 +668,7 @@ class App(Frame):
             str(eachmodule.Position[5])+' '+str(eachmodule.Position[6])+ \
             '</position>\n')
       lines.append('\t\t<joints>'+str(eachmodule.JointAngle[0])+' '+str(eachmodule.JointAngle[1])+' '+str(eachmodule.JointAngle[2])+' '+str(eachmodule.JointAngle[3])+'</joints>\n')
+      lines.append('\t\t<path>'+eachmodule.Path+'</path>\n')
       lines.append('\t</module>\n')
     lines.append('</modules>\n\n')
     lines.append('<connections>\n')
