@@ -19,6 +19,8 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include <sstream>
+#include <iterator>
 #include <boost/bind.hpp>
 #include <queue>
 #include <unistd.h>
@@ -204,7 +206,8 @@ class WorldServer : public WorldPlugin
   /// Read a 'gait table' stored in a text file
   void ReadFileAndGenerateCommands(const char* fileName);
   /// Used to interpret the number in gait table 
-  void FigureInterpret(string joints_spec, bool *type_flags, double *joint_values);
+  void FigureInterpret(const vector<string> *joints_spec, bool *type_flags, 
+      double *joint_values);
   /// Interpret normal command string
   void InterpretCommonGaitString(string a_command_str);
   /// Interpret special command

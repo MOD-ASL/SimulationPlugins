@@ -1174,55 +1174,87 @@ void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
   infile.open(fileName);
   string output;
   string candidate_str;
-  bool special_command = false;
+  // bool special_command = false;
   if (infile.is_open()) {
     while (!infile.eof()) {
-      infile >> output;
-      // Find special command
-      if (candidate_str.size() == 0) {
-        if (output.find("$") != string::npos) {
-          special_command = true;
-          if (output.size()>1 && output.at(output.size()-1) != '$') {
-            output = output.substr(output.find("$")+1);
-          }
-          if (output.size() == 1) {
-            continue;
-          }
-        }
+      string a_line;
+      getline(infile,a_line);
+      if (a_line.find("//") != string::npos) {
+        a_line = a_line.substr(0,a_line.find("//"));
       }
-      if (output.find(";") != string::npos) {
-        if (output.find(";") != 0) {
-          candidate_str += output.substr(0,output.find(";"));
-        }else{
-          candidate_str = candidate_str.substr(0,candidate_str.size()-1);
+      if (a_line.size()>0) {
+        while(a_line.find_first_of(";") != string::npos) {
+          string candidate_str = a_line.substr(0, a_line.find_first_of(";"));
+          a_line = a_line.substr(a_line.find_first_of(";")+1);
+          if (candidate_str.find_first_of("$") != string::npos) {
+            candidate_str = candidate_str.substr(
+                candidate_str.find_first_of("$")+1);
+            InterpretSpecialString(candidate_str);
+          }else{
+            InterpretCommonGaitString(candidate_str);
+          }
         }
-        if (special_command) {
-          InterpretSpecialString(candidate_str);
-        }else{
-          InterpretCommonGaitString(candidate_str);
-        }
-        special_command = false;
-        candidate_str.erase();
       }else{
-        candidate_str += output + ' ';
+        continue;
       }
+      // infile >> output;
+      // // Find special command
+      // if (candidate_str.size() == 0) {
+      //   if (output.find("$") != string::npos) {
+      //     special_command = true;
+      //     if (output.size()>1 && output.at(output.size()-1) != '$') {
+      //       output = output.substr(output.find("$")+1);
+      //     }
+      //     if (output.size() == 1) {
+      //       continue;
+      //     }
+      //   }
+      // }
+      // if (output.find(";") != string::npos) {
+      //   if (output.find(";") != 0) {
+      //     candidate_str += output.substr(0,output.find(";"));
+      //   }else{
+      //     candidate_str = candidate_str.substr(0,candidate_str.size()-1);
+      //   }
+      //   if (special_command) {
+      //     InterpretSpecialString(candidate_str);
+      //   }else{
+      //     InterpretCommonGaitString(candidate_str);
+      //   }
+      //   special_command = false;
+      //   candidate_str.erase();
+      // }else{
+      //   candidate_str += output + ' ';
+      // }
     }
   }
 } // WorldServer::ReadFileAndGenerateCommands
 void WorldServer::InterpretCommonGaitString(string a_command_str)
 {
-  Color::Modifier yellow_log(Color::FG_YELLOW,true);
-  Color::Modifier def_log(Color::FG_DEFAULT);
+  // Color::Modifier yellow_log(Color::FG_YELLOW,true);
+  // Color::Modifier def_log(Color::FG_DEFAULT);
   // cout<<yellow_log<<"World: Command str: "<<a_command_str<<def_log<<";"<<endl;
   int time_interval = StripOffTimerInCommandString(a_command_str);
   string condition = StripOffCondition(a_command_str);
   string dependency = StripOffDependency(a_command_str);
-  string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
-  a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
+  istringstream str_stream(a_command_str);
+  vector<string> tokens;
+  copy(istream_iterator<string>(str_stream),
+     istream_iterator<string>(),
+     back_inserter<vector<string> >(tokens));
+
+  // string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
+  // a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
+  string model_name = tokens.at(0);
+  cout<<"World: Model name: "<<model_name<<";"<<endl;
   // cout<<"World: The command string is: "<<a_command_str<<endl;
   bool flags[4] = {false, false, false, false};
   double joints_values[4] = {0, 0, 0, 0};
-  FigureInterpret(a_command_str, flags, joints_values);
+  vector<string> joint_specs;
+  for (int i = 1; i < 5; ++i) {
+    joint_specs.push_back(tokens.at(i));
+  }
+  FigureInterpret(&joint_specs, flags, joints_values);
   if (time_interval >=0 ) {
     SendGaitTable(GetModulePtrByName(model_name), flags, joints_values, 
         3, time_interval, condition, dependency);
@@ -1240,11 +1272,6 @@ void WorldServer::InterpretSpecialString(string a_command_str)
   int time_interval = StripOffTimerInCommandString(a_command_str);
   string condition = StripOffCondition(a_command_str);
   string dependency = StripOffDependency(a_command_str);
-  int command_type = 0;
-  if (a_command_str.at(0) == '+')
-    command_type = 1;
-  if (a_command_str.at(0) == '-')
-    command_type = 2;
   // Find all the Module names
   vector<string> module_names;
   a_command_str += " ";
@@ -1268,6 +1295,18 @@ void WorldServer::InterpretSpecialString(string a_command_str)
     a_command_str = a_command_str.substr(0,symbol_pos)
         +a_command_str.substr(space_pos+1);
   }
+
+  istringstream str_stream(a_command_str);
+  vector<string> tokens;
+  copy(istream_iterator<string>(str_stream),
+     istream_iterator<string>(),
+     back_inserter<vector<string> >(tokens));
+
+  int command_type = 0;
+  if (tokens.at(0).at(0) == '+')
+    command_type = 1;
+  if (tokens.at(0).at(0) == '-')
+    command_type = 2;
   // TODO: This is not an elegant solution
   while (node_ids.size()<2) {
     node_ids.push_back(0);
@@ -1284,33 +1323,51 @@ void WorldServer::InterpretSpecialString(string a_command_str)
 } // WorldServer::InterpretSpecialString
 // TODO: This is at a very low API level of SGST
 //       need to implement all the features in the future
-void WorldServer::FigureInterpret(string joints_spec, bool *type_flags, 
-    double *joint_values)
+void WorldServer::FigureInterpret(const vector<string> *joints_spec, 
+    bool *type_flags,  double *joint_values)
 {
-  int sequence_iter = 0;
-  while (joints_spec.size()>0 && sequence_iter < 4) {
-    unsigned int space_location = joints_spec.find_first_of(' ');
-    string mini_unit;
-    if (sequence_iter < 3) {
-      mini_unit =  joints_spec.substr(0, space_location);
-      joints_spec = joints_spec.substr(space_location+1);
-    }else
-      mini_unit =  joints_spec.substr(0);
+  // int sequence_iter = 0;
+  // while (joints_spec.size()>0 && sequence_iter < 4) {
+  //   unsigned int space_location = joints_spec.find_first_of(' ');
+  //   string mini_unit;
+  //   if (sequence_iter < 3) {
+  //     mini_unit =  joints_spec.substr(0, space_location);
+  //     joints_spec = joints_spec.substr(space_location+1);
+  //   }else
+  //     mini_unit =  joints_spec.substr(0);
+  //   if (mini_unit.at(0) == 'p')
+  //     type_flags[sequence_iter] = true;
+  //   if (mini_unit.at(0) == 's')
+  //     type_flags[sequence_iter] = false;
+  //   if (mini_unit.at(0) == 't')
+  //     type_flags[sequence_iter] = false;
+  //   if (mini_unit.at(0) == 'i')
+  //     type_flags[sequence_iter] = false;
+  //   if (mini_unit.at(0) == 'c')
+  //     type_flags[sequence_iter] = false;
+  //   if (mini_unit.at(0) == 'd')
+  //     type_flags[sequence_iter] = false;
+  //   if (mini_unit.substr(1).size()>0)
+  //     joint_values[sequence_iter] = atof(mini_unit.substr(1).c_str());
+  //   sequence_iter++;
+  // }
+  for (unsigned int i = 0; i < 4; ++i)
+  {
+    string mini_unit =  joints_spec->at(i);
     if (mini_unit.at(0) == 'p')
-      type_flags[sequence_iter] = true;
+      type_flags[i] = true;
     if (mini_unit.at(0) == 's')
-      type_flags[sequence_iter] = false;
+      type_flags[i] = false;
     if (mini_unit.at(0) == 't')
-      type_flags[sequence_iter] = false;
+      type_flags[i] = false;
     if (mini_unit.at(0) == 'i')
-      type_flags[sequence_iter] = false;
+      type_flags[i] = false;
     if (mini_unit.at(0) == 'c')
-      type_flags[sequence_iter] = false;
+      type_flags[i] = false;
     if (mini_unit.at(0) == 'd')
-      type_flags[sequence_iter] = false;
+      type_flags[i] = false;
     if (mini_unit.substr(1).size()>0)
-      joint_values[sequence_iter] = atof(mini_unit.substr(1).c_str());
-    sequence_iter++;
+      joint_values[i] = atof(mini_unit.substr(1).c_str());
   }
 } // WorldServer::FigureInterpret
 int WorldServer::StripOffTimerInCommandString(string &command_string)

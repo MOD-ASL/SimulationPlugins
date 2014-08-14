@@ -961,6 +961,8 @@ class App(Frame):
     self.DeleteAllWidgetsOnHisWindow()
     for eachlines in gaitfile.readlines():
       # print eachlines[0:-1]
+      if eachlines.find("//") != -1:
+        eachlines = eachlines[0:eachlines.find("//")]
       semicolon_index = eachlines.find(";")
       while semicolon_index != -1:
         newgait = self.InterpretGaitString(eachlines[0:semicolon_index])
@@ -1012,35 +1014,37 @@ class App(Frame):
           timer = 0,dependency = dependency, condition = condition, \
           special = True, extra_info = gaitstring)
     else:
-      for x in range(len(gaitstring)):
-        if gaitstring[x] != " ":
-          start_idx = x
-          break
-      idx = gaitstring.find(" ",start_idx)
-      modelname = gaitstring[start_idx:idx]
-      gaitstring = gaitstring[idx+1:]
+      gaitstring = gaitstring.strip()
+      fields = gaitstring.split()
+      # for x in range(len(gaitstring)):
+      #   if gaitstring[x] != " ":
+      #     start_idx = x
+      #     break
+      # idx = gaitstring.find(" ",start_idx)
+      modelname = fields[0]
+      # gaitstring = gaitstring[idx+1:]
       joints = []
       jointsflags = []
-      for i in xrange(4):
-        idx = gaitstring.find(" ")
-        if gaitstring[0] == "p":
+      for i in xrange(1,5):
+        value_candidate = fields[i]
+        if value_candidate[0] == "p":
           jointsflags.append(0)
-        elif gaitstring[0] == "s" :
+        elif value_candidate[0] == "s" :
           jointsflags.append(1)
-        elif gaitstring[0] == "t" :
+        elif value_candidate[0] == "t" :
           jointsflags.append(2)
-        elif gaitstring[0] == "i" :
+        elif value_candidate[0] == "i" :
           jointsflags.append(3)
-        elif gaitstring[0] == "c" :
+        elif value_candidate[0] == "c" :
           jointsflags.append(4)
-        elif gaitstring[0] == "d" :
+        elif value_candidate[0] == "d" :
           jointsflags.append(5)
-        if gaitstring[1:idx] == "":
+        if value_candidate[1:] == "":
           joints.append(0.0)
         else:
-          joints.append(float(gaitstring[1:idx]))
-        gaitstring = gaitstring[idx+1:]
-      # print "joint size: ", len(joints)
+          joints.append(float(value_candidate[1:]))
+      #   gaitstring = gaitstring[idx+1:]
+      # # print "joint size: ", len(joints)
       return GaitEntry(modelname,joints,timer,dependency,condition, \
           False,jointsflags[0:4])
 
