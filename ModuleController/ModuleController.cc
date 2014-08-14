@@ -177,9 +177,14 @@ void ModuleController::SystemInitialization(physics::ModelPtr parent_model)
 } // ModuleController::SystemInitialization
 void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
 {
-  // Update the states that are stored in joint plus
-  // It is mainly for joint angle PID controller
-  JointAngleUpdateInJointPlus();
+  if (executionState == 4){
+    cout<<"Module Controller: Destroying Module."<<endl;
+  }
+  else{
+    // Update the states that are stored in joint plus
+    // It is mainly for joint angle PID controller
+    JointAngleUpdateInJointPlus();
+  }
   // Command execution
   if (executionState == 1){
     math::Vector2d final_position(targetPosition.pos.x,targetPosition.pos.y);
@@ -202,9 +207,6 @@ void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
     JointPIDController(jointAngleShouldBe[3], &GetJointPlus(3));
     SetJointSpeed(jointWL, 0, lftWheelSpeed);
     SetJointSpeed(jointWR, 0, rgtWheelSpeed);
-  }
-  if (executionState == 4){
-    cout<<"Module Controller: Destroying Module."<<endl;
   }
 } // ModuleController::OnSystemRunning
 void ModuleController::CollisionPubAndSubInitialization(void)
