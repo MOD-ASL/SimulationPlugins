@@ -567,8 +567,6 @@ void WorldServer::DeleteModule(string module_name)
   command_message::msgs::CommandMessage terminate_message;
   terminate_message.set_messagetype(6);
   currentModule->ModulePublisher->Publish(terminate_message);
-  // remove the model from the world
-  currentWorld->RemoveModel(module_name);
   // ---------- Destroy all the edges -------------------
   if (currentModule->NodeFWPtr->Edge) {
     Disconnect(currentModule, 0);
@@ -582,6 +580,8 @@ void WorldServer::DeleteModule(string module_name)
   if (currentModule->NodeUHPtr->Edge) {
     Disconnect(currentModule, 3);
   }
+  // remove the model from the world
+  currentWorld->RemoveModel(module_name);
   // ---------- Destroy module in the module list -----
   for (unsigned int i = 0; i < moduleList.size(); ++i) {
     if (currentModule == moduleList.at(i)) {

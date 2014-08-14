@@ -204,7 +204,7 @@ void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
     SetJointSpeed(jointWR, 0, rgtWheelSpeed);
   }
   if (executionState == 4){
-    cout<<"[Module Controller] Destroying Module."<<endl;
+    cout<<"Module Controller: Destroying Module."<<endl;
   }
 } // ModuleController::OnSystemRunning
 void ModuleController::CollisionPubAndSubInitialization(void)
