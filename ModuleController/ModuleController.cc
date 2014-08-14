@@ -203,6 +203,9 @@ void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
     SetJointSpeed(jointWL, 0, lftWheelSpeed);
     SetJointSpeed(jointWR, 0, rgtWheelSpeed);
   }
+  if (executionState == 4){
+    cout<<"[Module Controller] Destroying Module."<<endl;
+  }
 } // ModuleController::OnSystemRunning
 void ModuleController::CollisionPubAndSubInitialization(void)
 {
@@ -310,6 +313,9 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
       }
       commandPub->Publish(feed_back_message);
       break;
+    }
+    case 6:{
+      this->executionState = 4;
     }
   }
   // TODO: If we can confirm that command 5 will be abandoned
