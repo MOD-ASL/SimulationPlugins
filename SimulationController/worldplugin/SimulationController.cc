@@ -20,7 +20,7 @@ void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent,
 
   need_to_load = false;
   need_to_execute = false;
-  current_gait_file = ""
+  current_gait_file = "";
   current_configuration_file = "";
 
   delete_time = common::Timer();
