@@ -32,13 +32,15 @@ Border_hieht = 40
 DIALOG_WIDTH = 400
 DIALOG_HEIGHT = 260
 PI = np.pi
-
-class App(Frame):
+## This is the class for gait recorder  python gui application
+class GaitRecorder(Frame):
   
   def __init__(self, parent, flag):
     Frame.__init__(self, parent)   
     #------------ Variables Initialization --------------- 
+    ## Parent of the App class, which is a tk root
     self.parent = parent
+    ## Variable stores name string in the wedget
     self.modelname = StringVar()
 
     #----------- Common Command Entry Section ------------
@@ -50,6 +52,8 @@ class App(Frame):
     self.nodeSelect2 = IntVar()
     self.module2Select = StringVar()
     self.jointAngleDifferenceTracking = [0]*4
+    ## Variable records the entered value right next to scroll bar
+    self.valueInBox = DoubleVar()
     #----------- Extra Information Section --------------
     self.condition = StringVar()
     self.dependency = StringVar()
@@ -179,8 +183,11 @@ class App(Frame):
     self.modeTorque.place(x = 280, y = 120)
     label5 = Label(JointModSec, text='4. Select Value ')
     label5.place(x = 10, y = 175)
-    self.valueSetting = Scale(JointModSec, from_=-180, to=180, orient=HORIZONTAL,length = 370, resolution = 5, state = NORMAL, command = self.DynamicUpdate)
+    self.valueSetting = Scale(JointModSec, from_=-180, to=180, orient=HORIZONTAL,length = 320, resolution = 5, state = NORMAL, command = self.DynamicUpdate)
     self.valueSetting.place(x = 10, y = 190)
+    self.valueSettingBox = Entry(JointModSec, width=6, textvariable=self.valueInBox)
+    self.valueSettingBox.bind('<Return>',self.UpdateFromValueBox)
+    self.valueSettingBox.place(x = 340, y = 205)
 
     label6 = Label(JointModSec, text='3. Select Associated Joints ')
     label6.place(x = 400, y = 0)
@@ -1049,6 +1056,7 @@ class App(Frame):
           False,jointsflags[0:4])
 
 #----------------- Common Command Related -------------------
+  ## Call back with scale bar moving event
   def DynamicUpdate(self, *args):
     if len(self.modelname.get()) > 0 :
       message_queue = []
@@ -1102,12 +1110,79 @@ class App(Frame):
       if self.jointSelection.get() != 3 and self.typeSelection.get() == 0:
         if self.valueSetting.get() == self.valueSetting["to"]:
           self.valueSetting["to"] = self.valueSetting["to"] + 90
+          self.valueSetting["from"] = self.valueSetting["from"] + 90;
           self.valueSetting.set(self.valueSetting["to"] - 180)
           time.sleep(0.3)
         if self.valueSetting.get() == self.valueSetting["from"]:
+          self.valueSetting["to"] = self.valueSetting["to"] - 90
           self.valueSetting["from"] = self.valueSetting["from"] - 90
           self.valueSetting.set(self.valueSetting["from"] + 180)
           time.sleep(0.3)
+        self.valueInBox.set(self.valueSetting.get())
+  ## Call back function bind to the entry box next to scale, hit enter to update
+  def UpdateFromValueBox(self, *args):
+    if len(self.modelname.get()) > 0 :
+      message_queue = []
+      newmessage = GaitRecMessage()
+      newmessage.ModelName = self.modelname.get()
+      newmessage.NewFrame = False
+      newmessage.PlayStatus = False
+      the_module = self.GetModuleByName(self.modelname.get())
+      diff = self.valueInBox.get()/180.0*PI - \
+          the_module.JointAngle[self.jointSelection.get()]
+      the_module.JointAngle[self.jointSelection.get()] = \
+          self.valueInBox.get()/180.0*PI
+      for i in xrange(4):
+        newmessage.JointAngles.append(the_module.JointAngle[i])
+      message_queue.append(newmessage)
+      for each_associates in self.currentAssociates:
+        if not self.CheckTheExistingCommand(each_associates.ModuleName, message_queue):
+          newmessage = GaitRecMessage()
+          newmessage.ModelName = each_associates.ModuleName
+          newmessage.NewFrame = False
+          newmessage.PlayStatus = False
+          the_module = self.GetModuleByName(each_associates.ModuleName)
+          the_module.JointAngle[each_associates.Node] = \
+              the_module.JointAngle[each_associates.Node] + \
+              diff*each_associates.Ratio* \
+              self.InterpretCorrelation(each_associates.Correlation)
+          for i in xrange(4):
+            newmessage.JointAngles.append(the_module.JointAngle[i])
+          message_queue.append(newmessage)
+        else:
+          the_messgae = self.CheckTheExistingCommand( \
+              each_associates.ModuleName, message_queue)
+          the_module = self.GetModuleByName(the_messgae.ModelName)
+          the_module.JointAngle[each_associates.Node] = \
+              the_module.JointAngle[each_associates.Node] + \
+              diff*each_associates.Ratio* \
+              self.InterpretCorrelation(each_associates.Correlation)
+          for i in xrange(4):
+            newmessage.JointAngles.append(the_module.JointAngle[i])
+      if self.initflag==0 or self.initflag==2:
+        for each_message in message_queue:
+          self.communicator.publish(each_message)
+      print "Angle Updating"
+      self.Addcommand["state"] = NORMAL
+      self.jointAngleDifferenceTracking[self.jointSelection.get()] += diff
+      if sum([abs(x) for x in self.jointAngleDifferenceTracking]) > 1.0/180.0*PI:
+        print "Angle difference is ", diff
+        self.name["state"] = DISABLED
+      else:
+        self.name["state"] = NORMAL
+      if self.typeSelection.get() == 0:
+        if self.jointSelection.get() != 3:
+          if (self.valueInBox.get() > self.valueSetting["to"]) or \
+              (self.valueInBox.get() < self.valueSetting["from"]):
+            self.valueSetting["to"] = self.valueInBox.get() + 180
+            self.valueSetting["from"] = self.valueInBox.get() - 180
+          self.valueSetting.set(self.valueInBox.get())
+        else:
+          if self.valueInBox.get() > 90:
+            self.valueInBox.set(90)
+          if self.valueInBox.get() < -90:
+            self.valueInBox.set(-90)
+          self.valueSetting.set(self.valueInBox.get())
 
   def CheckTheExistingCommand(self,model_name,command_queue):
     for each_command in command_queue:
@@ -1189,10 +1264,16 @@ class App(Frame):
       self.valueSetting["from_"] = -90
       self.valueSetting["to"] = 90
     if node_idx != 3 and value_type == 0:
-      self.valueSetting["from_"] = -180
-      self.valueSetting["to"] = 180
+      if a_module.JointAngle[node_idx]/PI*180 > -180 and \
+          a_module.JointAngle[node_idx]/PI*180 < 180:
+        self.valueSetting["from_"] = -180
+        self.valueSetting["to"] = 180
+      else:
+        self.valueSetting["from_"] = a_module.JointAngle[node_idx]/PI*180-180
+        self.valueSetting["to"] = a_module.JointAngle[node_idx]/PI*180+180
     if a_module:
       self.valueSetting.set(a_module.JointAngle[node_idx]/PI*180)
+      self.valueInBox.set(a_module.JointAngle[node_idx]/PI*180)
     self.RefreshAssociates()
 
   def SelectCommonCommand(self):
@@ -1330,16 +1411,26 @@ class App(Frame):
     self.module2Selection["state"] = NORMAL
     self.node2Selection["state"] = NORMAL
 
-# A class for adding associates dialog
+## A class for adding associates dialog
 class AddAssociate(Toplevel):
+  ## Constructor
+  # @param self Object pointer
+  # @param parent Parent widget, which is the python gui window
   def __init__(self, parent):
     Toplevel.__init__(self,parent)
+    ## Inherit from Toplevel object
     self.transient(parent)
+    ## Title object of Toplevel object
     self.title("Add association")
+    ## Parent, which is the class GaitRecorder
     self.parent = parent
+    ## Variable stores the module name list for selecting
     self.moduleList = StringVar()
+    ## Integer, Joint identity number
     self.jointSelection = IntVar()
+    ## Integer, correlation type, -1 for negtive, 1 for positive
     self.corelation = IntVar()
+    ## Correlation ratio
     self.ratio = DoubleVar()
 
     body = Frame(self, width = DIALOG_WIDTH, height = DIALOG_HEIGHT)
@@ -1354,7 +1445,9 @@ class AddAssociate(Toplevel):
                             DIALOG_HEIGHT))
     self.initial_focus.focus_set()
     # self.wait_window(self)
-
+  ## Dialog UI boday
+  # @param self Object pointer
+  # @param master Body's frame object
   def body(self, master):
     # create dialog body.  return widget that should have
     # initial focus.  this method should be overridden
@@ -1376,9 +1469,13 @@ class AddAssociate(Toplevel):
     label2 = Label(master, image = bardejov)
     label2.image = bardejov
     label2.place(x=90, y=90)
+    ## Ratio button for bend joint
     self.bend_joint = Radiobutton(master, text='Central Bending', variable=self.jointSelection, value=3)
+    ## Ratio button for left joint
     self.left_joint = Radiobutton(master, text='Lft Wheel', variable=self.jointSelection, value=1)
+    ## Ratio button for right joint
     self.right_joint = Radiobutton(master, text='Rgt Wheel', variable=self.jointSelection, value=2)
+    ## Ratio button for front joint
     self.front_joint = Radiobutton(master, text='Front Wheel', variable=self.jointSelection, value=0)
     self.front_joint.select()
     self.bend_joint.place(x= 85, y = 65)
@@ -1388,19 +1485,23 @@ class AddAssociate(Toplevel):
 
     label4 = Label(master, text = "3. Select correlation")
     label4.place(x = 260, y = 40)
+    ## Ratio button for positive correlation
     self.positiveCor = Radiobutton(master, text = "Positive", variable = self.corelation, value = 0)
     self.positiveCor.place(x = 270, y = 70)
+    ## Ratio button for negative correlation
     self.negativeCor = Radiobutton(master, text = "Negative", variable = self.corelation, value = 1)
     self.negativeCor.place(x = 270, y = 100)
 
     label5 = Label(master, text = "4. Select ratio")
     label5.place(x = 260, y = 150)
+    ## Entry box for correlation
     self.correlationRatio = Entry(master, textvariable = self.ratio, width = 10)
     self.ratio.set(1)
     self.correlationRatio.place(x = 270, y = 180)
 
     return moduleName
-
+  ## Add button callback, which will vreate an associate in parent object
+  # @param self Object pointer
   def Add(self):
     if len(self.moduleList.get()) > 0 and len(self.parent.modelname.get()) > 0:
       corr = True
@@ -1425,18 +1526,21 @@ class AddAssociate(Toplevel):
       self.parent.RefreshAssociates()
     self.parent.focus_set()
     self.destroy()
-
+  ## Cancle adding associate
+  # @param self Object pointer
+  # @param event Event object  
   def cancel(self, event=None):
     # put focus back to the parent window
     self.parent.focus_set()
     self.destroy()
-
+## Main function for this module, which will start the python gui
+# @param falg integer, 0 for normal mode, 1 for gui debug mode, 2 for python only mode
 def main(flag):
   
   root = Tk()
   root.geometry(str(window_width)+"x"+str(window_height))
   root.wm_attributes("-topmost", 1)
-  app = App(root,flag)
+  app = GaitRecorder(root,flag)
   root.mainloop()  
 
 

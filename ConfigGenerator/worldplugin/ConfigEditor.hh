@@ -1,26 +1,27 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Author: Edward Yunkai Cui
-// Description: 
-/*! 
-  This is the world plugin that used by configuration
-  generator. It basically inherit all the functions from
-  world plugin template. However there are several main
-  differences, 1. This world plugin will not load 
-  initial configuration, but will have a subscriber that
-  subscribe configuration information; 2. This world plugin
-  will publish configuration information to gui plugin that 
-  will force graphic updates happening
-*///+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Description:
+// This is the world plugin that used by configuration
+// generator. It basically inherit all the functions from
+// world plugin template. However there are several main
+// differences, 1. This world plugin will not load 
+// initial configuration, but will have a subscriber that
+// subscribe configuration information; 2. This world plugin
+// will publish configuration information to gui plugin that 
+// will force graphic updates happening
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #ifndef _GAZEBO_CONFIG_EDITOR_HH_
 #define _GAZEBO_CONFIG_EDITOR_HH_
 
 #include "WorldServer.hh"
 #include "config_message.pb.h"
-
+/// Shared_ptr of the customized protobuf config_message
+/*! This message is used to communicate between config editor and worldplugin*/
 typedef const boost::shared_ptr
     <const config_message::msgs::ConfigMessage> ConfigMessagePtr;
-    
+/// gazebo name space
 namespace gazebo{
+/// Configuration Editor customized worldplugin
 class ConfigEditor : public WorldServer
 {
  public:
@@ -53,7 +54,7 @@ class ConfigEditor : public WorldServer
       sdf::ElementPtr _sdf);
   /// Need to be set to empty so the world plugin will not read in gaits
   /*!
-    Because this function will be called in the command callback function when
+    This function will be called in the command callback function when
     receiving messgae from model.
     \param msg reference of the command message object pointer
   */

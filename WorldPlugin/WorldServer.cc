@@ -694,15 +694,6 @@ void WorldServer::CommandManager(void)
               current_command_container->CommandSquence.at(0).Dependency)) {
             CommandExecution(current_command_container);
           }
-          // TODO: Check whether this part is necessary in logic
-          // else
-          // {
-          //   // current_command_container->FinishedFlag = false;
-          //   // current_command_container->ReceivedFlag = false;
-          //   cout<<"World: is waiting for condition: "
-          //       << current_command_container->CommandSquence.at(0).Dependency
-          //       <<endl;
-          // }
         }else{
           CommandExecution(current_command_container);
         }
@@ -1090,57 +1081,6 @@ bool WorldServer::AlreadyConnected(SmoresModulePtr module, int node_ID)
   }
   return having_a_connection;
 } // WorldServer::AlreadyConnected
-// // This is a BFS (Breath First Search)
-// unsigned int WorldServer::CountModules(SmoresModulePtr module)
-// {
-//   vector<SmoresModulePtr> vector1;
-//   vector<SmoresModulePtr> vector2;
-//   vector<SmoresModulePtr> vector3;
-//   vector1.push_back(module);
-//   vector3.push_back(module);
-//   unsigned int module_count = 0;
-//   while(1)
-//   {
-//     if (vector1.size()>0)
-//     {
-//       module_count += vector1.size();
-//       for (unsigned int i = 0; i < vector1.size(); ++i)
-//       {
-//         for (int j = 0; j < 4; ++j)
-//         {
-//           if(vector1.at(i)->GetNode(j)->Edge)
-//           {
-            // SmoresModulePtr ConnectedModule = vector1.at(i)->GetNode(j)->Edge
-            //     ->FindMatchingNode(vector1.at(i)->GetNode(j))->Parent;
-//             vector2.push_back(ConnectedModule);
-//           }
-//         }
-//       }
-//       vector1.clear();
-//       for (unsigned int i = 0; i < vector2.size(); ++i)
-//       {
-//         bool have_it = true;
-//         for (unsigned int j = 0; j < vector3.size(); ++j)
-//         {
-//           if (vector2.at(i) == vector3.at(j))
-//           {
-//             have_it = false;
-//             break;
-//           }
-//         }
-//         if (have_it)
-//         {
-//           vector1.push_back(vector2.at(i));
-//           vector3.push_back(vector2.at(i));
-//         }
-//       }
-//       vector2.clear();
-//     }else{
-//       break;
-//     }
-//   }
-//   return module_count;
-// }
 // A replacement of the old function, a BFS (Breath First Search)
 // TODO: Need to be tested
 unsigned int WorldServer::CountModules(SmoresModulePtr module)
@@ -1174,7 +1114,6 @@ void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
   infile.open(fileName);
   string output;
   string candidate_str;
-  // bool special_command = false;
   if (infile.is_open()) {
     while (!infile.eof()) {
       string a_line;
@@ -1197,35 +1136,6 @@ void WorldServer::ReadFileAndGenerateCommands(const char* fileName)
       }else{
         continue;
       }
-      // infile >> output;
-      // // Find special command
-      // if (candidate_str.size() == 0) {
-      //   if (output.find("$") != string::npos) {
-      //     special_command = true;
-      //     if (output.size()>1 && output.at(output.size()-1) != '$') {
-      //       output = output.substr(output.find("$")+1);
-      //     }
-      //     if (output.size() == 1) {
-      //       continue;
-      //     }
-      //   }
-      // }
-      // if (output.find(";") != string::npos) {
-      //   if (output.find(";") != 0) {
-      //     candidate_str += output.substr(0,output.find(";"));
-      //   }else{
-      //     candidate_str = candidate_str.substr(0,candidate_str.size()-1);
-      //   }
-      //   if (special_command) {
-      //     InterpretSpecialString(candidate_str);
-      //   }else{
-      //     InterpretCommonGaitString(candidate_str);
-      //   }
-      //   special_command = false;
-      //   candidate_str.erase();
-      // }else{
-      //   candidate_str += output + ' ';
-      // }
     }
   }
 } // WorldServer::ReadFileAndGenerateCommands
@@ -1242,11 +1152,8 @@ void WorldServer::InterpretCommonGaitString(string a_command_str)
   copy(istream_iterator<string>(str_stream),
      istream_iterator<string>(),
      back_inserter<vector<string> >(tokens));
-
-  // string model_name = a_command_str.substr(0,a_command_str.find_first_of(' '));
-  // a_command_str = a_command_str.substr(a_command_str.find_first_of(' ')+1);
   string model_name = tokens.at(0);
-  cout<<"World: Model name: "<<model_name<<";"<<endl;
+  // cout<<"World: Model name: "<<model_name<<";"<<endl;
   // cout<<"World: The command string is: "<<a_command_str<<endl;
   bool flags[4] = {false, false, false, false};
   double joints_values[4] = {0, 0, 0, 0};
@@ -1321,36 +1228,12 @@ void WorldServer::InterpretSpecialString(string a_command_str)
         condition, dependency);
   }
 } // WorldServer::InterpretSpecialString
-// TODO: This is at a very low API level of SGST
-//       need to implement all the features in the future
+/*! TODO: This is at a very low API level of SGST
+          need to implement all the features in the future
+*/
 void WorldServer::FigureInterpret(const vector<string> *joints_spec, 
     bool *type_flags,  double *joint_values)
 {
-  // int sequence_iter = 0;
-  // while (joints_spec.size()>0 && sequence_iter < 4) {
-  //   unsigned int space_location = joints_spec.find_first_of(' ');
-  //   string mini_unit;
-  //   if (sequence_iter < 3) {
-  //     mini_unit =  joints_spec.substr(0, space_location);
-  //     joints_spec = joints_spec.substr(space_location+1);
-  //   }else
-  //     mini_unit =  joints_spec.substr(0);
-  //   if (mini_unit.at(0) == 'p')
-  //     type_flags[sequence_iter] = true;
-  //   if (mini_unit.at(0) == 's')
-  //     type_flags[sequence_iter] = false;
-  //   if (mini_unit.at(0) == 't')
-  //     type_flags[sequence_iter] = false;
-  //   if (mini_unit.at(0) == 'i')
-  //     type_flags[sequence_iter] = false;
-  //   if (mini_unit.at(0) == 'c')
-  //     type_flags[sequence_iter] = false;
-  //   if (mini_unit.at(0) == 'd')
-  //     type_flags[sequence_iter] = false;
-  //   if (mini_unit.substr(1).size()>0)
-  //     joint_values[sequence_iter] = atof(mini_unit.substr(1).c_str());
-  //   sequence_iter++;
-  // }
   for (unsigned int i = 0; i < 4; ++i)
   {
     string mini_unit =  joints_spec->at(i);
