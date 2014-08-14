@@ -31,13 +31,13 @@ To use the simulator, you will first need to install Gazebo. Both precompiled bi
 
 **Simulator Repositories**
 
-Development of the SMORES simulator is currently split into two repositories: one for [plugins](https://github.com/princeedward/SimulationPlugins/) and one for [models](https://github.com/princeedward/GAZEBO_model). The plugins repository contains the code used to control the SMORES modules and generate custom behaviors in the simulator, such as the docking and undocking actions between two modules. The models repository contains the description of the robot models, sensor models, and world parameters. This repository uses the plugins created in the plugin repository to give the models their functionality.
+Development of the SMORES simulator is currently split into two repositories: one for [plugins](https://github.com/MOD-ASL/SimulationPlugins/) and one for [models](https://github.com/MOD-ASL/GAZEBO_model). The plugins repository contains the code used to control the SMORES modules and generate custom behaviors in the simulator, such as the docking and undocking actions between two modules. The models repository contains the description of the robot models, sensor models, and world parameters. This repository uses the plugins created in the plugin repository to give the models their functionality.
 
 To get the simulator, clone the two repositories using git. In order to get the sensor models and testing platform, you will additionally need to fetch the sensors branch on the amptrofa/ fork of each of the repositories. As of this writing, the models repository contains compiled binary files of the plugins; you may need to recompile these for your platform.
 
 **Simulation Setup**
 
-The instruction of setting up the simulation could be found on the github wiki of this project through this [link](https://github.com/princeedward/SimulationPlugins/wiki/Simulation-Setup).
+The instruction of setting up the simulation could be found on the github wiki of this project through this [link](https://github.com/MOD-ASL/SimulationPlugins/wiki/Simulation-Setup).
 
 **File Relationships**
 
@@ -52,9 +52,13 @@ The most up to date version of the SMORES simulator is currently in the SMORES6U
 
 A short video could be found [here](https://www.youtube.com/watch?v=eX9czliCpnM)
 
-We also designed Configuration designer tools and command recorder for people who want to play with this simulator. The instruction of how to setup and use these tools can also be found on this project github [wiki](https://github.com/princeedward/SimulationPlugins/wiki).
+We also designed Configuration designer tools and command recorder for people who want to play with this simulator. The instruction of how to setup and use these tools can also be found on this project github [wiki](https://github.com/MOD-ASL/SimulationPlugins/wiki).
 
 People from both lab are preparing a competetion on the configration design and gait control design, the competetion kit will also be launched soon.
+
+**For developers**
+
+You may find the APIs(documentation) for all the simulation plugins and python program on this [page](http://modlab.seas.upenn.edu/resource/smoresapi/index.html).
 
 Known problems of GAZEBO
 ----------------------------------------
