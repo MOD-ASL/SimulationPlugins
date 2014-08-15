@@ -1327,6 +1327,7 @@ void WorldServer::AddCondition(string condition_id)
   for (unsigned int i = 0; i < commandConditions.size(); ++i) {
     if (commandConditions.at(i)->condition_id.compare(condition_id) == 0) {
       commandConditions.at(i)->total_count += 1;
+      commandConditions.at(i)->achieved = false;
       not_exist = false;
       break;
     }
