@@ -58,6 +58,9 @@ if [ $# -eq 1 ]; then
       sudo apt-get install protobuf-compiler
     fi
   fi
+  if [ "$1" = "-s4" ]; then
+    #statements
+  fi
   if [ "$1" = "-u" ]; then
     STATUS=2
     WIPEOUT=1

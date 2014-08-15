@@ -32,9 +32,13 @@ Border_hieht = 40
 DIALOG_WIDTH = 400
 DIALOG_HEIGHT = 260
 PI = np.pi
-## This is the class for gait recorder  python gui application
+## This is the class of gait recorder  python gui application
 class GaitRecorder(Frame):
-  
+  ## Constructor
+  # @param self Object pointer
+  # @param parent Parent of this app, which is tk root
+  # @param flag Specifies the state of the this python program, 
+  # 0 for normal mode, 1 for gui debug mode, 2 for python only mode
   def __init__(self, parent, flag):
     Frame.__init__(self, parent)   
     #------------ Variables Initialization --------------- 
@@ -116,7 +120,8 @@ class GaitRecorder(Frame):
     self.initUI()
     # self.SaveCurrentPose()
     self.SelectCommonCommand()
-      
+  ## Initializes the UI of the current python app
+  # @param self Object pointer    
   def initUI(self):
     self.parent.title("Gait Table Recorder")
       
@@ -336,7 +341,8 @@ class GaitRecorder(Frame):
     #----------------- Add Current Command ---------------------
     self.Addcommand = Button(f1,text = "Add Command", command = self.AddGaitEntry, state = DISABLED, width = 11)
     self.Addcommand.place(x = 5, y = window_height-Border_hieht-5, anchor = SW)
-
+  ## Callback for close button
+  # @param self object pointer
   def CloseWindow(self):
     if self.initflag==0 or self.initflag==2:
       self.communicator.stop()
@@ -349,7 +355,8 @@ class GaitRecorder(Frame):
       call(["pkill", "gzserver"])
       call(["pkill", "gzclient"])
     self.quit()
-
+  ## Initializaed the section, don't be fooled by the name
+  # @param self Object pointer
   def InitialFrame(self):
     self.currentFrame = Section("Section_0")
     self.currentFrame.RecordCurrentPosition(self.ModuleList)
@@ -362,6 +369,8 @@ class GaitRecorder(Frame):
     self.allCommands = []
 
 #---------------- Open Configurations ----------------------
+  ## Callback of Open Configuration button
+  # @param self Object pointer
   def AskOpenFile(self):
     self.file_opt['title'] = 'Open Configuration File'
     filename = tkFileDialog.askopenfilename(**self.file_opt)
@@ -375,7 +384,9 @@ class GaitRecorder(Frame):
       # configFile = open(filename, 'r')
       self.ReadInConfiguration(filename)
     self.OpenGait["state"] = NORMAL
-
+  ## Parse the configuration file and build the configuration tree
+  # @param self Objetc pointer
+  # @param filename Name of the configuration file
   def ReadInConfiguration(self, filename):
     self.ModuleList = []
     self.modulenames = []
@@ -416,7 +427,9 @@ class GaitRecorder(Frame):
       time.sleep(2)
       self.rungzclient = Popen(['gzclient'], stdout=PIPE)
     self.InitialFrame()
-
+  ## Creates a open configuration request and publish to worldplugin
+  # @param self Object pointer
+  # @param configure_path Path of the configuration file
   def SendLoadConfigurationMessage(self,configure_path):
     newmessage = GaitRecMessage()
     newmessage.ModelName = "Module_0"
@@ -428,6 +441,9 @@ class GaitRecorder(Frame):
       self.communicator.publish(newmessage)
 
 #---------------- Module Selection ----------------------
+  ## Callback of Select Model Combobox
+  # @param self Object pointer
+  # @param args Other arguments
   def UpdateJoint(self,*args):
     modelname = self.modelname.get()
     moduleObj = self.GetModuleByName(modelname)
@@ -439,40 +455,45 @@ class GaitRecorder(Frame):
     # self.Disconnect["state"] = NORMAL
 
 #---------------- Utility functions --------------------
+  ## Get module object by specifying the name
+  # @param self Object pointer
+  # @param modelname String: Name of the model
+  # @return if there is a model return the model object, otherwise return False
   def GetModuleByName(self,modelname):
     for eachmodule in self.ModuleList:
       if eachmodule.ModelName == modelname:
         return eachmodule
     return False
-
+  ## Refresh the dependency list
+  # @param self Object pointer
   def RefreshDependencyList(self):
     self.Dependency['values'] = tuple(self.DependencyList)
-
+  ## Convert a string that has multiple values to tuple
+  # @param self Object pointer
+  # @param anglestring A string that has values separated by spaces
+  # @return Tuple of those values
   def StringToTuple(self, anglestring):
-    jointangles = []
-    while True:
-      idx = anglestring.find(" ")
-      if idx >=0 :
-        jointangles.append(float(anglestring[0:idx]))
-        anglestring = anglestring[idx+1:]
-      else:
-        jointangles.append(float(anglestring))
-        break
+    jointangles = anglestring.split()
     return tuple(jointangles)
-
+  ## Convert a string that has multiple values to list
+  # @param self Object pointer
+  # @param anglestring A string that has values separated by spaces
+  # @return List of those values
   def StringToList(self, anglestring):
-    jointangles = []
-    while True:
-      idx = anglestring.find(" ")
-      if idx >=0 :
-        jointangles.append(float(anglestring[0:idx]))
-        anglestring = anglestring[idx+1:]
-      else:
-        jointangles.append(float(anglestring))
-        break
+    jointangles = anglestring.split()
+    # while True:
+    #   idx = anglestring.find(" ")
+    #   if idx >=0 :
+    #     jointangles.append(float(anglestring[0:idx]))
+    #     anglestring = anglestring[idx+1:]
+    #   else:
+    #     jointangles.append(float(anglestring))
+    #     break
     return jointangles
 
 #--------------- Add Gait Table ------------------------
+  ## Callback for Add Command Button
+  # @param self Object pointer
   def AddGaitEntry(self):
     if self.elapsedTimeType.get() == "sec" :
       currenttimer = int(self.elapstime.get()*1000)
@@ -523,7 +544,9 @@ class GaitRecorder(Frame):
     self.Addframe["state"] = NORMAL
     self.Addcommand["state"] = DISABLED
     self.Resetframe["state"] = NORMAL
-
+  ## Add gait to current section and display them in the Manage Gait Table tag
+  # @param self Object pointer
+  # @param gait_obj A gait object
   def AddGaitToCurrentFrame(self,gait_obj):
     if not gait_obj.ModuleName in self.currentFrame.ModulesInThisFrame:
       self.currentFrame.AddNewChangedModuleToFrame(gait_obj)
@@ -562,7 +585,9 @@ class GaitRecorder(Frame):
       self.currentFrame.AddGaitToModule(gait_obj,list_idx)
       gait_list = self.currentFrame.GaitStrListOfModule[list_idx]
       self.frameListVars[list_idx].set(tuple(gait_list))
-
+  ## Send disconnect message to worldplugin
+  # @param self Object pointer
+  # @param time_interval How long this command will be executed
   def DisconnectSend(self, time_interval):
     newmessage = GaitRecMessage()
     newmessage.ModelName = self.modelname.get()
@@ -590,7 +615,9 @@ class GaitRecorder(Frame):
     newgaits.AddExtraInfo(newmessage.ExtrInfo)
     newgaits.SpecialEntry = True
     self.AddGaitToCurrentFrame(newgaits)
-
+  ## Send connect message to worldplugin
+  # @param self Object pointer
+  # @param time_interval How long this command will be executed
   def ConnectSend(self, time_interval):
     if len(self.modelname.get())>0 and len(self.module2Select.get())>0 and len(self.nodeSelect1.get())>0 and len(self.nodeSelect2.get())>0:
       newmessage = GaitRecMessage()
@@ -617,7 +644,8 @@ class GaitRecorder(Frame):
       newgaits.AddExtraInfo(newmessage.ExtrInfo)
       newgaits.SpecialEntry = True
       self.AddGaitToCurrentFrame(newgaits)
-
+  ## Delets all the widgets on the second tag page
+  # @param self Object pointer
   def DeleteAllWidgetsOnHisWindow(self):
     for each_widget in self.frameListForGaitRecord:
       each_widget.destroy()
@@ -627,12 +655,18 @@ class GaitRecorder(Frame):
       each_widget.destroy()
     self.frameListVars = []
     self.scollForCommands["command"] = ()
-
+  ## Click the button on the top to resize the panel size
+  # It doesn't work
+  # @param self Object pointer
+  # @param button_idx Integer: index of the panel
   def ResizePanelSize(self, button_idx):
     print "Button index is ", button_idx
     self.panedWindow.paneconfigure(self.frameListForGaitRecord[button_idx], \
         width = 100)
-
+  ## Converts gait object to string
+  # @param self Object pointer
+  # @param gaittableobj A GaitEntry object
+  # @return Gait string
   def GaitObjToStr(self,gaittableobj):
     if gaittableobj.SpecialEntry :
       gaitstr = gaittableobj.ModuleName
@@ -658,6 +692,8 @@ class GaitRecorder(Frame):
       return gaitstr
 
 #---------------- Save & Reset & Play Frames ---------------
+  ## Saves current section, save section button callback
+  # @param self Object pointer
   def SaveFrame(self):
     framenum = len(self.keyFrameList)
     while True:
@@ -687,7 +723,8 @@ class GaitRecorder(Frame):
     # self.RefreshGaitRecorder()
     self.UpdateFrameBox()
     self.SaveCurrentPose()
-
+  ## Updates the section selction ComboBox
+  # @param self Object pointer
   def UpdateFrameBox(self):
     self.allCommands = []
     for each_section in self.keyFrames:
@@ -695,7 +732,8 @@ class GaitRecorder(Frame):
         self.allCommands.append(each_entry.GaitToStr())
     # self.Framename['values'] = tuple(frameliststr)
     self.commandhis.set(tuple(self.allCommands))
-
+  ## Resets the current simulation world to the begin of the section
+  # @param self Object pointer 
   def Reset(self):
     newmessage = GaitRecMessage()
     if self.currentFrame.GaitEntries:
@@ -733,7 +771,8 @@ class GaitRecorder(Frame):
       self.UpdateJointValue()
     module_obj = self.GetModuleByName(each_module_name)
     print "Reset message sent"
-
+  ## Plays the current section
+  # @param self Object pointer
   def PlayFrame(self):
     for eachgait in self.currentFrame.GaitEntries :
       if not eachgait.SpecialEntry:
@@ -743,7 +782,8 @@ class GaitRecorder(Frame):
     # self.Playframe["state"] = DISABLED
     print "All information published"
     self.Resetframe["state"] = NORMAL
-
+  ## Generates and publish save current section command to worldplugin
+  # @param self Object pointer
   def SaveCurrentPose(self):
     newmessage = GaitRecMessage()
     newmessage.ModelName = "SaveFrame"
@@ -751,7 +791,9 @@ class GaitRecorder(Frame):
     newmessage.PlayStatus = True
     if self.initflag==0 or self.initflag==2:
       self.communicator.publish(newmessage)
-
+  ## Updates the panel window after selecting a section
+  # @param self Object pointer
+  # @param args Other variables
   def UpdateFrameWindows(self,*args):
     print "Runs update frame window"
     self.DeleteAllWidgetsOnHisWindow()
@@ -765,13 +807,18 @@ class GaitRecorder(Frame):
       self.AddGaitToCurrentFrame(each_gait)
 
 #----------- Manually Update Section ----------------- 
+  ## Callback when you click a gait entry in the third tag ("Gait Records")
+  # @param self Object pointer
+  # @param args Other variables
   def ModifyHistory(self,*args):
     self.historyidx = int(self.CommandHis.curselection()[0])
     print "Select item: ",self.historyidx
     self.selectedcommand.set(self.allCommands[self.historyidx])
     self.CommandDeleteBtn["state"] = NORMAL
     self.CommandUpdateBtn["state"] = NORMAL
-
+  ## Update a GaitEntry object when you finish editing
+  # Callback of the Update button in the third tag ("Gait Records")
+  # @param self Object pointer
   def UpdateSingleGaitEntry(self):
     newsinglegait = self.selectedcommand.get()
     self.allCommands[self.historyidx] = newsinglegait
@@ -783,7 +830,9 @@ class GaitRecorder(Frame):
     self.UpdateFrameBox()
     self.saveButton["state"] = NORMAL
     self.saveButton2["state"] = NORMAL
-
+  ## Delete a GaitEntry object after you hit the delete button
+  # Callback of the Delete button in the third tag ("Gait Records")
+  # @param self Object pointer
   def DeleteSingleGait(self):
     del self.allCommands[self.historyidx]
     (modified_gait,gaits,idx) = self.FindGaitEntryBasedOnIdx(self.historyidx)
@@ -794,7 +843,11 @@ class GaitRecorder(Frame):
     self.saveButton2["state"] = NORMAL
     self.CommandDeleteBtn["state"] = DISABLED
     self.CommandUpdateBtn["state"] = DISABLED
-
+  ## Finds the GaitEntry object by index
+  # for update and delete gait in the Gait Records window
+  # @param self Object pointer
+  # @param gait_idx Integer, the index number of the gait
+  # @return (the GaitEntry object, Section GaitEntry List, And Section GaitEntry index)
   def FindGaitEntryBasedOnIdx(self,gait_idx):
     before_substr = gait_idx
     for each_section in self.keyFrames:
@@ -802,6 +855,8 @@ class GaitRecorder(Frame):
       if before_substr>=0 and after_substr<0:
         return (each_section.GaitEntries[before_substr],each_section.GaitEntries, \
             before_substr)
+      else:
+        before_substr = after_substr
 
   # def CommandRecModify(self):
   #   self.recidx = int(self.CommandRec.curselection()[0])
@@ -1056,7 +1111,7 @@ class GaitRecorder(Frame):
           False,jointsflags[0:4])
 
 #----------------- Common Command Related -------------------
-  ## Call back with scale bar moving event
+  ## Callback of scale bar moving event
   def DynamicUpdate(self, *args):
     if len(self.modelname.get()) > 0 :
       message_queue = []
@@ -1119,7 +1174,7 @@ class GaitRecorder(Frame):
           self.valueSetting.set(self.valueSetting["from"] + 180)
           time.sleep(0.3)
         self.valueInBox.set(self.valueSetting.get())
-  ## Call back function bind to the entry box next to scale, hit enter to update
+  ## Callback function binded to the entry box next to scale with enter key
   def UpdateFromValueBox(self, *args):
     if len(self.modelname.get()) > 0 :
       message_queue = []
@@ -1434,6 +1489,7 @@ class AddAssociate(Toplevel):
     self.ratio = DoubleVar()
 
     body = Frame(self, width = DIALOG_WIDTH, height = DIALOG_HEIGHT)
+    ## Pointer to the object that needs to be focused initially
     self.initial_focus = self.body(body)
     body.pack(padx=5, pady=5)
 
@@ -1448,6 +1504,7 @@ class AddAssociate(Toplevel):
   ## Dialog UI boday
   # @param self Object pointer
   # @param master Body's frame object
+  # @return moduleName Combobox object
   def body(self, master):
     # create dialog body.  return widget that should have
     # initial focus.  this method should be overridden
@@ -1534,7 +1591,7 @@ class AddAssociate(Toplevel):
     self.parent.focus_set()
     self.destroy()
 ## Main function for this module, which will start the python gui
-# @param falg integer, 0 for normal mode, 1 for gui debug mode, 2 for python only mode
+# @param falg Integer, 0 for normal mode, 1 for gui debug mode, 2 for python only mode
 def main(flag):
   
   root = Tk()
