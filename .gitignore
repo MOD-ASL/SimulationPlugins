@@ -1,0 +1,11 @@
+ConfigGenerator/
+ContactPublisher/
+GaitRecorder/
+Libraries/
+ModuleController/
+SimulationController/
+Util/
+WorldController/
+WorldPlugin/
+html/
+latex/
