@@ -58,7 +58,7 @@ People from both lab are preparing a competetion on the configration design and 
 
 **For developers**
 
-You may find the APIs(documentation) for all the simulation plugins and python program on this [page](http://modlab.seas.upenn.edu/resource/smoresapi/index.html).
+You may find the APIs(documentation) for all the simulation plugins and python program on this [page](http://mod-asl.github.io/SimulationPlugins/apis/).
 
 Known problems of GAZEBO
 ----------------------------------------
