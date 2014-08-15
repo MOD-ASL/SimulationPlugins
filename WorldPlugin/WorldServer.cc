@@ -560,7 +560,13 @@ void WorldServer::AddInitialJoints(string joint_angles)
 } // WorldServer::AddInitialJoints
 void WorldServer::DeleteModule(string module_name)
 {
+  cout<<"Deleting model "<<module_name<<endl;
   SmoresModulePtr currentModule = GetModulePtrByName(module_name);
+  // send a command message to the module controller
+  // so that the module controller can prepare to be terminated
+  command_message::msgs::CommandMessage terminate_message;
+  terminate_message.set_messagetype(6);
+  currentModule->ModulePublisher->Publish(terminate_message);
   // ---------- Destroy all the edges -------------------
   if (currentModule->NodeFWPtr->Edge) {
     Disconnect(currentModule, 0);
@@ -574,6 +580,8 @@ void WorldServer::DeleteModule(string module_name)
   if (currentModule->NodeUHPtr->Edge) {
     Disconnect(currentModule, 3);
   }
+  // remove the model from the world
+  currentWorld->RemoveModel(module_name);
   // ---------- Destroy module in the module list -----
   for (unsigned int i = 0; i < moduleList.size(); ++i) {
     if (currentModule == moduleList.at(i)) {
@@ -582,9 +590,30 @@ void WorldServer::DeleteModule(string module_name)
       break;
     }
   }
-  currentWorld->GetModel(module_name)->Fini();
   needToSetPtr -= 1;
 }
+void WorldServer::DeleteAllModules(void)
+{
+  // we cannot iterate through moduleList to remove modules
+  // as we are removing items from moduleList at the same time
+  // so we try to get a list of models in the current world
+  // and iterate through this list
+  unsigned int num_of_models = currentWorld->GetModelCount();
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+
+  for (unsigned int i = 0; i < num_of_models; ++i)
+  {
+    string model_name = list_of_model[i]->GetName();
+    // world also includes other model such as ground and sun
+    // we need to distinguish those from the SMORES model
+    // TODO: Find a better way to identify SMORES model
+    if (model_name.find("Module") == 0)
+    {
+      DeleteModule(model_name);
+    }
+  }
+}
+
 void WorldServer::PassiveConnect(SmoresModulePtr module_1, 
     SmoresModulePtr module_2, int node1_ID, int node2_ID, 
     double node_angle, double node_distance)

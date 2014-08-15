@@ -99,6 +99,8 @@ class WorldServer : public WorldPlugin
   void AddInitialJoints(string joint_angles);
   /// Delete a model that already in the world
   void DeleteModule(string module_name);
+  /// Delete all models that already in the world
+  void DeleteAllModules(void);
   /// This function is used to build a configuration using a XML file
   void BuildConfigurationFromXML(string file_name);
   /// This function is used to build connection using a XML file
