@@ -1,6 +1,6 @@
 import pdb
 from numpy import matrix, deg2rad, rad2deg, cos, sin, hstack, vstack, eye, pi, arcsin, arccos, arctan2, sqrt
-from math import copysign
+from math import copysign, pow
 c = cos
 s = sin
 
@@ -80,6 +80,11 @@ def rotToQuat(R):
 	q = (qw*sgn, qx*sgn, qy*sgn, qz*sgn)
 	#q = q*sign(qw);
 	return q
+
+def quatToRot(Q):
+	return matrix([[1 - 2*pow(Q[2],2) - 2*pow(Q[3],2), 2*Q[1]*Q[2] - 2*Q[3]*Q[0], 2*Q[1]*Q[3] + 2*Q[2]*Q[0]],
+								 [2*Q[1]*Q[2] + 2*Q[3]*Q[0], 1 - 2*pow(Q[1],2) - 2*pow(Q[3],2), 2*Q[2]*Q[3] - 2*Q[1]*Q[0]],
+								 [2*Q[1]*Q[3] - 2*Q[2]*Q[0], 2*Q[2]*Q[3] + 2*Q[1]*Q[0], 1 - 2*pow(Q[1],2) - 2*pow(Q[2],2)]])
 
 #########
 L = 0.05

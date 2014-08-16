@@ -59,7 +59,7 @@ if [ $# -eq 1 ]; then
     fi
   fi
   if [ "$1" = "-s4" ]; then
-    #statements
+    echo "[Installing] gazebo-4.0 ..."
   fi
   if [ "$1" = "-u" ]; then
     STATUS=2

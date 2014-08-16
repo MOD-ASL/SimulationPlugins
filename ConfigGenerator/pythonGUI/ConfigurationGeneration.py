@@ -84,6 +84,7 @@ class App(Frame):
     #------------ Run Simulation and GUI ---------------------
     if flag == 0: 
       self.rungzserver = Popen(['sh', 'RunSimulation.sh'], stdout=PIPE)
+      time.sleep(0.3)
       self.rungzclient = Popen(['gzclient', '-g','libsystem_gui.so'], stdout=PIPE)
       time.sleep(2)
 
@@ -384,10 +385,14 @@ class App(Frame):
       print "module path: ",module_path
       # print "joint angles: ",self.StringToTuple(jointanglestr)
       module_jointangle = self.StringToTuple(jointanglestr)
-      new_module = Module(model_name,module_position,module_jointangle,module_path)
-      new_module.rotation_matrix = kinematics.rotz(module_position[5])* \
-                                   kinematics.roty(module_position[4])* \
-                                   kinematics.rotx(module_position[3])
+      if len(module_position) == 6:
+          new_module = Module(model_name,module_position,module_jointangle,module_path)
+          new_module.rotation_matrix = kinematics.rotz(module_position[5])* \
+                                       kinematics.roty(module_position[4])* \
+                                       kinematics.rotx(module_position[3])
+      elif len(module_position) == 7:
+        new_module = Module(model_name,module_position,module_jointangle,module_path,True)
+        new_module.rotation_matrix = kinematics.quatToRot(module_position[3:])
       self.ModuleList.append(new_module)
       if self.ServerConnected == 1:
         self.PublishMessage(self.ModuleList[-1])
@@ -409,15 +414,7 @@ class App(Frame):
     self.connectmodel.set('')
 
   def StringToTuple(self, anglestring):
-    jointangles = []
-    while True:
-      idx = anglestring.find(" ")
-      if idx >=0 :
-        jointangles.append(float(anglestring[0:idx]))
-        anglestring = anglestring[idx+1:]
-      else:
-        jointangles.append(float(anglestring))
-        break
+    jointangles = [float(x) for x in anglestring.split()]
     return tuple(jointangles)
 
   def GetModelByname(self,name):

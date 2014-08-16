@@ -473,14 +473,14 @@ class GaitRecorder(Frame):
   # @param anglestring A string that has values separated by spaces
   # @return Tuple of those values
   def StringToTuple(self, anglestring):
-    jointangles = anglestring.split()
+    jointangles = [float(x) for x in anglestring.split()]
     return tuple(jointangles)
   ## Convert a string that has multiple values to list
   # @param self Object pointer
   # @param anglestring A string that has values separated by spaces
   # @return List of those values
   def StringToList(self, anglestring):
-    jointangles = anglestring.split()
+    jointangles = [float(x) for x in anglestring.split()]
     # while True:
     #   idx = anglestring.find(" ")
     #   if idx >=0 :
