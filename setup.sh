@@ -207,6 +207,28 @@ if [ "$STATUS" = 1 ]; then
   make
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
+
+  cd "$DIR"
+  cd SimulationController/pythonGUI
+  sh setup.sh
+  cd ../worldplugin/
+  if [ ! -d build/ ]; then
+    mkdir build
+    cd build
+    cmake ../
+  else
+    cd build
+    if [ "$WIPEOUT" = 1 ]; then
+      rm -r *
+      cmake ../
+    fi
+  fi
+  make
+  cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+  cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
+  cd ~/.gazebo/models/SMORES8Jack/
+  sed -e "s/libGaitRecorder.so/libSimulationController.so/" -e "s/ControlCenter/SimulationController/" World.sdf > World_sim.sdf
+
   echo "Setup finished!"
 fi
 cd "$DIR"
