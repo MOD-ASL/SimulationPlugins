@@ -9,7 +9,7 @@ namespace util
 /// A function template that convert number to string
 /*!
   \param n A reference of T type
-  \retun Converted string
+  \return Converted string
 */
 template < typename T > std::string to_string( const T& n )
 {

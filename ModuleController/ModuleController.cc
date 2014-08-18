@@ -7,7 +7,7 @@ using std::endl;
 
 namespace gazebo{
 ModuleController::ModuleController() 
-    : ModelPlugin(), jointAngleKPID(5.5,0,0.75), modelAngleKPID(1,0,0)
+    : ModelPlugin(), jointAngleKPID(7.5,0,0.75), modelAngleKPID(1,0,0)
 {
   // Variables Initialization
   // Dimension Parameter Initialization
