@@ -6,6 +6,7 @@
 //              control, joint speed control, model plane motion control,
 //              model plane position and orientation control
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//! \file Defines the modelplugin for low level control of modules
 #ifndef _GAZEBO_MODEL_CONTROLLER_HH_
 #define _GAZEBO_MODEL_CONTROLLER_HH_
 
@@ -16,7 +17,6 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
-// Google protocol buffers
 // Classes for communication between different plugins
 #include "collision_message.pb.h"
 #include "command_message.pb.h"
@@ -28,18 +28,21 @@
 
 using std::vector;
 using std::string;
-
-// Useful pointer type declaration
+/// shared_ptr of GzString object
 typedef const boost::shared_ptr<const gazebo::msgs::GzString> GzStringPtr;
+/// shared_ptr of Pose
 typedef const boost::shared_ptr<const gazebo::msgs::Pose> PosePtr;
+/// shared_ptr of CommandMessage
 typedef const boost::shared_ptr<const command_message::msgs::CommandMessage> 
     CommandMessagePtr;
 
 namespace gazebo
 {
-// This class programmed follows the gazebo model plugin standard
-// All the low level controllers of SMORES robot are in here
-// A graphic structure can be find here: 
+/// The modelplugin that actually controls the model and provide low level apis
+/*! This class programmed follows the gazebo model plugin standard.
+    All the low level controllers of SMORES robot are in here.
+    A graphic structure can be find here: 
+*/
 class ModuleController : public ModelPlugin 
 {
  public:
@@ -51,9 +54,16 @@ class ModuleController : public ModelPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+  Useful functions to get model status and other tool functions  +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  /// This function is used to calculate the angular velocity of a revolute joint
+  /// Calculates the angular velocity of a revolute joint
+  /*!
+    \param joint Joint object pointer whose revolution rate needs to be
+    calculate
+    \param axis_index Index of the axis, for a single joint type,
+    it is always 0
+    \return Joint speed in rad/s
+  */
   double RevolutionSpeedCal(physics::JointPtr joint, const int axis_index);
-  /// This function is used to get the coordinates and direction of the current model
+  /// Gets the coordinates and direction of the current model
   math::Pose GetModelCentralCoor(void);
   /// This function is used to calculate the angle in the world frame 
   /// of two points in the world frame

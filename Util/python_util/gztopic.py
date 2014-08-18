@@ -1,3 +1,4 @@
+## @package gztopic Defines classes used for communication using the same thread
 import socket
 import time
 import sys

@@ -1,3 +1,5 @@
+## @package gztopic_multithreading Defines classes used for communication
+## between python program and gazebo plugins
 import socket
 import time
 import sys
@@ -17,46 +19,74 @@ from pygazebo.msg.quaternion_pb2 import Quaternion
 from pygazebo.msg.model_pb2      import Model
 from pygazebo.msg.joint_pb2      import Joint
 from pygazebo.msg.subscribe_pb2  import Subscribe
-
+## Gztopic pulisher object
 class GzPublisher:
+  ## Constructor 
+  # @param self Object pointer
+  # @param topic Gztopic string
+  # @param messagetype Message type string, defined in protobuf
+  # @param GzCommunicator A GzCommunicator object
   def __init__(self,topic,messagetype,GzCommunicator):
+    ## Gztopic string
     self.TOPIC = topic
+    ## Message type string
     self.MESSAGETYPE = messagetype
+    ## A GzCommunicator object
     self.GZCOMMUNICATOR = GzCommunicator
-
+  ## Publish message
+  # @param self Object pointer
+  # @param msg Message object
   def Publish(self,msg):
     self.GZCOMMUNICATOR.Publish(self.TOPIC, msg)
-
+## Gztopic subscriber object
 class GzSubscriber:
+  ## Constructor 
+  # @param self Object pointer
+  # @param topic Gztopic string
+  # @param messagetype Message type string, defined in protobuf
+  # @param callback Callback function handle
   def __init__(self, topic, messagetype, callback):
+    ## Gztopic string
     self.TOPIC = topic
+    ## Message type string
     self.MESSAGETYPE = messagetype
+    ## Callback function handle
     self.CALLBACK = callback
-
+## Builds a TCP socket in a spearate thread
 class GzCommunicator(threading.Thread):
+  ## Constructor
+  # @param self Object pointer
+  # @param masterip Master ip address, default is 127.0.0.1
+  # @param masterport Master port number, defult 11345
+  # @param selfport Socket local machine port number
   def __init__(self,masterip = '127.0.0.1',masterport = 11345,selfport = 11451):
     threading.Thread.__init__(self)
     """Initiate server"""
+    ## Master ip address
     self.MASTER_TCP_IP   = masterip
+    ## Master port number
     self.MASTER_TCP_PORT = masterport
-
+    ## Node ip address
     self.NODE_TCP_IP     = ''
+    ## Node port number
     self.NODE_TCP_PORT   = selfport
-
+    ## Socket buffer size
     self.TCP_BUFFER_SIZE = 4096
-
+    ## List of output sockets
     self.outputs = []
+    ## Dictionary of clients using gztopic string as key
     self.clientmap = {}
     # self.subscribers = []
-
+    ## Flag of running server
     self.runserver = 1
-
+    ## A socket that builds communication with simulator plugin
     self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.server.setblocking(0)
     self.server.bind((self.NODE_TCP_IP, self.NODE_TCP_PORT))
     self.server.listen(5)
-
+  ## Creates a thread and starts a socket
+  # @param self Object pointer
   def run(self):
     inputs = [self.server]   
     while self.runserver:
@@ -109,13 +139,21 @@ class GzCommunicator(threading.Thread):
     for eachsocket in inputs:
       eachsocket.close()
     # self.server.close()
-
+  ## Find the correct thread and socket
+  # @param self Object pointer
+  # @param dic Dictionary that stores all the threads
+  # @param avalue A socket object
+  # @return Gztopic string
   def WhichCLient(self, dic, avalue):
     for keystr, val in dic.iteritems():
       if avalue == val:
         return keystr
     return ''
-
+  ## Create a publisher
+  # @param self Object pointer
+  # @param topic Gztopic string
+  # @param messagetype Message type string
+  # @return A GzPublisher object
   def CreatePulisher(self, topic, messagetype):
     # print "Dictionary len: ",len(self.clientmap)
     # Register as a Publisher with Gazebo
@@ -192,9 +230,14 @@ class GzCommunicator(threading.Thread):
   #   self.subscribers.append(newsubscriber)
   #   # return GzPublisher(topic,messagetype,self)
 
+  ## Terminate the thread
+  # @param self Object pointer
   def Close(self):
     self.runserver = 0
-
+  ## Pblish a message
+  # @param self Object pointer
+  # @param topic Gztopic string
+  # @param msg Message object
   def Publish(self, topic, msg):
     self.clientmap[topic].send(hex(msg.ByteSize()).rjust(8))
     self.clientmap[topic].sendall(msg.SerializeToString())

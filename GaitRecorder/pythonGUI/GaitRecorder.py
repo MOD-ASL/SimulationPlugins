@@ -1,3 +1,5 @@
+## @package GaitRecorder Gait recorder python GUI application
+
 #--------------- System related ----------------------
 import time
 from subprocess import call, Popen, PIPE
@@ -25,12 +27,19 @@ import numpy as np
 #--------------- Debuggin Tools ----------------------
 import pdb
 #------------- Window Size Settings ------------------
+## Window width
 window_width = 800
+## Window height
 window_height = 520
+## Window left and right padding
 Border_width = 20
+## Window up and bottom padding
 Border_hieht = 40
+## Dialog window width
 DIALOG_WIDTH = 400
+## Dialog window height
 DIALOG_HEIGHT = 260
+## PI used in this module
 PI = np.pi
 ## This is the class of gait recorder  python gui application
 class GaitRecorder(Frame):
@@ -481,14 +490,6 @@ class GaitRecorder(Frame):
   # @return List of those values
   def StringToList(self, anglestring):
     jointangles = [float(x) for x in anglestring.split()]
-    # while True:
-    #   idx = anglestring.find(" ")
-    #   if idx >=0 :
-    #     jointangles.append(float(anglestring[0:idx]))
-    #     anglestring = anglestring[idx+1:]
-    #   else:
-    #     jointangles.append(float(anglestring))
-    #     break
     return jointangles
 
 #--------------- Add Gait Table ------------------------
@@ -939,6 +940,12 @@ class GaitRecorder(Frame):
   #   else:
   #     self.Addframe["state"] = DISABLED
 
+  ## Publish common command message
+  # Control joint position, speed or torque
+  # @param self Object Pointer
+  # @param eachgaittable A GaitEntry object
+  # @param playstate Bool, True: for playmode, update model state using gait string; 
+  #                        False: update model state immediately 
   def PublishMessage(self,eachgaittable,playstate):
     newmessage = GaitRecMessage()
     newmessage.ModelName = eachgaittable.ModuleName
@@ -959,7 +966,12 @@ class GaitRecorder(Frame):
       self.communicator.publish(newmessage)
     # eventlet.sleep(1.0)
     print "Information published"
-
+  ## Publish special command messgae
+  # Send connection and disconnection message
+  # @param self Object Pointer
+  # @param eachgaittable A GaitEntry object
+  # @param playstate Bool, True: for playmode, update model state using gait string; 
+  #                        False: update model state immediately 
   def PublishMessageSpecial(self,eachgaittable,playstate):
     newmessage = GaitRecMessage()
     newmessage.ModelName = eachgaittable.ModuleName
@@ -982,6 +994,8 @@ class GaitRecorder(Frame):
     print "Information published"
 
 #----------------- Save & Load Gait Table -------------------
+  ## Write recorded gait table to file
+  # @param self Object Pointer
   def SaveGaitTable(self):
     # Need a regular expression
     # commandpath = self.savepath.get()
@@ -1007,7 +1021,8 @@ class GaitRecorder(Frame):
     print "Gait saved"
     self.saveButton["state"] = DISABLED
     self.saveButton2["state"] = DISABLED
-
+  ## Open and read in a gait file
+  # @param self Object Pointer
   def OpenGaitFile(self):
     self.file_opt['title'] = 'Open Gait Command'
     filename = tkFileDialog.askopenfilename(**self.file_opt)
@@ -1054,7 +1069,10 @@ class GaitRecorder(Frame):
     self.saveButton["state"] = NORMAL
     self.saveButton2["state"] = NORMAL
     self.Addframe["state"] = NORMAL
-
+  ## Convert a gait string to a GaitEntry object
+  # @param self Object Pointer
+  # @param gaitstring A gait command string
+  # @return A GaitEntry object
   def InterpretGaitString(self,gaitstring):
     # print "gait string: ",gaitstring
     if gaitstring.find("[") != -1:
@@ -1111,7 +1129,10 @@ class GaitRecorder(Frame):
           False,jointsflags[0:4])
 
 #----------------- Common Command Related -------------------
-  ## Callback of scale bar moving event
+  ## Callback function of the scale bar moving event
+  # Update the joint angle in simulator when slide the scale bar
+  # @param self Object pointer
+  # @args Other arguements
   def DynamicUpdate(self, *args):
     if len(self.modelname.get()) > 0 :
       message_queue = []
@@ -1175,6 +1196,8 @@ class GaitRecorder(Frame):
           time.sleep(0.3)
         self.valueInBox.set(self.valueSetting.get())
   ## Callback function binded to the entry box next to scale with enter key
+  # @param self Object pointer
+  # @param args Other arguements
   def UpdateFromValueBox(self, *args):
     if len(self.modelname.get()) > 0 :
       message_queue = []
@@ -1238,13 +1261,20 @@ class GaitRecorder(Frame):
           if self.valueInBox.get() < -90:
             self.valueInBox.set(-90)
           self.valueSetting.set(self.valueInBox.get())
-
+  ## Check whether there is a command of the same model in a command list
+  # @param self Object pointer
+  # @param model_name Name string of the model
+  # @param command_queue A command list
+  # @return If found a command, then return the messga object; otherwise return False
   def CheckTheExistingCommand(self,model_name,command_queue):
     for each_command in command_queue:
       if each_command.ModelName == model_name:
         return each_command
     return False
-
+  ## Convert a correlation boolean value to number that can be used in calculation
+  # @param self Object pointer
+  # @param corr Bool value stored in AssociateJ?oint object
+  # @return Position correlation: 1.0 ; negtive correlation: -1.0
   def InterpretCorrelation(self, corr):
     if corr:
       return 1.0
@@ -1252,6 +1282,8 @@ class GaitRecorder(Frame):
       return -1.0
 
 #---------------- Associates Related -----------------------
+  ## Clear the association window
+  # @param self Object pointer
   def ResetAssociateWindow(self):
     self.frontWheelAssociates = []
     self.lftWheelAssociates = []
@@ -1259,7 +1291,8 @@ class GaitRecorder(Frame):
     self.centralBendAssociates = []
     self.currentAssociates = []
     self.associatedJointsList.set(())
-
+  ## Refresh association window
+  # @param self Object pointer
   def RefreshAssociates(self):
     associate_list = []
     if self.jointSelection.get() == 0:
@@ -1273,7 +1306,8 @@ class GaitRecorder(Frame):
     for each_associate in self.currentAssociates:
       associate_list.append(each_associate.ToString())
     self.associatedJointsList.set(tuple(associate_list))
-
+  ## Delete an association
+  # @param self Object pointer
   def DeleteAnAssociate(self):
     if self.associatedJoints.curselection():
       self.associateIdx = int(self.associatedJoints.curselection()[0])
@@ -1296,6 +1330,8 @@ class GaitRecorder(Frame):
 
 
 #---------------- Select File Save Path --------------------
+  ## Select gaitfile save path
+  # @param self Object pointer
   def SelectSavePath(self):
     select_dir_options = {}
     select_dir_options['initialdir'] = '~/'
@@ -1307,10 +1343,13 @@ class GaitRecorder(Frame):
     self.savepath.set(self.savePath+"/")
 
 #---------------- Add Common Command -----------------------
+  ## Open an add association window
+  # @param self Object pointer
   def AddAssociates(self):
     asc = AddAssociate(self)
     self.wait_window(asc)
-
+  ## Update joint value on the scale bar and entry next to it
+  # @param self Object pointer
   def UpdateJointValue(self):
     node_idx = self.jointSelection.get()
     value_type = self.typeSelection.get()
@@ -1330,12 +1369,14 @@ class GaitRecorder(Frame):
       self.valueSetting.set(a_module.JointAngle[node_idx]/PI*180)
       self.valueInBox.set(a_module.JointAngle[node_idx]/PI*180)
     self.RefreshAssociates()
-
+  ## Callback of common command select radiobutton
+  # @param self Object pointer
   def SelectCommonCommand(self):
     self.DisableSpecialCommand()
     self.EnableCommonCommand()
     self.ResetSpecialComand()
-
+  ## Disable common command
+  # @param self Object pointer
   def DisableCommonCommand(self):
     self.bend_joint["state"] = DISABLED
     self.left_joint["state"] = DISABLED
@@ -1348,7 +1389,8 @@ class GaitRecorder(Frame):
     self.ascModify["state"] = DISABLED
     self.ascDelete["state"] = DISABLED
     self.valueSetting["state"] = DISABLED
-
+  ## Enable common command
+  # @param self Object pointer
   def EnableCommonCommand(self):
     self.bend_joint["state"] = NORMAL
     self.left_joint["state"] = NORMAL
@@ -1363,6 +1405,8 @@ class GaitRecorder(Frame):
     self.valueSetting["state"] = NORMAL
 
 #---------------- Add Special Command ----------------------
+  ## Callback of select connection radiobutton
+  # @param self Object pointer
   def SelectConnection(self):
     self.ResetSpecialComand()
     self.EnableSpecialCommand()
@@ -1381,7 +1425,9 @@ class GaitRecorder(Frame):
     node1_list = self.UpdateConnectableNodes(module1_name)
     self.node1Selection['values'] = tuple(node1_list)
     self.node2Selection["values"] = ()
-
+  ## Select the second module which the current module connect to or disconnect to
+  # @param self Object pointer
+  # @param args Other arguments
   def SelectSecondModule(self,*args):
     if self.commandType.get() == 1:
       module2_name = self.module2Select.get()
@@ -1405,7 +1451,9 @@ class GaitRecorder(Frame):
             self.nodeSelect1.set(module_1.nodes[x].Node1)
             self.nodeSelect2.set(module_1.nodes[x].Node2)
             break
-
+  ## Select the node of the first module
+  # @param self Object pointer
+  # @param args Other arguments
   def SelectNode1(self,*args):
     if self.commandType.get() == 2:
       module1_name = self.modelname.get()
@@ -1421,7 +1469,10 @@ class GaitRecorder(Frame):
         self.module2Select.set(module_2_name)
         self.nodeSelect2.set(module_1.nodes[node_1].Node2)
         self.node2Selection['values'] = (module_1.nodes[node_1].Node2)
-
+  ## Update the available nodes of the other module the current module connect to
+  # @param self Object pointer
+  # @param module_name Name string of the other module
+  # @return A list of interger, which are the id of the available nodes
   def UpdateConnectableNodes(self, module_name):
     a_module = self.GetModuleByName(module_name)
     node_available = []
@@ -1429,12 +1480,14 @@ class GaitRecorder(Frame):
       if len(a_module.nodes[x]) == 0:
         node_available.append(str(x))
     return node_available
-
+  ## Reset the module and nodes selection in the special command section
+  # @param self Object pointer
   def ResetSpecialComand(self):
     self.module2Select.set("")
     self.nodeSelect1.set("")
     self.nodeSelect2.set("")
-
+  ## Callback of select disconnection radiobutton
+  # @param self Object pointer
   def SelectDisconnection(self):
     self.ResetSpecialComand()
     self.EnableSpecialCommand()
@@ -1455,12 +1508,14 @@ class GaitRecorder(Frame):
     self.module2Selection['values'] = tuple(self.DisconnectableModules)
     self.node1Selection["values"] = tuple(self.DisconnectableNodes)
     self.node2Selection["values"] = ()
-
+  ## Disable special command section
+  # @param self Object pointer
   def DisableSpecialCommand(self):
     self.node1Selection["state"] = DISABLED
     self.module2Selection["state"] = DISABLED
     self.node2Selection["state"] = DISABLED
-
+  ## Enable special command section
+  # @param self Object pointer
   def EnableSpecialCommand(self):
     self.node1Selection["state"] = NORMAL
     self.module2Selection["state"] = NORMAL

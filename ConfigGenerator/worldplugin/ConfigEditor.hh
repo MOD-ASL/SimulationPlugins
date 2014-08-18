@@ -10,12 +10,14 @@
 // will publish configuration information to gui plugin that 
 // will force graphic updates happening
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*! \file Defined the ConfigEditor worldplugin and the types that used by this 
+ object */
 #ifndef _GAZEBO_CONFIG_EDITOR_HH_
 #define _GAZEBO_CONFIG_EDITOR_HH_
 
 #include "WorldServer.hh"
 #include "config_message.pb.h"
-/// Shared_ptr of the customized protobuf config_message
+/// Shared_ptr of the customized protobuf message: config_message
 /*! This message is used to communicate between config editor and worldplugin*/
 typedef const boost::shared_ptr
     <const config_message::msgs::ConfigMessage> ConfigMessagePtr;

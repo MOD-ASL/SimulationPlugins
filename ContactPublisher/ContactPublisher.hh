@@ -16,7 +16,7 @@
 namespace gazebo
 {
 /// This class will be used in automatically connection under magnetic force
-/// The trigger condition of magnetic connections is the face contact of two modules  
+/*! The trigger condition of magnetic connections is the face contact of two modules  */
 class ContactSensor : public SensorPlugin
 {         
  public: 
@@ -25,8 +25,10 @@ class ContactSensor : public SensorPlugin
   /// Destructor.
   ~ContactSensor();
   /// Load the sensor plugin.
-  ///  _sensor: Pointer to the sensor that loaded this plugin.
-  ///  _sdf: SDF element that describes the plugin.
+  /*!
+    \param _sensor: Pointer to the sensor that loaded this plugin.
+    \param _sdf: SDF element that describes the plugin.
+  */
   void Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf);
   /// Callback that recieves the contact sensor's update signal.
   void OnUpdate();
@@ -34,8 +36,9 @@ class ContactSensor : public SensorPlugin
  private: 
   /// Pointer to the contact sensor
   sensors::ContactSensorPtr parentSensor;
-  /// Connection that maintains a link between the contact sensor's
-  /// updated signal and the OnUpdate callback.
+  /// Connection event handle
+  /* Connection that maintains a link between the contact sensor's
+      updated signal and the OnUpdate callback. */
   event::ConnectionPtr updateConnection;
   /// Collision publisher
   transport::PublisherPtr collisionPub; 

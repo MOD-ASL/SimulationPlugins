@@ -22,6 +22,7 @@
 
 // Include Rand.hh first due to compilation error on osx (boost #5010)
 // https://svn.boost.org/trac/boost/ticket/5010
+//! \file System plugin to force graphic update in simulator graphics
 #include <gazebo/math/Rand.hh>
 #include <gazebo/gui/GuiIface.hh>
 #include <gazebo/rendering/rendering.hh>
@@ -33,7 +34,7 @@ using std::string;
 using std::vector;
 using std::cout;
 using std::endl;
-
+/// Shared_ptr of the customized protobuf message: config_message
 typedef const boost::shared_ptr<
     const config_message::msgs::ConfigMessage> ConfigMessagePtr;
 
@@ -43,6 +44,11 @@ namespace gazebo
 class JointUpdate
 {
  public:
+  /// Constructor
+  /*!
+    \param modelname Model name string
+    \param jointangle Pointer of the joint angle array
+  */
   JointUpdate(string modelname, double *jointangle)
   {
     this->modelName = modelname;
@@ -50,6 +56,10 @@ class JointUpdate
       this->jointAngle[i] = jointangle[i];
     }
   }
+  /// Set joint angles
+  /*!
+    \param jointangle Pointer of the joint angle array
+  */
   void SetJointAngle(double *jointangle)
   {
     for (int i = 0; i < 4; ++i) {
@@ -84,6 +94,7 @@ class SystemGUI : public SystemPlugin
         topicName,&SystemGUI::ConfigMessageDecoding, this);
     cout<<"World: subscriber topic: "<<this->configSub->GetTopic()<<endl;
   }
+  /// Called do extra work in the function Update()
   public: virtual void RunsInUpdate(void) {}
   /// Called every Render event. See the Load function.
   private: void Update()
@@ -128,6 +139,9 @@ class SystemGUI : public SystemPlugin
     }
   }
   /// Call back when receiving configuration information
+  /*!
+    \param msg ConfigMessagePtr object for incoming message
+  */
   private: void ConfigMessageDecoding(ConfigMessagePtr &msg)
   {
     cout<<"GUI: Information received"<<endl;
