@@ -18,8 +18,12 @@ from pygazebo.msg.quaternion_pb2 import Quaternion
 from pygazebo.msg.model_pb2      import Model
 from pygazebo.msg.joint_pb2      import Joint
 from pygazebo.msg.subscribe_pb2  import Subscribe
-
+## Gztopic pulisher object
 class GzCommunicator(object):
+  ## Constructor 
+  # @param self Object pointer
+  # @param masterip Master ip address
+  # @param masterport Master port number
   def __init__(self,masterip = '127.0.0.1',masterport = 11345):
     """Init function"""
     self.MASTER_TCP_IP   = masterip
@@ -29,7 +33,10 @@ class GzCommunicator(object):
     self.NODE_TCP_PORT   = 11451
 
     self.TCP_BUFFER_SIZE = 40960
-
+  ## Build the socket and start the connection
+  # @param self Object pointer
+  # @param topic Gztopic string
+  # @param messagetype Name of the messgae object
   def StartCommunicator(self,topic,messagetype):
     """Start the communication through gztopic"""
     # Listen for Subscribers
@@ -82,12 +89,15 @@ class GzCommunicator(object):
         sub.ParseFromString(pk_sub.serialized_data)
         print "Sub:\n", sub
         print
-
+  ## Close the connection
+  # @param self Object pointer
   def stop(self):
     """Stop the communicator"""
     self.s_reg.close()
     self.conn.close()
-
+  ## Publish message
+  # @param self Object pointer
+  # @param msg Message object
   def publish(self,msg):
 
     self.conn.send(hex(msg.ByteSize()).rjust(8))

@@ -1,14 +1,24 @@
+## @package SimpleKL Provides some simple kinematic functions
 import numpy as np
-
+## Rotation matrix around x axis
+# @param row Row 
+# @return Numpy matrix object of rotation matrix
 def rotx(row):
 	return np.matrix([[1,0,0],[0,np.cos(row),-np.sin(row)],[0,np.sin(row),np.cos(row)]])
-
+## Rotation matrix around y axis
+# @param pitch Pitch 
+# @return Numpy matrix object of rotation matrix
 def roty(pitch):
 	return np.matrix([[np.cos(pitch),0,np.sin(pitch)],[0,1,0],[-np.sin(pitch),0,np.cos(pitch)]])
-
+## Rotation matrix around z axis
+# @param yaw Yaw 
+# @return Numpy matrix object of rotation matrix
 def rotz(yaw):
 	return np.matrix([[np.cos(yaw),-np.sin(yaw),0],[np.sin(yaw),np.cos(yaw),0],[0,0,1]])
-
+## Checks whether two faces close enough
+# @param pos1 Face norm vector of the first face
+# @param pos2 Face norm vector of the second face
+# @return If two faces are close, return True; otherwise, return False
 def CloseEnough(pos1,pos2):
 	referenceVec = np.matrix([[pos1[0]-pos2[0]],[pos1[1]-pos2[1]],[pos1[2]-pos2[2]]])
 	dis = np.linalg.norm(referenceVec)
@@ -16,7 +26,12 @@ def CloseEnough(pos1,pos2):
 		return True
 	else:
 		return False
-
+## Giving position of two modules to check which faces can be connected
+# @param pos1 Position of the first module 1
+# @param joint1 List of joint anlges of module 1
+# @param pos1 Position of the first module 2
+# @param joint1 List of joint anlges of a module 2
+# @return If connectable, then return connectable node index number; otherwise False
 def Connectable(pos1,joint1,pos2,joint2):
 	threshold = 0.98
 	referenceVec = np.matrix([[pos1[0]-pos2[0]],[pos1[1]-pos2[1]],[pos1[2]-pos2[2]]])
