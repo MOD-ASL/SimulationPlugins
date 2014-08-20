@@ -234,7 +234,7 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
     // Need a function when delete a entity, this value needs to be decrease
     needToSetPtr += 1;
     if (initalJointValue.size()>0) {
-      bool flags[4] = {true,true,true,true};
+      int flags[4] = {0,0,0,0};
       double joint_angles[4] = {0};
       string joint_values_string = initalJointValue.at(0);
       for (int i = 0; i < 4; ++i) {
@@ -789,15 +789,13 @@ void WorldServer::CommandExecution(ModuleCommandsPtr current_command_container)
   //     <<current_command_container->CommandSquence.size()<<endl;
   current_command_container->ExecutionFlag = true;
 } // WorldServer::CommandExecution
-void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+void WorldServer::SendGaitTable(SmoresModulePtr module, const int *flag, 
     const double *gait_value, int msg_type, unsigned int time_stamp, 
     string condition_str, string dependency_str) 
     // unit of time_stamp is millisecond
 {
   CommandPtr command_message(new command_message::msgs::CommandMessage());
   command_message->set_messagetype(msg_type);
-  // TODO: Need to get rid of priority entirely
-  command_message->set_priority(0);
   for (int i = 0; i < 4; ++i) {
     command_message->add_jointgaittablestatus(flag[i]);
     command_message->add_jointgaittable(gait_value[i]);
@@ -828,19 +826,18 @@ void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag,
         <<module->moduleCommandContainer->CommandSquence.size()<<endl;
   }
 } // WorldServer::SendGaitTable
-void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+void WorldServer::SendGaitTable(SmoresModulePtr module, const int *flag, 
     const double *gait_value, int msg_type, unsigned int time_stamp) 
     // unit of time_stamp is millisecond
 {
   SendGaitTable(module, flag, gait_value, msg_type, time_stamp, "", "");
 } // WorldServer::SendGaitTable
-void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+void WorldServer::SendGaitTable(SmoresModulePtr module, const int *flag, 
     const double *gait_value, int msg_type, string condition_str, 
     string dependency_str)
 {
   CommandPtr command_message(new command_message::msgs::CommandMessage());
   command_message->set_messagetype(msg_type);
-  command_message->set_priority(0);
   for (int i = 0; i < 4; ++i) {
     command_message->add_jointgaittablestatus(flag[i]);
     command_message->add_jointgaittable(gait_value[i]);
@@ -867,7 +864,7 @@ void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag,
         <<module->moduleCommandContainer->CommandSquence.size()<<endl;
   }
 } // WorldServer::SendGaitTable
-void WorldServer::SendGaitTable(SmoresModulePtr module, const bool *flag, 
+void WorldServer::SendGaitTable(SmoresModulePtr module, const int *flag, 
     const double *gait_value, int msg_type)
 {
   SendGaitTable(module, flag, gait_value, msg_type, "", "");
@@ -876,11 +873,11 @@ void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID,
     double gait_value, int msg_type, unsigned int time_stamp, 
     string condition_str, string dependency_str)
 {
-  bool flag[4] = {false,false,false,false};
+  int flag[4] = {3,3,3,3};
   double gait_values[4] = {0,0,0,0};
-  flag[joint_ID] = true;
+  flag[joint_ID] = msg_type;
   gait_values[joint_ID] = gait_value;
-  SendGaitTable(module, flag, gait_values, msg_type, time_stamp, 
+  SendGaitTable(module, flag, gait_values, 3, time_stamp, 
       condition_str, dependency_str);
 } // WorldServer::SendGaitTable
 void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
@@ -891,11 +888,11 @@ void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID,
 void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
     double gait_value, int msg_type, string condition_str, string dependency_str)
 {
-  bool flag[4] = {false,false,false,false};
+  int flag[4] = {3,3,3,3};
   double gait_values[4] = {0,0,0,0};
-  flag[joint_ID] = true;
+  flag[joint_ID] = msg_type;
   gait_values[joint_ID] = gait_value;
-  SendGaitTable(module, flag, gait_values, msg_type, 
+  SendGaitTable(module, flag, gait_values, 3, 
       condition_str, dependency_str);
 } // WorldServer::SendGaitTable
 void WorldServer::SendGaitTable(SmoresModulePtr module, int joint_ID, 
@@ -972,11 +969,10 @@ void WorldServer::SendGaitTable(SmoresModulePtr module,
   SendGaitTable(module, module1, module2, node1, node2, command_type, "", "");
 } // WorldServer::SendGaitTable
 void WorldServer::SendGaitTableInstance(SmoresModulePtr module, 
-    const bool *flag, const double *gait_value, int msg_type)
+    const int *flag, const double *gait_value, int msg_type)
 {
   CommandPtr connection_message(new command_message::msgs::CommandMessage());
   connection_message->set_messagetype(msg_type);
-  connection_message->set_priority(-1);
   for (int i = 0; i < 4; ++i) {
     connection_message->add_jointgaittablestatus(flag[i]);
     connection_message->add_jointgaittable(gait_value[i]);
@@ -984,7 +980,7 @@ void WorldServer::SendGaitTableInstance(SmoresModulePtr module,
   module->ModulePublisher->Publish(*connection_message);
 } // WorldServer::SendGaitTableInstance
 void WorldServer::SendGaitTableInstance(SmoresModulePtr module, 
-    const bool *flag, const double *gait_value)
+    const int *flag, const double *gait_value)
 {
   SendGaitTableInstance(module, flag, gait_value, 4);
 } // WorldServer::SendGaitTableInstance
@@ -993,7 +989,6 @@ void WorldServer::SendPositionInstance(SmoresModulePtr module,
 {
   CommandPtr connection_message(new command_message::msgs::CommandMessage());
   connection_message->set_messagetype(2);
-  connection_message->set_priority(-1);
   connection_message->mutable_positionneedtobe()->mutable_position()->set_x(x);
   connection_message->mutable_positionneedtobe()->mutable_position()->set_y(y);
   connection_message->mutable_positionneedtobe()->mutable_position()
@@ -1184,7 +1179,7 @@ void WorldServer::InterpretCommonGaitString(string a_command_str)
   string model_name = tokens.at(0);
   // cout<<"World: Model name: "<<model_name<<";"<<endl;
   // cout<<"World: The command string is: "<<a_command_str<<endl;
-  bool flags[4] = {false, false, false, false};
+  int flags[4] = {3, 3, 3, 3};
   double joints_values[4] = {0, 0, 0, 0};
   vector<string> joint_specs;
   for (int i = 1; i < 5; ++i) {
@@ -1261,23 +1256,23 @@ void WorldServer::InterpretSpecialString(string a_command_str)
           need to implement all the features in the future
 */
 void WorldServer::FigureInterpret(const vector<string> *joints_spec, 
-    bool *type_flags,  double *joint_values)
+    int *type_flags,  double *joint_values)
 {
   for (unsigned int i = 0; i < 4; ++i)
   {
     string mini_unit =  joints_spec->at(i);
     if (mini_unit.at(0) == 'p')
-      type_flags[i] = true;
+      type_flags[i] = 0;
     if (mini_unit.at(0) == 's')
-      type_flags[i] = false;
+      type_flags[i] = 1;
     if (mini_unit.at(0) == 't')
-      type_flags[i] = false;
+      type_flags[i] = 2;
     if (mini_unit.at(0) == 'i')
-      type_flags[i] = false;
+      type_flags[i] = 3;
     if (mini_unit.at(0) == 'c')
-      type_flags[i] = false;
+      type_flags[i] = 4;
     if (mini_unit.at(0) == 'd')
-      type_flags[i] = false;
+      type_flags[i] = 5;
     if (mini_unit.substr(1).size()>0)
       joint_values[i] = atof(mini_unit.substr(1).c_str());
   }

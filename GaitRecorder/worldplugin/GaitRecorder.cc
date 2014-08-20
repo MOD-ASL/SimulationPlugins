@@ -139,16 +139,17 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
           }
           return;
         }
-        bool flags[4] = {true,true,true,true};
+        int flags[4] = {3,3,3,3};
         double joints_values[4] = {0,0,0,0};
         joints_values[0] = msg->jointangles(0);
         joints_values[1] = msg->jointangles(1);
         joints_values[2] = msg->jointangles(2);
         joints_values[3] = msg->jointangles(3);
         for (int i = 0; i < 4; ++i) {
-          if (msg->flags(i) != 0) {
-            flags[i] = false;
-          }
+          flags[i] = msg->flags(i);
+          // if (msg->flags(i) != 0) {
+          //   flags[i] = false;
+          // }
         }
         string condition = msg->condition();
         string dependency = msg->dependency();
@@ -198,7 +199,7 @@ void GaitRecorder::GaitRecorderMessageDecoding(GaitRecMessagePtr &msg)
             return;
           }
         }
-        bool flags[4] = {true,true,true,true};
+        int flags[4] = {0,0,0,0};
         double joints_values[4] = {0,0,0,0};
         joints_values[0] = msg->jointangles(0);
         joints_values[1] = msg->jointangles(1);
@@ -242,7 +243,7 @@ void GaitRecorder::SetPose(const Frame *a_frame)
     DynamicJointDestroy(GetEdgePtrByIDX(i));
   }
   for (unsigned int i = 0; i < a_frame->GetPositionSize(); ++i) {
-    bool flags[4] = {true,true,true,true};
+    int flags[4] = {0,0,0,0};
     GetModulePtrByIDX(i)->ModuleObject->GetJoint("Front_wheel_hinge")->SetPosition(
         0,a_frame->GetPosition(i).JointAngles[0]);
     GetModulePtrByIDX(i)->ModuleObject->GetJoint("Left_wheel_hinge")->SetPosition(

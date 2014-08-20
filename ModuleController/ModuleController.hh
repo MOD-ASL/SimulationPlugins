@@ -20,6 +20,8 @@
 // Classes for communication between different plugins
 #include "collision_message.pb.h"
 #include "command_message.pb.h"
+// Library for colored log text
+#include "ColorLog.hh"
 // The head file which contains the joint_plus structure
 #include "SmoresJoint.hh"
 
@@ -150,6 +152,7 @@ class ModuleController : public ModelPlugin
   math::Vector3 modelAngleKPID;   // First digit is Kp,
                                   // second digit is Ki and
                                   // third digit is Kd
+  /// Maximium rotation rate of each joint, unit: rad/s
   double maxiRotationRate;  // Maximium rotation rate of each joint
   double accelerationRate;
   double planarMotionStopThreshold;
@@ -158,7 +161,7 @@ class ModuleController : public ModelPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+       Pointers of Model and joints and a emhanced struct        +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  // Current Model Pointer
+  /// Current Model Pointer
   physics::ModelPtr model;
   // Pointers to all the Joints the current model has
   physics::JointPtr jointWR;
@@ -189,24 +192,32 @@ class ModuleController : public ModelPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Useful Buffers                            +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  // Vector that contains all the names of connected models
+  /// Contains all the names of connected models
   vector<string> nameOfConnectedModels;
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                 Model Execution Variables                       +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  /// Execution state
   int executionState; // 0 for waiting mode, 
                      // 1 for planar motion mode, 
                      // 2 for joint control mode, 
                      // 3 for direct control mode 
+  /// Desired joint angles
   double jointAngleShouldBe[4];
+  /// Joint speed
+  double jointSpeeds[4];
+  /// Desired robot position when controled to move to a position 
   math::Pose targetPosition;
+  /// Left wheel speed
   double lftWheelSpeed;
+  /// Right wheel speed
   double rgtWheelSpeed;
+  /// Execution status
   bool startExecution;
   // DEPRECATED: This is no longer needed
   // TODO: command id should be implemented in the future
-  int commandPriority;
+  // int commandPriority;
 }; // class ModuleController
 } // namespace gazebo
 #endif

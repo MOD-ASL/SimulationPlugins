@@ -9,6 +9,8 @@
 #define _COLOR_LOG_HH_
 #include <ostream>
 /// Color namespace has functions can log colorful texts in terminal
+using std::cout;
+using std::endl;
 namespace Color {
 /// Color code definition
 enum Code {
@@ -54,5 +56,25 @@ class Modifier {
     return os << "\033[0;" << mod.code << "m";
   }
 };
+/// Warning message log function
+/*!
+  \param message_str The text that needs to be loged
+*/
+inline void Warning(const char* message_str)
+{
+  Color::Modifier yellow_log(Color::FG_YELLOW, true);
+  Color::Modifier def_log(Color::FG_DEFAULT);
+  cout<<yellow_log<<"[Warning] "<<message_str<<def_log<<endl;
+}
+/// Error message log function
+/*!
+  \param message_str The text that needs to be loged
+*/
+inline void Error(const char* message_str)
+{
+  Color::Modifier red_log(Color::FG_RED, true);
+  Color::Modifier def_log(Color::FG_DEFAULT);
+  cout<<red_log<<"[Error] "<<message_str<<def_log<<endl;
+}
 }
 #endif

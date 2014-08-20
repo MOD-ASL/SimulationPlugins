@@ -18,11 +18,14 @@ ModuleController::ModuleController()
   wheelRadius =  0.045275;
   // Execution Parameter Initialization
   executionState = 0;
-  for (unsigned i = 0; i < 4; ++i) jointAngleShouldBe[i] = 0;
+  for (unsigned i = 0; i < 4; ++i) {
+    jointAngleShouldBe[i] = 0;
+    jointSpeeds[i] = 0;
+  }
   lftWheelSpeed = 0;
   rgtWheelSpeed = 0;
   startExecution = false;
-  commandPriority = 0;
+  // commandPriority = 0;
 } // ModuleController::ModuleController
 ModuleController::~ModuleController()
 {
@@ -191,22 +194,34 @@ void ModuleController::OnSystemRunning(const common::UpdateInfo & /*_info*/)
     math::Angle final_orientation(targetPosition.pos.z);
     Move2Point(final_position,final_orientation);
     if (startExecution){
-      PositionTracking(); // A feedback message will be sent after acheiving the goal
+      // A feedback message will be sent after acheiving the goal
+      PositionTracking();
     }
   }
   if (executionState == 2){
     for (int i = 0; i < 4; ++i){
-      JointPIDController(jointAngleShouldBe[i], &GetJointPlus(i));
+      JointPIDController(jointAngleShouldBe[i], jointSpeeds[i], &GetJointPlus(i));
+      // JointPIDController(jointAngleShouldBe[i], &GetJointPlus(i));
     }
     if (startExecution){
-      JointAngleTracking(); // A feedback message will be sent after acheiving the goal
+      // A feedback message will be sent after acheiving the goal
+      JointAngleTracking();
     }
   }
   if (executionState == 3){
     JointPIDController(jointAngleShouldBe[0], &GetJointPlus(0));
     JointPIDController(jointAngleShouldBe[3], &GetJointPlus(3));
-    SetJointSpeed(jointWL, 0, lftWheelSpeed);
-    SetJointSpeed(jointWR, 0, rgtWheelSpeed);
+    if (lftWheelSpeed == 0) {
+      JointPIDController(jointAngleShouldBe[1], &GetJointPlus(1));
+    }else{
+      SetJointSpeed(jointWL, 0, lftWheelSpeed);
+    }
+    if (rgtWheelSpeed == 0)
+    {
+      JointPIDController(jointAngleShouldBe[2], &GetJointPlus(2));
+    }else{
+      SetJointSpeed(jointWR, 0, rgtWheelSpeed);
+    }
   }
 } // ModuleController::OnSystemRunning
 void ModuleController::CollisionPubAndSubInitialization(void)
@@ -281,8 +296,39 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
     case 3:{
       this->executionState = 2;
       for (int i = 0; i < 4; ++i){
-        if (msg->jointgaittablestatus(i)){
+        if (msg->jointgaittablestatus(i) == 0) {
           this->jointAngleShouldBe[i] = msg->jointgaittable(i);
+          if (msg->has_timer()) {
+            double pos_speed = double(msg->jointgaittable(i))
+                /(msg->timer()/1000.0);
+            if (pos_speed > maxiRotationRate) {
+              Color::Warning("Module: Speed exceeds the maximium, "
+                  "not possible finish on time");
+              this->jointSpeeds[i] = 1.0;
+            }else{
+              this->jointSpeeds[i] = pos_speed/maxiRotationRate*1.1>1.0?
+                  1.0:pos_speed/maxiRotationRate*1.1;
+            }
+          }else{
+            this->jointSpeeds[i] = 0.8;
+          }
+        }
+        if (msg->jointgaittablestatus(i) == 1) {
+          if (msg->has_timer()) {
+            this->jointAngleShouldBe[i] = double(msg->jointgaittable(i)
+                *msg->timer())/1000.0;
+          }else{
+            // If there is no timer setting, module will run in that speed 
+            // for 10 seconds
+            this->jointAngleShouldBe[i] = msg->jointgaittable(i)*10.0;
+          }
+          if (msg->jointgaittable(i) > maxiRotationRate)
+          {
+            Color::Warning("Module: Speed exceeds the maimium");
+            this->jointSpeeds[i] = 1.0;
+          }else{
+            this->jointSpeeds[i] = msg->jointgaittable(i)/maxiRotationRate;
+          }
         }
       }
       // Joint setting log
@@ -300,17 +346,26 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
     case 4:{
       this->executionState = 3;
       for (int i = 0; i < 4; ++i){
-        if (i==0 || i==3){
-          if (msg->jointgaittablestatus(i)){
-            this->jointAngleShouldBe[i] = msg->jointgaittable(i);
-          }
-        }else{
-          if (msg->jointgaittablestatus(i) && i == 1){
-            lftWheelSpeed = msg->jointgaittable(i);
-          }
-          if (msg->jointgaittablestatus(i) && i == 2){
-            rgtWheelSpeed = msg->jointgaittable(i);
-          }
+        if ((i==0 || i==3) && msg->jointgaittablestatus(i)==0) {
+          this->jointAngleShouldBe[i] = msg->jointgaittable(i);
+        }
+        if ((i==0 || i==3) && msg->jointgaittablestatus(i)==1) {
+          Color::Warning("Module: Direct speed control of this joint"
+            " has been implemented, ignored");
+        }
+        if (i==1 && msg->jointgaittablestatus(i)==1) {
+          lftWheelSpeed = msg->jointgaittable(i);
+        }
+        if (i==1 && msg->jointgaittablestatus(i)==0) {
+          lftWheelSpeed = 0;
+          this->jointAngleShouldBe[i] = msg->jointgaittable(i);
+        }
+        if (i==2 && msg->jointgaittablestatus(i)==1) {
+          rgtWheelSpeed = msg->jointgaittable(i);
+        }
+        if (i==2 && msg->jointgaittablestatus(i)==0) {
+          rgtWheelSpeed = 0;
+          this->jointAngleShouldBe[i] = msg->jointgaittable(i);
         }
       }
       commandPub->Publish(feed_back_message);
@@ -326,7 +381,7 @@ void ModuleController::CommandDecoding(CommandMessagePtr &msg)
     startExecution = false;
   }else{
     startExecution = true;
-    commandPriority = msg->priority();
+    // commandPriority = msg->priority();
   }
 } // ModuleController::CommandDecoding
 void ModuleController::SetJointAngleForce(physics::JointPtr current_joint, 
@@ -394,7 +449,7 @@ void ModuleController::JointAngleTracking(void)
   if (execution_finished_flag){
     command_message::msgs::CommandMessage feed_back_message;
     feed_back_message.set_messagetype(0);
-    feed_back_message.set_priority(commandPriority);
+    // feed_back_message.set_priority(commandPriority);
     feed_back_message.set_stringmessage(model->GetName()+":finished");
     commandPub->Publish(feed_back_message);
   }
@@ -418,7 +473,7 @@ void ModuleController::PositionTracking(void)
   if (execution_finished_flag){
     command_message::msgs::CommandMessage feed_back_message;
     feed_back_message.set_messagetype(0);
-    feed_back_message.set_priority(commandPriority);
+    // feed_back_message.set_priority(commandPriority);
     feed_back_message.set_stringmessage(model->GetName()+":finished");
     commandPub->Publish(feed_back_message);
   }

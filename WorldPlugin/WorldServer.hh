@@ -138,43 +138,192 @@ class WorldServer : public WorldPlugin
   /// Disconnect two module base on their names
   void Disconnect(string moduleName1, string moduleName2);
 
-  /// Theses functions are used to send 'gait table'
-  /// TODO: Think about how to combine these functions
-  void SendGaitTable(SmoresModulePtr module, const bool *flag, 
+  // Theses functions are used to send 'gait table'
+  // TODO: Think about how to combine these functions
+  /// Send time based common gait with condition and dependency
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+    \param msg_type Defined in command_message.proto, 3 for joint control
+    \param time_stamp Time based gait table timer
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
+  void SendGaitTable(SmoresModulePtr module, const int *flag, 
       const double *gait_value, int msg_type, unsigned int time_stamp, 
       string condition_str, string dependency_str);
-  void SendGaitTable(SmoresModulePtr module, const bool *flag, 
+  /// Send time based common gait without condition and dependency
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+    \param msg_type Defined in command_message.proto, 3 for joint control
+    \param time_stamp Time based gait table timer
+  */
+  void SendGaitTable(SmoresModulePtr module, const int *flag, 
       const double *gait_value, int msg_type, unsigned int time_stamp);
-  void SendGaitTable(SmoresModulePtr module, const bool *flag, 
+  /// Send common gait with condition and dependency
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+    \param msg_type Defined in command_message.proto, 3 for joint control
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
+  void SendGaitTable(SmoresModulePtr module, const int *flag, 
       const double *gait_value, int msg_type, 
       string condition_str, string dependency_str);
-  void SendGaitTable(SmoresModulePtr module, const bool *flag, 
+  /// Send common gait without condition and dependency
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+    \param msg_type Defined in command_message.proto, 3 for joint control
+  */
+  void SendGaitTable(SmoresModulePtr module, const int *flag, 
       const double *gait_value, int msg_type);
+  /// Send gait table to change a single joint of a module
+  /*!
+    \param module A pointer of SmoresModule object
+    \param joint_ID Number index of a joint
+    \param gait_value Joint value, either be position, speed or torque
+    \param msg_type  0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore;
+    \param time_stamp Time based gait table timer
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
   void SendGaitTable(SmoresModulePtr module, int joint_ID, 
       double gait_value, int msg_type, unsigned int time_stamp, 
       string condition_str, string dependency_str);
+  /// Send gait table to change a single joint of a module
+  /*!
+    \param module A pointer of SmoresModule object
+    \param joint_ID Number index of a joint
+    \param gait_value Joint value, either be position, speed or torque
+    \param msg_type  0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore;
+    \param time_stamp Time based gait table timer
+  */
   void SendGaitTable(SmoresModulePtr module, int joint_ID, 
       double gait_value, int msg_type, unsigned int time_stamp);
+  /// Send gait table to change a single joint of a module
+  /*!
+    \param module A pointer of SmoresModule object
+    \param joint_ID Number index of a joint
+    \param gait_value Joint value, either be position, speed or torque
+    \param msg_type  0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore;
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
   void SendGaitTable(SmoresModulePtr module, int joint_ID, 
       double gait_value, int msg_type, 
       string condition_str, string dependency_str);
+  /// Send gait table to change a single joint of a module
+  /*!
+    \param module A pointer of SmoresModule object
+    \param joint_ID Number index of a joint
+    \param gait_value Joint value, either be position, speed or torque
+    \param msg_type  0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore;
+  */
   void SendGaitTable(SmoresModulePtr module, int joint_ID, 
       double gait_value, int msg_type);
+  /// Send connect or disconnect command, 
+  /// with condition or dependency and time based
+  /*!
+    \param module A pointer of SmoresModule object of module 1
+    \param module1 Name string of module 1
+    \param module2 Name string of module 2
+    \param node1 Number index of the joint of module 1
+    \param node2 Number index of the joint of module 2
+    \param commandtype Special command indicator, 1 connect; 2 disconnect
+    \param time_stamp Time based gait table timer
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
   void SendGaitTable(SmoresModulePtr module, string module1, string module2, 
       int node1, int node2, int commandtype, unsigned int time_stamp, 
       string condition_str, string dependency_str);
+  /// Send connect or disconnect command, 
+  /// without condition or dependency and time based
+  /*!
+    \param module A pointer of SmoresModule object of module 1
+    \param module1 Name string of module 1
+    \param module2 Name string of module 2
+    \param node1 Number index of the joint of module 1
+    \param node2 Number index of the joint of module 2
+    \param commandtype Special command indicator, 1 connect; 2 disconnect
+    \param time_stamp Time based gait table timer
+  */
   void SendGaitTable(SmoresModulePtr module, string module1, string module2, 
       int node1, int node2, int commandtype, unsigned int time_stamp);
+  /// Send connect or disconnect command, 
+  /// with condition or dependency
+  /*!
+    \param module A pointer of SmoresModule object of module 1
+    \param module1 Name string of module 1
+    \param module2 Name string of module 2
+    \param node1 Number index of the joint of module 1
+    \param node2 Number index of the joint of module 2
+    \param commandtype Special command indicator, 1 connect; 2 disconnect
+    \param condition_str Condition string
+    \param dependency_str Dependency string
+  */
   void SendGaitTable(SmoresModulePtr module, string module1, string module2, 
       int node1, int node2, int commandtype, 
       string condition_str, string dependency_str);
+  /// Send connect or disconnect command, 
+  /// without condition or dependency
+  /*!
+    \param module A pointer of SmoresModule object of module 1
+    \param module1 Name string of module 1
+    \param module2 Name string of module 2
+    \param node1 Number index of the joint of module 1
+    \param node2 Number index of the joint of module 2
+    \param commandtype Special command indicator, 1 connect; 2 disconnect
+  */
   void SendGaitTable(SmoresModulePtr module, string module1, string module2, 
       int node1, int node2, int commandtype);
-  /// These two functions can only be used in the direct driving situation
-  void SendGaitTableInstance(SmoresModulePtr module, const bool *flag, 
+  /// Used in the direct driving situation, ignore execution order
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+    \param msg_type Defined in command_message.proto, 4 for direct drive
+  */
+  void SendGaitTableInstance(SmoresModulePtr module, const int *flag, 
       const double *gait_value, int msg_type);
-  void SendGaitTableInstance(SmoresModulePtr module, const bool *flag, 
+  /// Used in the direct driving situation with default type 4
+  /*!
+    \param module A pointer of SmoresModule object
+    \param flag Message type for each joint angle
+    0: position; 1: speed; 2: torque(Not implemented); 
+    3: ignore; 4: connect(Not implemented); 5: disconnect(Not implemented)
+    \param gait_value Joints values, either be position, speed or torque
+  */
+  void SendGaitTableInstance(SmoresModulePtr module, const int *flag, 
       const double *gait_value);
+  /// Used in direct control, dirve a module to a specific position
+  /*!
+    \param module A pointer of SmoresModule object
+    \param x 2D coordinate x
+    \param y 2D coordinate y
+    \param orientation_angle Final orientation of the module in global frame
+  */
   void SendPositionInstance(SmoresModulePtr module, double x, double y, 
       double orientation_angle);
   /// Erase all the existing commands of a specific module
@@ -208,13 +357,27 @@ class WorldServer : public WorldPlugin
   /// Read a 'gait table' stored in a text file
   void ReadFileAndGenerateCommands(const char* fileName);
   /// Used to interpret the number in gait table 
-  void FigureInterpret(const vector<string> *joints_spec, bool *type_flags, 
+  /*!
+    \param joints_spec String tokens of the joint specs
+    \param type_flags Joint control flag, see SendGaitTable (return)
+    \param joint_values Joint control values (return)
+  */
+  void FigureInterpret(const vector<string> *joints_spec, int *type_flags, 
       double *joint_values);
   /// Interpret normal command string
+  /*!
+    \param a_command_str A command string
+  */
   void InterpretCommonGaitString(string a_command_str);
   /// Interpret special command
+  /*!
+    \param a_command_str A command string
+  */
   void InterpretSpecialString(string a_command_str);
-  /// Count how many modules are there in a cluster
+  /// Count how many modules are there in a cluster with the current module
+  /*!
+    \param module A pointer of SmoresModule object
+  */
   unsigned int CountModules(SmoresModulePtr module);
   /// Get the length of the initial joint value setting sequence
   unsigned int GetInitialJointSequenceSize(void);
