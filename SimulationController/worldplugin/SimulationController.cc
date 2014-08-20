@@ -23,26 +23,48 @@ void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent,
   current_gait_file = "";
   current_configuration_file = "";
   delete_time = common::Timer();
+
+  ReadLibraryPathFile(SMORES_LIBRARY_PATH_FILE);
 }
 
 void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info)
 {
+  boost::filesystem::path SearchDir(smores_library_path);
+  boost::filesystem::path DirContainingFile;
+
   if (need_to_load)
+  // Loading a configuration
   {
     if (!delete_time.GetRunning()){
       delete_time.Start();
       DeleteAllModules();
     }
     else if (delete_time.GetElapsed() > 5.0) {
-      BuildConfigurationFromXML(current_configuration_file);
+
+      if ( FindFile( SearchDir, DirContainingFile, current_configuration_file ) )
+      {
+        BuildConfigurationFromXML(DirContainingFile.string());
+      }
+      else {
+        std::cout << "Cannot find configuration file " << current_configuration_file << std::endl;
+        std::cout << "\t in directory " << SearchDir << std::endl;
+      }
       delete_time.Stop();
       need_to_load = false;
     }
   }
 
   else if (need_to_execute)
+  // Executing a gait
   {
-    ReadFileAndGenerateCommands(current_gait_file.c_str());
+    if ( FindFile( SearchDir, DirContainingFile, current_gait_file) )
+    {
+      ReadFileAndGenerateCommands(DirContainingFile.string().c_str());
+    }
+    else {
+      std::cout << "Cannot find gait file " << current_configuration_file << std::endl;
+      std::cout << "\t in directory " << SearchDir << std::endl;
+    }
     need_to_execute = false;
   }
 
@@ -61,6 +83,54 @@ void SimulationController::SimControlMessageDecoding(SimControlMessagePtr &msg)
     current_configuration_file = msg->configurationname();
   }
 }
+
+void SimulationController::ReadLibraryPathFile(const char* filename)
+{
+  ifstream infile;
+  infile.open(filename);
+
+  if (infile.is_open()) {
+    while (!infile.eof()) {
+      string path;
+      getline(infile, path);
+      if (path.find("/") == 0) {
+        smores_library_path = path;
+      }
+      else {
+        cout<<"File "<< filename<< " is not a valid SMORES library path file."<< endl;
+      }
+      break;
+    }
+    infile.close();
+  }
+  else {
+    cout<<"File "<< filename<< " does not exist in SMORES model folder."<< endl;
+  }
+}
+
+bool SimulationController::FindFile( const boost::filesystem::path& directory,
+               boost::filesystem::path& path,
+               const std::string& filename )
+{
+  bool found = false;
+
+  const boost::filesystem::path file = filename;
+  const boost::filesystem::recursive_directory_iterator end;
+  const boost::filesystem::recursive_directory_iterator dir_iter( directory );
+
+  const boost::filesystem::recursive_directory_iterator it =
+        std::find_if( boost::filesystem::recursive_directory_iterator( directory ),
+                      end,
+                      FileEquals( filename ) );
+  if ( it != end )
+  {
+    path = it->path();
+    found = true;
+  }
+
+  return found;
+}
+
 // Register this plugin with the simulator
 GZ_REGISTER_WORLD_PLUGIN(SimulationController)
 } // namespace gazebo
