@@ -5,7 +5,7 @@ SimulationController::SimulationController()
 		:WorldServer()
 {}
 SimulationController::~SimulationController(){}
-void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent, 
+void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent,
       sdf::ElementPtr _sdf)
 {
   transport::NodePtr node_simControl(new transport::Node());
@@ -22,9 +22,7 @@ void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent,
   need_to_execute = false;
   current_gait_file = "";
   current_configuration_file = "";
-
   delete_time = common::Timer();
-  
 }
 
 void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info)
@@ -47,7 +45,7 @@ void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info
     ReadFileAndGenerateCommands(current_gait_file.c_str());
     need_to_execute = false;
   }
-  
+
 } // WorldServer::OnSystemRunningExtra
 
 void SimulationController::ExtraWorkWhenModelInserted(CommandMessagePtr &msg){}

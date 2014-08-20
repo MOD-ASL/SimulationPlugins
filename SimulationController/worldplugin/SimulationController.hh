@@ -1,6 +1,6 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Author: Jim Jing 
-// Description: This is the world plugin that used by simulation 
+// Author: Jim Jing
+// Description: This is the world plugin that used by simulation
 //              controller. It basically inherit all the functions from
 //              world plugin template. However there are several main
 //              differences.
@@ -13,7 +13,7 @@
 
 typedef const boost::shared_ptr
     <const sim_control_message::msgs::SimControlMessage> SimControlMessagePtr;
-    
+
 namespace gazebo{
 class SimulationController: public WorldServer
 {
@@ -23,7 +23,7 @@ class SimulationController: public WorldServer
   /// The function that perform extra initialization
   /// In the base class, configuration wil be built in this function
   /// Which means we need to diable it here
-  virtual void ExtraInitializationInLoad(physics::WorldPtr _parent, 
+  virtual void ExtraInitializationInLoad(physics::WorldPtr _parent,
       sdf::ElementPtr _sdf);
   virtual void OnSystemRunningExtra(const common::UpdateInfo & _info);
   /// Need to be set to empty so the world plugin will not read in gaits
