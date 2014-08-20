@@ -1,5 +1,6 @@
 ## @package SimpleKL Provides some simple kinematic functions
 import numpy as np
+from Module import *
 ## Rotation matrix around x axis
 # @param row Row 
 # @return Numpy matrix object of rotation matrix
@@ -32,19 +33,19 @@ def CloseEnough(pos1,pos2):
 # @param pos1 Position of the first module 2
 # @param joint1 List of joint anlges of a module 2
 # @return If connectable, then return connectable node index number; otherwise False
-def Connectable(pos1,joint1,pos2,joint2):
+def Connectable(module1,joint1,module2,joint2):
 	threshold = 0.98
-	referenceVec = np.matrix([[pos1[0]-pos2[0]],[pos1[1]-pos2[1]],[pos1[2]-pos2[2]]])
+	referenceVec = np.matrix([[module1.Position[0]-module2.Position[0]],[module1.Position[1]-module2.Position[1]],[module1.Position[2]-module2.Position[2]]])
 	referenceVec = referenceVec/np.linalg.norm(referenceVec)
 	lftVec1 = np.matrix([[1],[0],[0]])
 	rgtVec1 = np.matrix([[-1],[0],[0]])
 	bckvec1 = np.matrix([[0],[1],[0]])
 	frtVec1 = np.matrix([[0],[-1],[0]])
 	bckvec1 = rotx(joint1[3])*bckvec1
-	lftVec1 = rotz(pos1[5])*roty(pos1[4])*rotx(pos1[3])*lftVec1
-	rgtVec1 = rotz(pos1[5])*roty(pos1[4])*rotx(pos1[3])*rgtVec1
-	bckvec1 = rotz(pos1[5])*roty(pos1[4])*rotx(pos1[3])*bckvec1
-	frtVec1 = rotz(pos1[5])*roty(pos1[4])*rotx(pos1[3])*frtVec1
+	lftVec1 = module1.rotation_matrix*lftVec1
+	rgtVec1 = module1.rotation_matrix*rgtVec1
+	bckvec1 = module1.rotation_matrix*bckvec1
+	frtVec1 = module1.rotation_matrix*frtVec1
 	connect1 = 4
 	if np.dot(referenceVec.transpose().tolist()[0],lftVec1.transpose().tolist()[0])<= -threshold:
 		connect1 = 1
@@ -60,10 +61,10 @@ def Connectable(pos1,joint1,pos2,joint2):
 	bckvec2 = np.matrix([[0],[1],[0]])
 	frtVec2 = np.matrix([[0],[-1],[0]])
 	bckvec2 = rotx(joint2[3])*bckvec2
-	lftVec2 = rotz(pos2[5])*roty(pos2[4])*rotx(pos2[3])*lftVec2
-	rgtVec2 = rotz(pos2[5])*roty(pos2[4])*rotx(pos2[3])*rgtVec2
-	bckvec2 = rotz(pos2[5])*roty(pos2[4])*rotx(pos2[3])*bckvec2
-	frtVec2 = rotz(pos2[5])*roty(pos2[4])*rotx(pos2[3])*frtVec2
+	lftVec2 = module2.rotation_matrix*lftVec2
+	rgtVec2 = module2.rotation_matrix*rgtVec2
+	bckvec2 = module2.rotation_matrix*bckvec2
+	frtVec2 = module2.rotation_matrix*frtVec2
 	connect2 = 4
 	if np.dot(referenceVec.transpose().tolist()[0],lftVec2.transpose().tolist()[0]) >= threshold:
 		connect2 = 1

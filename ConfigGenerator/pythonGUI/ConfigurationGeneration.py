@@ -33,9 +33,12 @@ window_height = 520
 Border_width = 20
 Border_hieht = 40
 PI = pi           #3.1415926 this value is close to the pi they used in the simulation
-
-class App(Frame):
-  
+## Configuration editor python gui
+class ConfigEditor(Frame):
+  ## Constructor
+  # @param self Object pointer
+  # @param parent Parent object, which is tk root
+  # @param flg Start flag, see GaitRecorder
   def __init__(self, parent, flag):
     Frame.__init__(self, parent)   
     
@@ -105,7 +108,8 @@ class App(Frame):
     #------------ Initializae GUI ---------------------------
     self.initUI()
     self.DisableInsertByConnection()
-      
+  ## Python ui initialization
+  # @param self Object pointer    
   def initUI(self):
     
     self.parent.title("Configuration Generator")
@@ -705,7 +709,7 @@ class App(Frame):
     connectableList = []
     self.connectableRealList = []
     for eachmodel in closeModules:
-      connectNode = Connectable(modelobj.Position,modelobj.JointAngle,eachmodel.Position,eachmodel.JointAngle)
+      connectNode = Connectable(modelobj,modelobj.JointAngle,eachmodel,eachmodel.JointAngle)
       if connectNode :
         connectableList.append(self.GetNodenameByNodeNumber(connectNode[0])+":"+eachmodel.ModelName+"-"+self.GetNodenameByNodeNumber(connectNode[1]))
         self.connectableRealList.append([modelobj,eachmodel,connectNode])
@@ -826,7 +830,7 @@ def main(flag):
   
   root = Tk()
   root.geometry(str(window_width)+"x"+str(window_height))
-  app = App(root,flag)
+  app = ConfigEditor(root,flag)
   root.mainloop()  
 
 

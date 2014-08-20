@@ -60,6 +60,29 @@ if [ $# -eq 1 ]; then
   fi
   if [ "$1" = "-s4" ]; then
     echo "[Installing] gazebo-4.0 ..."
+    STATUS=2
+    WIPEOUT=1
+    wget -O /tmp/gazebo4_install.sh http://osrf-distributions.s3.amazonaws.com/gazebo/gazebo4_install.sh
+    sudo sh /tmp/gazebo4_install.sh
+    echo "[Installing] python ..."
+    sudo apt-get install python
+    echo "[Installing] gcc & g++ ..."
+    sudo apt-get install build-essential
+    echo "[Installing] cmake ..."
+    sudo apt-get install cmake
+    echo "[Installing] tinyxml ..."
+    sudo apt-get install libtinyxml-dev
+    echo "[Installing] extra python packages ..."
+    sudo apt-get install python-pip
+    sudo pip install -U pip
+    sudo pip install eventlet
+    sudo pip install pygazebo
+    sudo apt-get install python-imaging-tk
+    sudo apt-get install python-numpy python-scipy
+    echo "[Installing] boost library ..."
+    sudo apt-get install libboost-all-dev
+    echo "[Installing] google protobuf compiler ..."
+    sudo apt-get install protobuf-compiler
   fi
   if [ "$1" = "-u" ]; then
     STATUS=2

@@ -105,7 +105,8 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
   if (GetModulePtrByName(module_name)) {
     if (msg->has_deleteflag()) {
       if (msg->deleteflag()) {
-        DeleteModule(module_name);
+        // ModuleWaitForDelete.push_back(module_name);
+        this->configPub->Publish(*msg);
       }
     }else{
       currentWorld->GetModel(module_name)->GetJoint("Front_wheel_hinge")

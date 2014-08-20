@@ -146,31 +146,37 @@ class SystemGUI : public SystemPlugin
   {
     cout<<"GUI: Information received"<<endl;
     string module_name = msg->modelname();
-    double joints_angles[4] = {0,0,0,0};
-    for (int i = 0; i < 4; ++i) {
-      joints_angles[i] = msg->jointangles(i);
-    }
-    cout<<"GUI: 4 Joint angles: "<<joints_angles[0]<<","<<joints_angles[1]<<","
-        <<joints_angles[2]<<","<<joints_angles[3]<<endl;
-    bool exist = false;
-    for (unsigned int i = 0; i < jointUpdateList.size(); ++i) {
-      if (module_name.compare(jointUpdateList.at(i).modelName) == 0) {
-        jointUpdateList.at(i).SetJointAngle(joints_angles);
-        exist = true;
-        break;
+    if (msg->has_deleteflag()) {
+      if (msg->deleteflag()) {
+        rendering::ScenePtr scene = rendering::get_scene();
+        scene->RemoveVisual(scene->GetVisual(module_name));
+      }
+    }else{
+      double joints_angles[4] = {0,0,0,0};
+      for (int i = 0; i < 4; ++i) {
+        joints_angles[i] = msg->jointangles(i);
+      }
+      bool exist = false;
+      for (unsigned int i = 0; i < jointUpdateList.size(); ++i) {
+        if (module_name.compare(jointUpdateList.at(i).modelName) == 0) {
+          jointUpdateList.at(i).SetJointAngle(joints_angles);
+          exist = true;
+          break;
+        }
+      }
+      if (!exist) {
+        JointUpdate new_joint_update(module_name,joints_angles);
+        jointUpdateList.push_back(new_joint_update);
       }
     }
-    if (!exist) {
-      JointUpdate new_joint_update(module_name,joints_angles);
-      jointUpdateList.push_back(new_joint_update);
-    }
   }
+ private:
   /// All the event connections.
-  private: std::vector<event::ConnectionPtr> connections;
+  std::vector<event::ConnectionPtr> connections;
   /// The subscriber that subscribes the configuration information
-  private: transport::SubscriberPtr configSub;
+  transport::SubscriberPtr configSub;
   /// A list that stores all the joint update information
-  private: vector<JointUpdate> jointUpdateList;
+  vector<JointUpdate> jointUpdateList;
 }; // class JointUpdate
 // Register this plugin with the simulator
 GZ_REGISTER_SYSTEM_PLUGIN(SystemGUI)

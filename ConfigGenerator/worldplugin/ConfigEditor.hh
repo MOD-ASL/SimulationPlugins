@@ -72,6 +72,8 @@ class ConfigEditor : public WorldServer
   transport::SubscriberPtr configSub;
   /// Publisher which is used to publish message to gui plugin
   transport::PublisherPtr configPub;
+  /// Has all the module name that needs to be deleted
+  vector<string> ModuleWaitForDelete;
 };
 } // namespace gazebo
 #endif
