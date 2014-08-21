@@ -39,7 +39,7 @@ void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info
       delete_time.Start();
       DeleteAllModules();
     }
-    else if (delete_time.GetElapsed() > 5.0) {
+    else if (delete_time.GetElapsed() > 3.0) {
 
       if ( FindFile( SearchDir, DirContainingFile, current_configuration_file ) )
       {
