@@ -12,7 +12,6 @@ namespace gazebo
 {
 WorldServer::WorldServer()
 {
-  needToSetPtr = 0;
   autoMagneticConnectionFlag = false;
   configurationFile = "";
   // All code below this line is for testing
@@ -226,14 +225,15 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
   }
   // Inserted model initialization
   if (msg->messagetype()==5) {
-    // Initalization functions
-    moduleList.at(needToSetPtr)->SetModulePtr(
-        currentWorld->GetModel(moduleList.at(needToSetPtr)->ModuleID));
-    // cout<<"World: Asign the pointer to module: "
-    //     <<moduleList.at(needToSetPtr)->ModuleID<<endl;
-    // Need a function when delete a entity, this value needs to be decrease
-    needToSetPtr += 1;
-    if (initalJointValue.size()>0) {
+    if (waitingNameList.size()>0 && 
+        waitingNameList.at(0).compare(msg->stringmessage())==0) { 
+      while(!currentWorld->GetModel(msg->stringmessage())){}
+      cout<<"World: Feedback name: "<<msg->stringmessage()<<endl;
+      cout<<"World: Model: "<<currentWorld->GetModel(msg->stringmessage())<<endl;
+      GetModulePtrByName(msg->stringmessage())->SetModulePtr(
+          currentWorld->GetModel(msg->stringmessage()));
+      cout<<"World: After assign: "<<GetModulePtrByName(msg->stringmessage())->ModuleObject<<endl;
+    
       int flags[4] = {0,0,0,0};
       double joint_angles[4] = {0};
       string joint_values_string = initalJointValue.at(0);
@@ -270,6 +270,7 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
       ExtraWorkWhenModelInserted(msg);
       initalJointValue.erase(initalJointValue.begin());
       initialPosition.erase(initialPosition.begin());
+      waitingNameList.erase(waitingNameList.begin());
     }
   }
 } // WorldServer::FeedBackMessageDecoding
@@ -519,6 +520,7 @@ void WorldServer::InsertModel(string name, math::Pose position,
     currentWorld->InsertModelSDF(*model_sdf);
     initalJointValue.push_back(joint_angles);
     initialPosition.push_back(position);
+    waitingNameList.push_back(name);
   }else{
     Color::Modifier red_log(Color::FG_RED);
     Color::Modifier def_log(Color::FG_DEFAULT);
@@ -543,6 +545,7 @@ void WorldServer::InsertModel(string name, math::Pose position,
     currentWorld->InsertModelSDF(*model_sdf);
     initalJointValue.push_back(joint_angles);
     initialPosition.push_back(position);
+    waitingNameList.push_back(name);
   }else{
     Color::Modifier red_log(Color::FG_RED);
     Color::Modifier def_log(Color::FG_DEFAULT);
@@ -580,17 +583,34 @@ void WorldServer::DeleteModule(string module_name)
   if (currentModule->NodeUHPtr->Edge) {
     Disconnect(currentModule, 3);
   }
-  // remove the model from the world
-  currentWorld->RemoveModel(module_name);
+  // ---------- Destroy all the conditions ----------
+  if (currentModule->moduleCommandContainer) {
+    for (unsigned int i = 0; 
+        i < currentModule->moduleCommandContainer->CommandSquence.size(); ++i)
+    {
+      if (currentModule->moduleCommandContainer
+          ->CommandSquence.at(i).ConditionCommand)
+      {
+        FinishOneConditionCommand(currentModule->moduleCommandContainer
+          ->CommandSquence.at(i).ConditionID);
+      }
+    }
+  // ---------- Destroy command container ------------
+    EraseCommandPtrByModule(currentModule);
+  }
   // ---------- Destroy module in the module list -----
   for (unsigned int i = 0; i < moduleList.size(); ++i) {
     if (currentModule == moduleList.at(i)) {
       moduleList.at(i).reset();
       moduleList.erase(moduleList.begin()+i);
+      if (WorldColSubscriber.size() > i) {
+        WorldColSubscriber.erase(WorldColSubscriber.begin()+i);
+      }
       break;
     }
   }
-  needToSetPtr -= 1;
+  // remove the model from the world
+  currentWorld->RemoveModel(module_name);
 }
 void WorldServer::DeleteAllModules(void)
 {
@@ -612,6 +632,9 @@ void WorldServer::DeleteAllModules(void)
       DeleteModule(model_name);
     }
   }
+  commandConditions.clear();
+  moduleCommandContainer.clear();
+  WorldColSubscriber.clear();
 }
 
 void WorldServer::PassiveConnect(SmoresModulePtr module_1, 

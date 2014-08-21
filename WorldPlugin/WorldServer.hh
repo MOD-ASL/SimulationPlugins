@@ -340,6 +340,10 @@ class WorldServer : public WorldPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   int GetNodeIDByName(string node_name);
   /// Get SmoresModule object by specifying the name
+  /*!
+    \param module_name Module name string
+    \return A pointer of SmoresModule object
+  */
   SmoresModulePtr GetModulePtrByName(string module_name);
   /// Get SmoresModule object by specifying the index in the vector moduleList
   SmoresModulePtr GetModulePtrByIDX(unsigned int idx);
@@ -443,9 +447,8 @@ class WorldServer : public WorldPlugin
   event::ConnectionPtr updateConnection;
   /// The container that has all the edges
   vector<SmoresEdgePtr> connectionEdges;
-  /// The indicator of a new model has been added
-  /// TODO: A better mechnisam should be designed
-  int needToSetPtr;
+  /// List of model names that need to assign the Model object pointer
+  vector<string> waitingNameList;
   /// A String vector which contain the initial joint angles of modules
   vector<string> initalJointValue;
   vector<math::Pose> initialPosition;
