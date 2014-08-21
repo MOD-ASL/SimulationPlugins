@@ -35,7 +35,7 @@ void WorldServer::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // Create a publisher on the ~/SMORES_WorldStatus topic
   cout << "Initializing Publisher and Subscriber for WorldStatus message" << endl;
   this->smoreWorldPub = node->Advertise<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldStatus");
-  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldMessage", &WorldServer::WorldCommandMessageDecoding, this);
+  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldMessage", &WorldServer::WorldStatusMessageDecoding, this);
   cout << "publisher topic: " << smoreWorldPub->GetTopic() << endl;
   cout << "subscriber topic: " << smoreWorldSub->GetTopic() << endl;
 
