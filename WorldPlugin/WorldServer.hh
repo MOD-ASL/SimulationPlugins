@@ -339,6 +339,8 @@ class WorldServer : public WorldPlugin
   // These functions are utility functions
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   int GetNodeIDByName(string node_name);
+  /// Get return true if the smores module with given name exist in the world
+  bool CheckModuleExistByName(string module_name);
   /// Get SmoresModule object by specifying the name
   /*!
     \param module_name Module name string
