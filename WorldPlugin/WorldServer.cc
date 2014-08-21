@@ -31,9 +31,34 @@ void WorldServer::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
       boost::bind(&WorldServer::AddEntityToWorld, this, _1));
   this->updateConnection = event::Events::ConnectWorldUpdateBegin(
       boost::bind(&WorldServer::OnSystemRunning, this, _1));
+
+  // Create a publisher on the ~/SMORES_WorldStatus topic
+  cout << "Initializing Publisher and Subscriber for WorldStatus message" << endl;
+  this->smoreWorldPub = node->Advertise<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldStatus");
+  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldMessage", &WorldServer::WorldCommandMessageDecoding, this);
+  cout << "publisher topic: " << smoreWorldPub->GetTopic() << endl;
+  cout << "subscriber topic: " << smoreWorldSub->GetTopic() << endl;
+
   // Perform extra initializations
   ExtraInitializationInLoad(_parent,_sdf);
 } // WorldServer::Load
+
+void WorldServer::WorldStatusMessageDecoding(WorldStatusMessagePtr &msg)
+{
+  cout << "GOT WorldCommandMessage -  TYPE = " << msg->messagetype() << endl;
+  command_message::msgs::WorldStatusMessage worldMsg;
+  if(msg->messagetype() == 1)
+  {
+    for(unsigned int i = 0; i < moduleList.size(); i++)
+    {
+      worldMsg.add_stringmessages(moduleList[i]->ModuleID);
+    }
+  }
+  worldMsg.set_messagetype(1);
+  this->smoreWorldPub->Publish(worldMsg);
+} //ControlCenter::WorldCommandMessageDecoding
+
+
 void WorldServer::ExtraInitializationInLoad(
     physics::WorldPtr _parent, sdf::ElementPtr _sdf)
 {} // WorldServer::ExtraInitializationInLoad
@@ -81,11 +106,11 @@ void WorldServer::AddEntityToWorld(std::string & _info)
   node->Init(_info);
   // Topic name for publisher
   string topic_name = "~/" + _info + "_world";
-  transport::PublisherPtr new_module_pub 
+  transport::PublisherPtr new_module_pub
       = node->Advertise<command_message::msgs::CommandMessage>(topic_name);
   // Topic name for subscriber
   topic_name = "~/" + _info + "_model";
-  transport::SubscriberPtr new_module_sub 
+  transport::SubscriberPtr new_module_sub
       = node->Subscribe(topic_name,&WorldServer::FeedBackMessageDecoding, this);
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Initialize module object and store the pointers into the module vector

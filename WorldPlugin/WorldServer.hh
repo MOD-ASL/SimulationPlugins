@@ -34,6 +34,7 @@
 // Libraries for messages needed to use to communicate between plugins
 #include "collision_message.pb.h"
 #include "command_message.pb.h"
+#include "world_status_message.pb.h"
 // XML paser libraries
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
@@ -62,6 +63,8 @@ typedef const boost::shared_ptr
 typedef const boost::shared_ptr
     <const command_message::msgs::CommandMessage> CommandMessagePtr;
 typedef boost::shared_ptr<gazebo::Condition> ConditionPtr;
+typedef const boost::shared_ptr
+    <const command_message::msgs::WorldStatusMessage> WorldStatusMessagePtr;
 
 // TODO: Considering 
 namespace {
@@ -398,6 +401,8 @@ class WorldServer : public WorldPlugin
   void OnSystemRunning(const common::UpdateInfo & /*_info*/);
   /// Command information receiving callback
   void FeedBackMessageDecoding(CommandMessagePtr &msg);
+  /// World status information receiving callback
+  void WorldStatusMessageDecoding(WorldStatusMessagePtr &msg);
   /// Collision information receiving callback
   /// Used by automatic magnetic connection
   /// TODO: Need to be enabled by each individual module
@@ -437,6 +442,9 @@ class WorldServer : public WorldPlugin
  private: 
   event::ConnectionPtr addEntityConnection;
   transport::PublisherPtr welcomePub;
+
+  transport::PublisherPtr smoreWorldPub;
+  transport::SubscriberPtr smoreWorldSub;
   /// The pointer vector for all the models in the world
   vector<SmoresModulePtr> moduleList;
   /// The vectors that store the pending connections request and information
