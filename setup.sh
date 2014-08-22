@@ -139,7 +139,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES6Uriah/plugins/MessageDefinition/
 
@@ -156,7 +156,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
@@ -174,7 +174,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
@@ -194,7 +194,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   export GAZEBO_PLUGIN_PATH="$PWD":"$GAZEBO_PLUGIN_PATH"
   cd ../../worldplugin/
   if [ ! -d build/ ]; then
@@ -208,7 +208,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES7Stella/plugins/MessageDefinition/
 
@@ -227,7 +227,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
 
@@ -246,7 +246,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
   cd ~/.gazebo/models/SMORES8Jack/
