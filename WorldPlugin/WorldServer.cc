@@ -626,8 +626,7 @@ void WorldServer::DeleteAllModules(void)
     string model_name = list_of_model[i]->GetName();
     // world also includes other model such as ground and sun
     // we need to distinguish those from the SMORES model
-    // TODO: Find a better way to identify SMORES model
-    if (model_name.find("Module") == 0)
+    if (CheckModuleExistByName(model_name))
     {
       DeleteModule(model_name);
     }
@@ -1049,6 +1048,15 @@ int WorldServer::GetNodeIDByName(string node_name)
   cout<<red_log<<"WARNING: World: Wrong node number"<<def_log<<endl;
   return 4; // When return 4, then there is no match found
 } // WorldServer::GetNodeIDByName
+bool WorldServer::CheckModuleExistByName(string module_name)
+{
+  for (unsigned int i = 0; i < moduleList.size(); ++i) {
+    if (module_name.compare(moduleList.at(i)->ModuleID)==0) {
+      return true;
+    }
+  }
+  return false;
+} // WorldServer::CheckModuleExistByName
 SmoresModulePtr WorldServer::GetModulePtrByName(string module_name)
 {
   SmoresModulePtr exist_module;
