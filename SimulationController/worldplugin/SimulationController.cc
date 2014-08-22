@@ -23,6 +23,7 @@ void SimulationController::ExtraInitializationInLoad(physics::WorldPtr _parent,
   current_gait_file = "";
   current_configuration_file = "";
   delete_time = common::Timer();
+  math::Vector3 configuration_pose = math::Vector3(0,0,0);
 
   ReadLibraryPathFile(SMORES_LIBRARY_PATH_FILE);
 }
@@ -36,6 +37,7 @@ void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info
   // Loading a configuration
   {
     if (!delete_time.GetRunning()){
+      UpdatePose();
       delete_time.Start();
       DeleteAllModules();
     }
@@ -43,7 +45,7 @@ void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info
 
       if ( FindFile( SearchDir, DirContainingFile, current_configuration_file ) )
       {
-        BuildConfigurationFromXML(DirContainingFile.string());
+        BuildConfigurationFromXML(DirContainingFile.string(), configuration_pose);
       }
       else {
         std::cout << "Cannot find configuration file " << current_configuration_file << std::endl;
@@ -51,6 +53,7 @@ void SimulationController::OnSystemRunningExtra(const common::UpdateInfo & _info
       }
       delete_time.Stop();
       need_to_load = false;
+
     }
   }
 
@@ -82,6 +85,12 @@ void SimulationController::SimControlMessageDecoding(SimControlMessagePtr &msg)
     need_to_load = true;
     current_configuration_file = msg->configurationname();
   }
+}
+
+void SimulationController::UpdatePose(void)
+{
+  cout<<"Updating Pose"<<endl;
+  configuration_pose = GetCurrentConfigurationPose();
 }
 
 void SimulationController::ReadLibraryPathFile(const char* filename)

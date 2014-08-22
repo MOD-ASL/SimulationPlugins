@@ -101,8 +101,12 @@ class WorldServer : public WorldPlugin
   void DeleteModule(string module_name);
   /// Delete all models that already in the world
   void DeleteAllModules(void);
-  /// This function is used to build a configuration using a XML file
+  /// Get the current position in world of the inserted configuration by averaging the pose of all modules
+  math::Vector3 GetCurrentConfigurationPose(void);
+  /// This function is used to build a configuration at origin using a XML file
   void BuildConfigurationFromXML(string file_name);
+  /// This function is used to build a configuration at given initial_pose using a XML file
+  void BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose);
   /// This function is used to build connection using a XML file
   void BuildConnectionFromXML(string file_name);
   /// This function will be called after set the model initial position

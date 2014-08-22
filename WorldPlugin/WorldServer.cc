@@ -117,6 +117,10 @@ void WorldServer::OnSystemRunningExtra(
     const common::UpdateInfo & _info){} // WorldServer::OnSystemRunningExtra
 void WorldServer::BuildConfigurationFromXML(string file_name)
 {
+  BuildConfigurationFromXML(file_name, math::Vector3(0,0,0));
+} // WorldServer::BuildConfigurationFromXML
+void WorldServer::BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose)
+{
   file<> xmlFile(file_name.c_str());
   xml_document<> doc;    // character type defaults to char
   doc.parse<0>(xmlFile.data());
@@ -125,10 +129,11 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
   while (modlue_node) {
     string module_name = modlue_node->first_node("name")->value();
     string position_string = modlue_node->first_node("position")->value();
-    double coordinates[3] = {0,0,0};
+    // for now we always want the configuration to be based at z=0 plane
+    double coordinates[3] = {initial_pose[0],initial_pose[1],0};
     for (int i = 0; i < 3; ++i) {
       coordinates[i] 
-          = atof(position_string.substr(0,position_string.find(" ")).c_str());
+          += atof(position_string.substr(0,position_string.find(" ")).c_str());
       position_string = position_string.substr(position_string.find(" ")+1);
     }
     vector<double> orientation;
@@ -634,6 +639,28 @@ void WorldServer::DeleteAllModules(void)
   commandConditions.clear();
   moduleCommandContainer.clear();
   WorldColSubscriber.clear();
+}
+
+math::Vector3 WorldServer::GetCurrentConfigurationPose(void)
+{
+  math::Vector3 current_configuration_pose = math::Vector3(0,0,0);
+  // iterate through a list of models in the current world
+  unsigned int num_of_models = currentWorld->GetModelCount();
+  unsigned int num_of_smores = 0;
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+
+  for (unsigned int i = 0; i < num_of_models; ++i)
+  {
+    string model_name = list_of_model[i]->GetName();
+    // world also includes other model such as ground and sun
+    // we need to distinguish those from the SMORES model
+    if (CheckModuleExistByName(model_name))
+    {
+      current_configuration_pose += list_of_model[i]->GetWorldPose().pos;
+      num_of_smores++;
+    }
+  }
+  return current_configuration_pose/std::max(double(num_of_smores), 1.0);
 }
 
 void WorldServer::PassiveConnect(SmoresModulePtr module_1, 
