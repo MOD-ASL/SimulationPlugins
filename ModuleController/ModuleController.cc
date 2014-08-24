@@ -113,7 +113,11 @@ void ModuleController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
   // Bind function which will be executed in each iteration
   this->updateConnection = event::Events::ConnectWorldUpdateBegin(
       boost::bind(&ModuleController::OnSystemRunning, this, _1));
+  ExtraOnload(_parent,_sdf);
 } // ModuleController::Load
+void ModuleController::ExtraOnload(physics::ModelPtr _parent, 
+    sdf::ElementPtr _sdf)
+{} // ModuleController::ExtraOnload
 void ModuleController::WelcomInfoProcessor(GzStringPtr &msg)
 {
   string info_received = msg->data();

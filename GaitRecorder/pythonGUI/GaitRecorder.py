@@ -770,7 +770,6 @@ class GaitRecorder(Frame):
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
             -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
       self.UpdateJointValue()
-    module_obj = self.GetModuleByName(each_module_name)
     print "Reset message sent"
   ## Plays the current section
   # @param self Object pointer

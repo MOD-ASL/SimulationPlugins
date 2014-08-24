@@ -252,6 +252,25 @@ if [ "$STATUS" = 1 ]; then
   cd ~/.gazebo/models/SMORES8Jack/
   sed -e "s/libGaitRecorder.so/libSimulationController.so/" -e "s/ControlCenter/SimulationController/" World.sdf > World_sim.sdf
 
+  # Below for gripper
+  cd "$DIR"
+  cd GripperController/
+  if [ ! -d build/ ]; then
+    mkdir build
+    cd build
+    cmake ../
+  else
+    cd build
+    if [ "$WIPEOUT" = 1 ]; then
+      rm -r *
+      cmake ../
+    fi
+  fi
+  make
+  cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
+  cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
+  cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+
   echo "Setup finished!"
 fi
 cd "$DIR"

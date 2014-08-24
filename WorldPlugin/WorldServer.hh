@@ -451,6 +451,7 @@ class WorldServer : public WorldPlugin
   vector<string> waitingNameList;
   /// A String vector which contain the initial joint angles of modules
   vector<string> initalJointValue;
+  /// Vector that stores the initial position when building a configuration
   vector<math::Pose> initialPosition;
   /// A vector created for command management
   vector<ConditionPtr> commandConditions;

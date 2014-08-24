@@ -228,11 +228,8 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
     if (waitingNameList.size()>0 && 
         waitingNameList.at(0).compare(msg->stringmessage())==0) { 
       while(!currentWorld->GetModel(msg->stringmessage())){}
-      cout<<"World: Feedback name: "<<msg->stringmessage()<<endl;
-      cout<<"World: Model: "<<currentWorld->GetModel(msg->stringmessage())<<endl;
       GetModulePtrByName(msg->stringmessage())->SetModulePtr(
           currentWorld->GetModel(msg->stringmessage()));
-      cout<<"World: After assign: "<<GetModulePtrByName(msg->stringmessage())->ModuleObject<<endl;
     
       int flags[4] = {0,0,0,0};
       double joint_angles[4] = {0};
