@@ -34,6 +34,7 @@
 // Libraries for messages needed to use to communicate between plugins
 #include "collision_message.pb.h"
 #include "command_message.pb.h"
+#include "world_status_message.pb.h"
 // XML paser libraries
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
@@ -62,6 +63,8 @@ typedef const boost::shared_ptr
 typedef const boost::shared_ptr
     <const command_message::msgs::CommandMessage> CommandMessagePtr;
 typedef boost::shared_ptr<gazebo::Condition> ConditionPtr;
+typedef const boost::shared_ptr
+    <const command_message::msgs::WorldStatusMessage> WorldStatusMessagePtr;
 
 // TODO: Considering 
 namespace {
@@ -101,8 +104,12 @@ class WorldServer : public WorldPlugin
   void DeleteModule(string module_name);
   /// Delete all models that already in the world
   void DeleteAllModules(void);
-  /// This function is used to build a configuration using a XML file
+  /// Get the current position in world of the inserted configuration by averaging the pose of all modules
+  math::Vector3 GetCurrentConfigurationPose(void);
+  /// This function is used to build a configuration at origin using a XML file
   void BuildConfigurationFromXML(string file_name);
+  /// This function is used to build a configuration at given initial_pose using a XML file
+  void BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose);
   /// This function is used to build connection using a XML file
   void BuildConnectionFromXML(string file_name);
   /// This function will be called after set the model initial position
@@ -339,6 +346,8 @@ class WorldServer : public WorldPlugin
   // These functions are utility functions
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   int GetNodeIDByName(string node_name);
+  /// Get return true if the smores module with given name exist in the world
+  bool CheckModuleExistByName(string module_name);
   /// Get SmoresModule object by specifying the name
   /*!
     \param module_name Module name string
@@ -398,6 +407,8 @@ class WorldServer : public WorldPlugin
   void OnSystemRunning(const common::UpdateInfo & /*_info*/);
   /// Command information receiving callback
   void FeedBackMessageDecoding(CommandMessagePtr &msg);
+  /// World status information receiving callback
+  void WorldStatusMessageDecoding(WorldStatusMessagePtr &msg);
   /// Collision information receiving callback
   /// Used by automatic magnetic connection
   /// TODO: Need to be enabled by each individual module
@@ -437,6 +448,9 @@ class WorldServer : public WorldPlugin
  private: 
   event::ConnectionPtr addEntityConnection;
   transport::PublisherPtr welcomePub;
+
+  transport::PublisherPtr smoreWorldPub;
+  transport::SubscriberPtr smoreWorldSub;
   /// The pointer vector for all the models in the world
   vector<SmoresModulePtr> moduleList;
   /// The vectors that store the pending connections request and information

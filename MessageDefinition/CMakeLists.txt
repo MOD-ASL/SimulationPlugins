@@ -14,6 +14,7 @@ set (msgs
   config_message.proto
   gait_recorder_message.proto
   sim_control_message.proto
+  world_status_message.proto
   ${PROTOBUF_IMPORT_DIRS}/pose.proto
   ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
   ${PROTOBUF_IMPORT_DIRS}/quaternion.proto
@@ -35,3 +36,6 @@ target_link_libraries(gait_recorder_message ${PROTOBUF_LIBRARY})
 
 add_library(sim_control_message SHARED ${PROTO_SRCS})
 target_link_libraries(sim_control_message ${PROTOBUF_LIBRARY})
+
+# add_library(world_status_message SHARED ${PROTO_SRCS})
+# target_link_libraries(world_status_message ${PROTOBUF_LIBRARY})

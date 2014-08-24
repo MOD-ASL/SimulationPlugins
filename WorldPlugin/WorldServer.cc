@@ -31,9 +31,34 @@ void WorldServer::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
       boost::bind(&WorldServer::AddEntityToWorld, this, _1));
   this->updateConnection = event::Events::ConnectWorldUpdateBegin(
       boost::bind(&WorldServer::OnSystemRunning, this, _1));
+
+  // Create a publisher on the ~/SMORES_WorldStatus topic
+  cout << "Initializing Publisher and Subscriber for WorldStatus message" << endl;
+  this->smoreWorldPub = node->Advertise<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldStatus");
+  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldMessage", &WorldServer::WorldStatusMessageDecoding, this);
+  cout << "publisher topic: " << smoreWorldPub->GetTopic() << endl;
+  cout << "subscriber topic: " << smoreWorldSub->GetTopic() << endl;
+
   // Perform extra initializations
   ExtraInitializationInLoad(_parent,_sdf);
 } // WorldServer::Load
+
+void WorldServer::WorldStatusMessageDecoding(WorldStatusMessagePtr &msg)
+{
+  cout << "GOT WorldCommandMessage -  TYPE = " << msg->messagetype() << endl;
+  command_message::msgs::WorldStatusMessage worldMsg;
+  if(msg->messagetype() == 1)
+  {
+    for(unsigned int i = 0; i < moduleList.size(); i++)
+    {
+      worldMsg.add_stringmessages(moduleList[i]->ModuleID);
+    }
+  }
+  worldMsg.set_messagetype(1);
+  this->smoreWorldPub->Publish(worldMsg);
+} //ControlCenter::WorldCommandMessageDecoding
+
+
 void WorldServer::ExtraInitializationInLoad(
     physics::WorldPtr _parent, sdf::ElementPtr _sdf)
 {} // WorldServer::ExtraInitializationInLoad
@@ -81,11 +106,11 @@ void WorldServer::AddEntityToWorld(std::string & _info)
   node->Init(_info);
   // Topic name for publisher
   string topic_name = "~/" + _info + "_world";
-  transport::PublisherPtr new_module_pub 
+  transport::PublisherPtr new_module_pub
       = node->Advertise<command_message::msgs::CommandMessage>(topic_name);
   // Topic name for subscriber
   topic_name = "~/" + _info + "_model";
-  transport::SubscriberPtr new_module_sub 
+  transport::SubscriberPtr new_module_sub
       = node->Subscribe(topic_name,&WorldServer::FeedBackMessageDecoding, this);
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Initialize module object and store the pointers into the module vector
@@ -117,6 +142,10 @@ void WorldServer::OnSystemRunningExtra(
     const common::UpdateInfo & _info){} // WorldServer::OnSystemRunningExtra
 void WorldServer::BuildConfigurationFromXML(string file_name)
 {
+  BuildConfigurationFromXML(file_name, math::Vector3(0,0,0));
+} // WorldServer::BuildConfigurationFromXML
+void WorldServer::BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose)
+{
   file<> xmlFile(file_name.c_str());
   xml_document<> doc;    // character type defaults to char
   doc.parse<0>(xmlFile.data());
@@ -125,10 +154,11 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
   while (modlue_node) {
     string module_name = modlue_node->first_node("name")->value();
     string position_string = modlue_node->first_node("position")->value();
-    double coordinates[3] = {0,0,0};
+    // for now we always want the configuration to be based at z=0 plane
+    double coordinates[3] = {initial_pose[0],initial_pose[1],0};
     for (int i = 0; i < 3; ++i) {
       coordinates[i] 
-          = atof(position_string.substr(0,position_string.find(" ")).c_str());
+          += atof(position_string.substr(0,position_string.find(" ")).c_str());
       position_string = position_string.substr(position_string.find(" ")+1);
     }
     vector<double> orientation;
@@ -623,8 +653,7 @@ void WorldServer::DeleteAllModules(void)
     string model_name = list_of_model[i]->GetName();
     // world also includes other model such as ground and sun
     // we need to distinguish those from the SMORES model
-    // TODO: Find a better way to identify SMORES model
-    if (model_name.find("Module") == 0)
+    if (CheckModuleExistByName(model_name))
     {
       DeleteModule(model_name);
     }
@@ -632,6 +661,28 @@ void WorldServer::DeleteAllModules(void)
   commandConditions.clear();
   moduleCommandContainer.clear();
   WorldColSubscriber.clear();
+}
+
+math::Vector3 WorldServer::GetCurrentConfigurationPose(void)
+{
+  math::Vector3 current_configuration_pose = math::Vector3(0,0,0);
+  // iterate through a list of models in the current world
+  unsigned int num_of_models = currentWorld->GetModelCount();
+  unsigned int num_of_smores = 0;
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+
+  for (unsigned int i = 0; i < num_of_models; ++i)
+  {
+    string model_name = list_of_model[i]->GetName();
+    // world also includes other model such as ground and sun
+    // we need to distinguish those from the SMORES model
+    if (CheckModuleExistByName(model_name))
+    {
+      current_configuration_pose += list_of_model[i]->GetWorldPose().pos;
+      num_of_smores++;
+    }
+  }
+  return current_configuration_pose/std::max(double(num_of_smores), 1.0);
 }
 
 void WorldServer::PassiveConnect(SmoresModulePtr module_1, 
@@ -1046,6 +1097,15 @@ int WorldServer::GetNodeIDByName(string node_name)
   cout<<red_log<<"WARNING: World: Wrong node number"<<def_log<<endl;
   return 4; // When return 4, then there is no match found
 } // WorldServer::GetNodeIDByName
+bool WorldServer::CheckModuleExistByName(string module_name)
+{
+  for (unsigned int i = 0; i < moduleList.size(); ++i) {
+    if (module_name.compare(moduleList.at(i)->ModuleID)==0) {
+      return true;
+    }
+  }
+  return false;
+} // WorldServer::CheckModuleExistByName
 SmoresModulePtr WorldServer::GetModulePtrByName(string module_name)
 {
   SmoresModulePtr exist_module;

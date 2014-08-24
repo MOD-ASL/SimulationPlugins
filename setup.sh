@@ -139,7 +139,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES6Uriah/plugins/MessageDefinition/
 
@@ -156,10 +156,11 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+  cp *.so ~/.gazebo/models/SMORES_RangeFinder/plugins/
 
   cd "$DIR"
   cd ContactPublisher/
@@ -174,10 +175,11 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+  cp *.so ~/.gazebo/models/SMORES_RangeFinder/plugins/
 
   cd "$DIR"
   cd ConfigGenerator/pythonGUI
@@ -194,7 +196,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   export GAZEBO_PLUGIN_PATH="$PWD":"$GAZEBO_PLUGIN_PATH"
   cd ../../worldplugin/
   if [ ! -d build/ ]; then
@@ -208,7 +210,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES7Stella/plugins/MessageDefinition/
 
@@ -227,7 +229,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
 
@@ -246,7 +248,7 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
   cd ~/.gazebo/models/SMORES8Jack/
@@ -266,10 +268,30 @@ if [ "$STATUS" = 1 ]; then
       cmake ../
     fi
   fi
-  make
+  make -j
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+
+  cd "$DIR"
+  cd paintingPlugin
+  if [ ! -d build/ ]; then
+    mkdir build
+    cd build
+    cmake ../
+  else
+    cd build
+    if [ "$WIPEOUT" = 1 ]; then
+      rm -r *
+      cmake ../
+    fi
+  fi
+  make -j
+  cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+  cd ~/.gazebo/models/SMORES8Jack/
+  match='<\/world>'
+  insert='<include>\n<uri>model:\/\/PaintShell<\/uri>\n<\/include>'
+  sed -i "s/$match/$insert\n$match/" World_sim.sdf
 
   echo "Setup finished!"
 fi
