@@ -1,1 +1,0 @@
-cd ~/.gazebo/models/SMORES8Jack/ ; gzserver -u World.sdf

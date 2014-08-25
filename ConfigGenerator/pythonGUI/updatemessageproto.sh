@@ -1,1 +1,0 @@
-protoc --proto_path=../../MessageDefinition/ --python_out=./ ../../MessageDefinition/config_message.proto

@@ -1,7 +1,0 @@
-package sim_control_message.msgs;
-
-message SimControlMessage
-{
-	required string ConfigurationName = 1;
-	optional string GaitName = 2;
-}
