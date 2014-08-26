@@ -69,6 +69,25 @@ class JointUpdate
   string modelName;
   double jointAngle[4];
 };
+/// This class is used for set the visual of model to the right position
+class ModelPositionSetup
+{
+ public:
+  /// Constructor
+  /*!
+    \param model_name Name string of the model
+    \param position Position of the model
+  */
+  ModelPositionSetup(string model_name, math::Pose position)
+  {
+    this->modelName = model_name;
+    this->modelPose = position;
+  }
+  /// Nmae string of the inserted model
+  string modelName;
+  /// Position of the model
+  math::Pose modelPose;
+};
 /// This is the system plugin that will start with gzclient
 class SystemGUI : public SystemPlugin
 {
@@ -137,6 +156,16 @@ class SystemGUI : public SystemPlugin
         }
       }
     }
+    // Update model positions
+    for (unsigned int i = 0; i < initialPositions.size(); ++i) {
+      if (scene->GetVisual(initialPositions.at(i).modelName)) {
+        math::Pose position_calibrate(
+        math::Vector3(0, 0, -0.05), math::Quaternion(0, 0, 0));
+        scene->GetVisual(initialPositions.at(i).modelName)->SetWorldPose(
+            position_calibrate*initialPositions.at(i).modelPose);
+        // initialPositions.erase(initialPositions.begin() + i);
+      }
+    }
   }
   /// Call back when receiving configuration information
   /*!
@@ -152,6 +181,7 @@ class SystemGUI : public SystemPlugin
         // scene->RemoveVisual(scene->GetVisual(module_name));
       }
     }else{
+      // For joint angle settings
       double joints_angles[4] = {0,0,0,0};
       for (int i = 0; i < 4; ++i) {
         joints_angles[i] = msg->jointangles(i);
@@ -168,6 +198,45 @@ class SystemGUI : public SystemPlugin
         JointUpdate new_joint_update(module_name,joints_angles);
         jointUpdateList.push_back(new_joint_update);
       }
+      // For position settings
+      double coordinates[3] = {0,0,0};
+      for (int i = 0; i < 3; ++i) {
+        coordinates[i] = msg->modelposition(i);
+      }
+      double orientation[4] = {0,0,0,0};
+      math::Quaternion orientation_pos;
+      bool qua_pos_flag = false;
+      if (msg->has_quaternionpos()) {
+        if (msg->quaternionpos()) {
+          qua_pos_flag = true;
+        }
+      }
+      if (qua_pos_flag) {
+        for (int i = 0; i < 4; ++i) {
+          orientation[i] = msg->modelposition(i+3);
+        }
+        orientation_pos.Set(orientation[0], orientation[1], orientation[2],
+            orientation[3]);
+      }else{
+        for (int i = 0; i < 3; ++i) {
+          orientation[i] = msg->modelposition(i+3);
+        }
+        orientation_pos.SetFromEuler(orientation[0], orientation[1], orientation[2]);
+      }
+      math::Pose position_tmp(
+          math::Vector3(coordinates[0], coordinates[1], coordinates[2]), 
+          orientation_pos);
+      rendering::ScenePtr scene = rendering::get_scene();
+      if (!scene->GetVisual(module_name))
+      {
+        ModelPositionSetup new_model(module_name,position_tmp);
+        initialPositions.push_back(new_model);
+      }
+      // while(!scene->GetVisual(module_name));
+      // math::Pose vis_position = scene->GetVisual(module_name)->GetWorldPose();
+      // if (vis_position != position_tmp) {
+      //   scene->GetVisual(module_name)->SetWorldPose(position_tmp);
+      // }
     }
   }
  private:
@@ -177,6 +246,8 @@ class SystemGUI : public SystemPlugin
   transport::SubscriberPtr configSub;
   /// A list that stores all the joint update information
   vector<JointUpdate> jointUpdateList;
+  /// A list of the models that need to be set to the right position.
+  vector<ModelPositionSetup> initialPositions;
 }; // class JointUpdate
 // Register this plugin with the simulator
 GZ_REGISTER_SYSTEM_PLUGIN(SystemGUI)
