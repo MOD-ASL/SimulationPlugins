@@ -21,7 +21,7 @@ void ConfigEditor::InsertModel(string name, math::Pose position,
     model_element->GetElement("pose")->Set(position_calibrate*position);
     currentWorld->InsertModelSDF(*model_sdf);
     AddInitialJoints(joint_angles);
-    AddInitialPosition(position);
+    AddInitialPosition(position_calibrate*position);
   }else{
     Color::Modifier red_log(Color::FG_RED);
     Color::Modifier def_log(Color::FG_DEFAULT);
@@ -45,7 +45,7 @@ void ConfigEditor::InsertModel(string name, math::Pose position,
     model_element->GetElement("pose")->Set(position_calibrate*position);
     currentWorld->InsertModelSDF(*model_sdf);
     AddInitialJoints(joint_angles);
-    AddInitialPosition(position);
+    AddInitialPosition(position_calibrate*position);
   }else{
     Color::Modifier red_log(Color::FG_RED);
     Color::Modifier def_log(Color::FG_DEFAULT);
