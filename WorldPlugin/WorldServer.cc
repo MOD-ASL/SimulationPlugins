@@ -588,15 +588,9 @@ void WorldServer::AddInitialJoints(string joint_angles)
 {
   initalJointValue.push_back(joint_angles);
 } // WorldServer::AddInitialJoints
-void WorldServer::DeleteModule(string module_name)
+void WorldServer::DeleteSmoresmodulePtr(string module_name)
 {
-  cout<<"Deleting model "<<module_name<<endl;
   SmoresModulePtr currentModule = GetModulePtrByName(module_name);
-  // send a command message to the module controller
-  // so that the module controller can prepare to be terminated
-  command_message::msgs::CommandMessage terminate_message;
-  terminate_message.set_messagetype(6);
-  currentModule->ModulePublisher->Publish(terminate_message);
   // ---------- Destroy all the edges -------------------
   if (currentModule->NodeFWPtr->Edge) {
     Disconnect(currentModule, 0);
@@ -636,6 +630,18 @@ void WorldServer::DeleteModule(string module_name)
       break;
     }
   }
+} // WorldServer::DeleteSmoresmodulePtr
+void WorldServer::DeleteModule(string module_name)
+{
+  cout<<"Deleting model "<<module_name<<endl;
+  SmoresModulePtr currentModule = GetModulePtrByName(module_name);
+  // send a command message to the module controller
+  // so that the module controller can prepare to be terminated
+  command_message::msgs::CommandMessage terminate_message;
+  terminate_message.set_messagetype(6);
+  currentModule->ModulePublisher->Publish(terminate_message);
+  currentModule.reset();
+  DeleteSmoresmodulePtr(module_name);
   // remove the model from the world
   currentWorld->RemoveModel(module_name);
 }

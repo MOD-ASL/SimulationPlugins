@@ -105,8 +105,8 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
   if (GetModulePtrByName(module_name)) {
     if (msg->has_deleteflag()) {
       if (msg->deleteflag()) {
-        // ModuleWaitForDelete.push_back(module_name);
-        this->configPub->Publish(*msg);
+        // this->configPub->Publish(*msg);
+        DeleteSmoresmodulePtr(module_name);
       }
     }else{
       currentWorld->GetModel(module_name)->GetJoint("Front_wheel_hinge")
@@ -124,7 +124,6 @@ void ConfigEditor::ConfigMessageDecoding(ConfigMessagePtr &msg)
     strs << joints_angles[0]<<" "<< joints_angles[1]<<" "<< joints_angles[2]<<" "
     		<< joints_angles[3];
     string joints_string = strs.str();
-    cout<<"World: Joint angles: "<<joints_string<<endl;
     if (msg->has_modelpath())
     {
       InsertModel(module_name, position_tmp, joints_string, msg->modelpath());
