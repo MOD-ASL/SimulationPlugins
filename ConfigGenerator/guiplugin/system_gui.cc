@@ -148,8 +148,8 @@ class SystemGUI : public SystemPlugin
     string module_name = msg->modelname();
     if (msg->has_deleteflag()) {
       if (msg->deleteflag()) {
-        rendering::ScenePtr scene = rendering::get_scene();
-        scene->RemoveVisual(scene->GetVisual(module_name));
+        // rendering::ScenePtr scene = rendering::get_scene();
+        // scene->RemoveVisual(scene->GetVisual(module_name));
       }
     }else{
       double joints_angles[4] = {0,0,0,0};

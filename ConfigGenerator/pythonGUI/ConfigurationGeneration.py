@@ -2,6 +2,7 @@
 import time
 from subprocess import call, Popen, PIPE
 import sys
+import os
 from os.path import expanduser
 #--------------- GUI Modules -------------------------
 from Tkinter import *
@@ -49,6 +50,7 @@ class ConfigEditor(Frame):
     self.ModuleList = []
     self.ConnectionList = []
     self.ModuleNameList = []
+    self.nameTrash = []
     self.modelname = StringVar()
     self.current_model_type = self.DEFAULT_TYPE
     self.current_suggest_name = "Module"
@@ -530,7 +532,8 @@ class ConfigEditor(Frame):
     incr_num = 0
     while 1:
       module_name_tmp = self.current_suggest_name+'_'+str(incr_num)
-      if module_name_tmp in self.ModuleNameList:
+      if (module_name_tmp in self.ModuleNameList) or \
+          (module_name_tmp in self.nameTrash):
         incr_num += 1
       else:
         self.modelname.set(module_name_tmp)
@@ -548,26 +551,27 @@ class ConfigEditor(Frame):
 
   def checkConnectivity(self,*args):
     themodule = self.findModule(self.connectedmodelvar.get())
-    if len(themodule.nodes[3]) != 0:
-      self.Back_face2["state"] = DISABLED
-    else:
-      self.Back_face2["state"] = NORMAL
-      self.Back_face2.select()
-    if len(themodule.nodes[1]) != 0:
-      self.left_face2["state"] = DISABLED
-    else:
-      self.left_face2["state"] = NORMAL
-      self.left_face2.select()
-    if len(themodule.nodes[2]) != 0:
-      self.right_face2["state"] = DISABLED
-    else:
-      self.right_face2["state"] = NORMAL
-      self.right_face2.select()
-    if len(themodule.nodes[0]) != 0:
-      self.front_face2["state"] = DISABLED
-    else:
-      self.front_face2["state"] = NORMAL
-      self.front_face2.select()
+    if themodule:
+      if len(themodule.nodes[3]) != 0:
+        self.Back_face2["state"] = DISABLED
+      else:
+        self.Back_face2["state"] = NORMAL
+        self.Back_face2.select()
+      if len(themodule.nodes[1]) != 0:
+        self.left_face2["state"] = DISABLED
+      else:
+        self.left_face2["state"] = NORMAL
+        self.left_face2.select()
+      if len(themodule.nodes[2]) != 0:
+        self.right_face2["state"] = DISABLED
+      else:
+        self.right_face2["state"] = NORMAL
+        self.right_face2.select()
+      if len(themodule.nodes[0]) != 0:
+        self.front_face2["state"] = DISABLED
+      else:
+        self.front_face2["state"] = NORMAL
+        self.front_face2.select()
 
   def PublishMessage(self,amodule):
     newmessage = ConfigMessage()
@@ -749,8 +753,16 @@ class ConfigEditor(Frame):
     newmessage.DeleteFlag = True
     # self.communicator.publish(newmessage)
     self.configPub.Publish(newmessage)
+    os.system("gz model -d -m "+newmessage.ModelName)
+    self.nameTrash.append(newmessage.ModelName)
+    # delete_module = Popen(['gz', 'model','-d','-m',newmessage.ModelName], stdout=PIPE)
+    # time.sleep(0.5)
+    # delete_module.kill()
     print "Module deleted"
     self.updateModuleList()
+    if not (self.connectedmodelvar.get() in self.ModuleNameList):
+      self.connectedmodelvar.set('')
+    self.checkConnectivity()
     self.modellist.set('')
     self.DeleteButtonDisable()
 
