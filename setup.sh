@@ -116,12 +116,12 @@ if [ "$STATUS" = 2 ]; then
   fi
   git add .
   git commit -m "Model backup"
-  git pull git@github.com:princeedward/GAZEBO_model.git master
+  git pull git@github.com:MOD-ASL/GAZEBO_model.git master
   STATUS=1
   cd "$DIR"
   git add .
   git commit -m "Backup before update"
-  git pull git@github.com:princeedward/SimulationPlugins.git master
+  git pull git@github.com:MOD-ASL/SimulationPlugins.git master
 fi
 
 if [ "$STATUS" = 1 ]; then
@@ -140,7 +140,13 @@ if [ "$STATUS" = 1 ]; then
     fi
   fi
   make -j
+  if [ ! -d ~/.gazebo/models/SMORES6Uriah/plugins/ ]; then
+    mkdir ~/.gazebo/models/SMORES6Uriah/plugins/
+  fi
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
+  if [ ! -d ~/.gazebo/models/SMORES6Uriah/plugins/MessageDefinition/ ]; then
+    mkdir ~/.gazebo/models/SMORES6Uriah/plugins/MessageDefinition/
+  fi
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES6Uriah/plugins/MessageDefinition/
 
   cd "$DIR"
@@ -157,6 +163,15 @@ if [ "$STATUS" = 1 ]; then
     fi
   fi
   make -j
+  if [ ! -d ~/.gazebo/models/SMORES7Stella/plugins/ ]; then
+    mkdir ~/.gazebo/models/SMORES7Stella/plugins/
+  fi
+  if [ ! -d ~/.gazebo/models/SMORES8Jack/plugins/ ]; then
+    mkdir ~/.gazebo/models/SMORES8Jack/plugins/
+  fi
+  if [ ! -d ~/.gazebo/models/SMORES_RangeFinder/plugins/ ]; then
+    mkdir ~/.gazebo/models/SMORES_RangeFinder/plugins/
+  fi
   cp *.so ~/.gazebo/models/SMORES6Uriah/plugins/
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
@@ -212,6 +227,9 @@ if [ "$STATUS" = 1 ]; then
   fi
   make -j
   cp *.so ~/.gazebo/models/SMORES7Stella/plugins/
+  if [ ! -d ~/.gazebo/models/SMORES7Stella/plugins/MessageDefinition/ ]; then
+    mkdir ~/.gazebo/models/SMORES7Stella/plugins/MessageDefinition/
+  fi
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES7Stella/plugins/MessageDefinition/
 
   cd "$DIR"
@@ -231,6 +249,9 @@ if [ "$STATUS" = 1 ]; then
   fi
   make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
+  if [ ! -d ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/ ]; then
+    mkdir ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
+  fi
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
 
   cd "$DIR"
