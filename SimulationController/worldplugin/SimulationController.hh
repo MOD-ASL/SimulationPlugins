@@ -40,6 +40,8 @@ class SimulationController: public WorldServer
   void ReadLibraryPathFile(const char* filename);
   /// Recursively find the location of a file on a given directory
   bool FindFile( const boost::filesystem::path& directory, boost::filesystem::path& path, const std::string& filename );
+  /// Record the position of the existing configuration
+  void UpdatePose(void);
  private:
   transport::SubscriberPtr simControlSub;
   transport::PublisherPtr simControlPub;
@@ -49,6 +51,7 @@ class SimulationController: public WorldServer
   string current_gait_file;
   common::Timer delete_time;
   string smores_library_path;
+  math::Vector3 configuration_pose;
 };
 } // namespace gazebo
 
