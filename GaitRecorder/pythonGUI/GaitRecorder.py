@@ -525,7 +525,7 @@ class GaitRecorder(Frame):
       for each_module_name in module_list_of_gait:
         module_obj = self.GetModuleByName(each_module_name)
         jointsflags = [self.typeSelection.get()]*4
-        newgaits = GaitEntry(each_module_name,module_obj.JointAngle,currenttimer, \
+        newgaits = GaitEntry(each_module_name,module_obj.JointAngle[:],currenttimer, \
             self.dependency.get(),self.condition.get(),False,jointsflags)
         # self.CurrentFrameRec.append(newgaits)
         self.currentFrame.AddGaitToSection(newgaits)
@@ -1194,6 +1194,8 @@ class GaitRecorder(Frame):
           self.valueSetting.set(self.valueSetting["from"] + 180)
           time.sleep(0.3)
         self.valueInBox.set(self.valueSetting.get())
+      if self.jointSelection.get() == 3 and self.typeSelection.get() == 0:
+        self.valueInBox.set(self.valueSetting.get())
   ## Callback function binded to the entry box next to scale with enter key
   # @param self Object pointer
   # @param args Other arguements
@@ -1249,8 +1251,8 @@ class GaitRecorder(Frame):
         self.name["state"] = NORMAL
       if self.typeSelection.get() == 0:
         if self.jointSelection.get() != 3:
-          if (self.valueInBox.get() > self.valueSetting["to"]) or \
-              (self.valueInBox.get() < self.valueSetting["from"]):
+          if (self.valueInBox.get() >= self.valueSetting["to"]) or \
+              (self.valueInBox.get() <= self.valueSetting["from"]):
             self.valueSetting["to"] = self.valueInBox.get() + 180
             self.valueSetting["from"] = self.valueInBox.get() - 180
           self.valueSetting.set(self.valueInBox.get())
