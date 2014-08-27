@@ -275,26 +275,6 @@ if [ "$STATUS" = 1 ]; then
   cd ~/.gazebo/models/SMORES8Jack/
   sed -e "s/libGaitRecorder.so/libSimulationController.so/" -e "s/ControlCenter/SimulationController/" World.sdf > World_sim.sdf
 
-  cd "$DIR"
-  cd paintingPlugin
-  if [ ! -d build/ ]; then
-    mkdir build
-    cd build
-    cmake ../
-  else
-    cd build
-    if [ "$WIPEOUT" = 1 ]; then
-      rm -r *
-      cmake ../
-    fi
-  fi
-  make -j
-  cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
-  cd ~/.gazebo/models/SMORES8Jack/
-  match='<\/world>'
-  insert='<include>\n<uri>model:\/\/PaintShell<\/uri>\n<\/include>'
-  sed -i "s/$match/$insert\n$match/" World_sim.sdf
-
   echo "Setup finished!"
 fi
 cd "$DIR"
