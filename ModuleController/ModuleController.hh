@@ -85,13 +85,6 @@ class ModuleController : public ModelPlugin
   int GetJointAxis(int node_ID);
   /// This function will return the angle of the specified joint
   math::Angle GetJointAngle(physics::JointPtr current_joint, int rot_axis);
-  /// Callback that decodes collision message and populate it to world plugin
-  /*! Used by magnetic connection
-    \param msg GzStringPtr object of the collision message
-  */
-  virtual void CollisionReceivingCallback(GzStringPtr &msg);
-  /// Extra stuff taht should be set on load
-  virtual void ExtraOnload(physics::ModelPtr _parent, sdf::ElementPtr _sdf);
 
  private:
   /// Callback function when model plugin has been loaded
@@ -105,6 +98,9 @@ class ModuleController : public ModelPlugin
   /// Collision Topics Publisher and Subscriber initialization
   /// Used by magnetic connection
   void CollisionPubAndSubInitialization(void);
+  /// Callback that decode collision information and populate it to world plugin
+  /// Used by magnetic connection
+  void CollisionReceivingCallback(GzStringPtr &msg);
   /// Callback that decode commands from world plugin and execute them
   void CommandDecoding(CommandMessagePtr &msg);
 
@@ -145,8 +141,6 @@ class ModuleController : public ModelPlugin
   /// on the ground plane
   void Move2Point(math::Vector2d DesiredPoint, math::Angle DesiredOrientation);
  public:
-  /// Current Model Pointer
-  physics::ModelPtr model;
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Model Pramaters                           +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -163,12 +157,12 @@ class ModuleController : public ModelPlugin
   double accelerationRate;
   double planarMotionStopThreshold;
   double wheelRadius;
-
-  transport::PublisherPtr collisionInfoToServer;
  private: 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+       Pointers of Model and joints and a emhanced struct        +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  /// Current Model Pointer
+  physics::ModelPtr model;
   // Pointers to all the Joints the current model has
   physics::JointPtr jointWR;
   physics::JointPtr jointWL;
@@ -193,6 +187,7 @@ class ModuleController : public ModelPlugin
   transport::SubscriberPtr commandSub;
   transport::PublisherPtr  commandPub;
   transport::SubscriberPtr linkCollisonSub[4];
+  transport::PublisherPtr collisionInfoToServer;
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Useful Buffers                            +
@@ -220,6 +215,9 @@ class ModuleController : public ModelPlugin
   double rgtWheelSpeed;
   /// Execution status
   bool startExecution;
+  // DEPRECATED: This is no longer needed
+  // TODO: command id should be implemented in the future
+  // int commandPriority;
 }; // class ModuleController
 } // namespace gazebo
 #endif

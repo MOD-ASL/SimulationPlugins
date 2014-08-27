@@ -144,7 +144,8 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
 {
   BuildConfigurationFromXML(file_name, math::Vector3(0,0,0));
 } // WorldServer::BuildConfigurationFromXML
-void WorldServer::BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose)
+void WorldServer::BuildConfigurationFromXML(string file_name, 
+  math::Vector3 initial_pose)
 {
   file<> xmlFile(file_name.c_str());
   xml_document<> doc;    // character type defaults to char
@@ -285,7 +286,7 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
       currentWorld->GetModel(msg->stringmessage())
           ->SetLinkWorldPose(initialPosition.at(0),
           currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
-      SendGaitTableInstance(
+      SendGaitTable(
           GetModulePtrByName(msg->stringmessage()), flags, joint_angles,3);
       if (GetInitialJointSequenceSize() == 1) {
         if (configurationFile.size() > 0) {
@@ -652,7 +653,8 @@ void WorldServer::DeleteAllModules(void)
   // so we try to get a list of models in the current world
   // and iterate through this list
   unsigned int num_of_models = currentWorld->GetModelCount();
-  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model 
+      = currentWorld->GetModels();
 
   for (unsigned int i = 0; i < num_of_models; ++i)
   {
@@ -675,7 +677,8 @@ math::Vector3 WorldServer::GetCurrentConfigurationPose(void)
   // iterate through a list of models in the current world
   unsigned int num_of_models = currentWorld->GetModelCount();
   unsigned int num_of_smores = 0;
-  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model 
+      = currentWorld->GetModels();
 
   for (unsigned int i = 0; i < num_of_models; ++i)
   {
