@@ -753,22 +753,22 @@ class GaitRecorder(Frame):
           -= self.jointAngleDifferenceTracking[0]
       for each_associate in self.frontWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[0]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[0]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[1] \
           -= self.jointAngleDifferenceTracking[1]
       for each_associate in self.lftWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[1]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[1]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[2] \
           -= self.jointAngleDifferenceTracking[2]
       for each_associate in self.rgtWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[2]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[2]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[3] \
           -= self.jointAngleDifferenceTracking[3]
       for each_associate in self.centralBendAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.UpdateJointValue()
     print "Reset message sent"
   ## Plays the current section
