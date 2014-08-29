@@ -525,7 +525,7 @@ class GaitRecorder(Frame):
       for each_module_name in module_list_of_gait:
         module_obj = self.GetModuleByName(each_module_name)
         jointsflags = [self.typeSelection.get()]*4
-        newgaits = GaitEntry(each_module_name,module_obj.JointAngle,currenttimer, \
+        newgaits = GaitEntry(each_module_name,module_obj.JointAngle[:],currenttimer, \
             self.dependency.get(),self.condition.get(),False,jointsflags)
         # self.CurrentFrameRec.append(newgaits)
         self.currentFrame.AddGaitToSection(newgaits)
@@ -753,24 +753,23 @@ class GaitRecorder(Frame):
           -= self.jointAngleDifferenceTracking[0]
       for each_associate in self.frontWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[0]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[0]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[1] \
           -= self.jointAngleDifferenceTracking[1]
       for each_associate in self.lftWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[1]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[1]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[2] \
           -= self.jointAngleDifferenceTracking[2]
       for each_associate in self.rgtWheelAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[2]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[2]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.GetModuleByName(self.modelname.get()).JointAngle[3] \
           -= self.jointAngleDifferenceTracking[3]
       for each_associate in self.centralBendAssociates:
         self.GetModuleByName(each_associate.ModuleName).JointAngle[each_associate.Node] \
-            -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.corr)
+            -= self.jointAngleDifferenceTracking[3]*each_associate.Ratio*self.InterpretCorrelation(each_associate.Correlation)
       self.UpdateJointValue()
-    module_obj = self.GetModuleByName(each_module_name)
     print "Reset message sent"
   ## Plays the current section
   # @param self Object pointer
@@ -1195,6 +1194,8 @@ class GaitRecorder(Frame):
           self.valueSetting.set(self.valueSetting["from"] + 180)
           time.sleep(0.3)
         self.valueInBox.set(self.valueSetting.get())
+      if self.jointSelection.get() == 3 and self.typeSelection.get() == 0:
+        self.valueInBox.set(self.valueSetting.get())
   ## Callback function binded to the entry box next to scale with enter key
   # @param self Object pointer
   # @param args Other arguements
@@ -1250,8 +1251,8 @@ class GaitRecorder(Frame):
         self.name["state"] = NORMAL
       if self.typeSelection.get() == 0:
         if self.jointSelection.get() != 3:
-          if (self.valueInBox.get() > self.valueSetting["to"]) or \
-              (self.valueInBox.get() < self.valueSetting["from"]):
+          if (self.valueInBox.get() >= self.valueSetting["to"]) or \
+              (self.valueInBox.get() <= self.valueSetting["from"]):
             self.valueSetting["to"] = self.valueInBox.get() + 180
             self.valueSetting["from"] = self.valueInBox.get() - 180
           self.valueSetting.set(self.valueInBox.get())

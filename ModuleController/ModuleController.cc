@@ -4,6 +4,7 @@ using std::vector;
 using std::string;
 using std::cout;
 using std::endl;
+using std::abs;
 
 namespace gazebo{
 ModuleController::ModuleController() 

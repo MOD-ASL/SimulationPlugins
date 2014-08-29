@@ -144,7 +144,8 @@ void WorldServer::BuildConfigurationFromXML(string file_name)
 {
   BuildConfigurationFromXML(file_name, math::Vector3(0,0,0));
 } // WorldServer::BuildConfigurationFromXML
-void WorldServer::BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose)
+void WorldServer::BuildConfigurationFromXML(string file_name, 
+  math::Vector3 initial_pose)
 {
   file<> xmlFile(file_name.c_str());
   xml_document<> doc;    // character type defaults to char
@@ -258,11 +259,8 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
     if (waitingNameList.size()>0 && 
         waitingNameList.at(0).compare(msg->stringmessage())==0) { 
       while(!currentWorld->GetModel(msg->stringmessage())){}
-      cout<<"World: Feedback name: "<<msg->stringmessage()<<endl;
-      cout<<"World: Model: "<<currentWorld->GetModel(msg->stringmessage())<<endl;
       GetModulePtrByName(msg->stringmessage())->SetModulePtr(
           currentWorld->GetModel(msg->stringmessage()));
-      cout<<"World: After assign: "<<GetModulePtrByName(msg->stringmessage())->ModuleObject<<endl;
     
       int flags[4] = {0,0,0,0};
       double joint_angles[4] = {0};
@@ -288,7 +286,7 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
       currentWorld->GetModel(msg->stringmessage())
           ->SetLinkWorldPose(initialPosition.at(0),
           currentWorld->GetModel(msg->stringmessage())->GetLink("CircuitHolder"));
-      SendGaitTableInstance(
+      SendGaitTable(
           GetModulePtrByName(msg->stringmessage()), flags, joint_angles,3);
       if (GetInitialJointSequenceSize() == 1) {
         if (configurationFile.size() > 0) {
@@ -591,15 +589,9 @@ void WorldServer::AddInitialJoints(string joint_angles)
 {
   initalJointValue.push_back(joint_angles);
 } // WorldServer::AddInitialJoints
-void WorldServer::DeleteModule(string module_name)
+void WorldServer::DeleteSmoresmodulePtr(string module_name)
 {
-  cout<<"Deleting model "<<module_name<<endl;
   SmoresModulePtr currentModule = GetModulePtrByName(module_name);
-  // send a command message to the module controller
-  // so that the module controller can prepare to be terminated
-  command_message::msgs::CommandMessage terminate_message;
-  terminate_message.set_messagetype(6);
-  currentModule->ModulePublisher->Publish(terminate_message);
   // ---------- Destroy all the edges -------------------
   if (currentModule->NodeFWPtr->Edge) {
     Disconnect(currentModule, 0);
@@ -639,6 +631,18 @@ void WorldServer::DeleteModule(string module_name)
       break;
     }
   }
+} // WorldServer::DeleteSmoresmodulePtr
+void WorldServer::DeleteModule(string module_name)
+{
+  cout<<"Deleting model "<<module_name<<endl;
+  SmoresModulePtr currentModule = GetModulePtrByName(module_name);
+  // send a command message to the module controller
+  // so that the module controller can prepare to be terminated
+  command_message::msgs::CommandMessage terminate_message;
+  terminate_message.set_messagetype(6);
+  currentModule->ModulePublisher->Publish(terminate_message);
+  currentModule.reset();
+  DeleteSmoresmodulePtr(module_name);
   // remove the model from the world
   currentWorld->RemoveModel(module_name);
 }
@@ -649,7 +653,8 @@ void WorldServer::DeleteAllModules(void)
   // so we try to get a list of models in the current world
   // and iterate through this list
   unsigned int num_of_models = currentWorld->GetModelCount();
-  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model 
+      = currentWorld->GetModels();
 
   for (unsigned int i = 0; i < num_of_models; ++i)
   {
@@ -672,7 +677,8 @@ math::Vector3 WorldServer::GetCurrentConfigurationPose(void)
   // iterate through a list of models in the current world
   unsigned int num_of_models = currentWorld->GetModelCount();
   unsigned int num_of_smores = 0;
-  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model = currentWorld->GetModels();
+  vector<boost::shared_ptr<gazebo::physics::Model> > list_of_model 
+      = currentWorld->GetModels();
 
   for (unsigned int i = 0; i < num_of_models; ++i)
   {

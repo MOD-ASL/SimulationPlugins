@@ -100,7 +100,15 @@ class WorldServer : public WorldPlugin
   void AddInitialPosition(math::Pose position);
   /// Add new initial joint values to set at the end of 'initalJointValue' vector
   void AddInitialJoints(string joint_angles);
+  /// Delete the smoresmodule object in the world
+  /*!
+    \param module_name Module name string
+  */
+  void DeleteSmoresmodulePtr(string module_name);
   /// Delete a model that already in the world
+  /*!
+    \param module_name Module name string
+  */
   void DeleteModule(string module_name);
   /// Delete all models that already in the world
   void DeleteAllModules(void);
@@ -465,6 +473,7 @@ class WorldServer : public WorldPlugin
   vector<string> waitingNameList;
   /// A String vector which contain the initial joint angles of modules
   vector<string> initalJointValue;
+  /// Vector that stores the initial position when building a configuration
   vector<math::Pose> initialPosition;
   /// A vector created for command management
   vector<ConditionPtr> commandConditions;
