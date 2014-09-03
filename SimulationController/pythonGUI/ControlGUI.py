@@ -69,8 +69,8 @@ class ControlGUI(Frame):
         Event handler for when the GUI is closed
         """
         self.communicator.Close()
-        self.rungzserver.terminate()
-        self.rungzclient.terminate()
+        #self.rungzserver.terminate()
+        #self.rungzclient.terminate()
         call(["pkill", "gzserver"])
         call(["pkill", "gzclient"])
 
@@ -151,7 +151,7 @@ class ControlGUI(Frame):
         self.loadSMORESLibrary()
         self.populateConfigList()
         self.rungzserver = Popen(['sh', 'RunSimulation.sh'])
-        self.rungzclient = Popen(['gzclient'], stdout=PIPE)
+        #self.rungzclient = Popen(['gazebo', 'World_sim.sdf'], stdout='PIPE')
         time.sleep(2)
         self.communicator = gztopic.GzCommunicator() # initialize and start the communicator
         self.communicator.start()
