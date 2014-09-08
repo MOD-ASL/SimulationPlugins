@@ -89,7 +89,7 @@ int ModuleController::GetJointAxis(int node_ID)
 {
   int axis_idx = 0;
   switch(node_ID){
-    case 0:axis_idx = 1;break;
+    case 0:axis_idx = 0;break;
     case 1:axis_idx = 0;break;
     case 2:axis_idx = 0;break;
     case 3:axis_idx = 0;break;
