@@ -36,6 +36,8 @@ ModuleController::~ModuleController()
   this->jointWF.reset();
   this->jointCB.reset();
 } // ModuleController::~ModuleController
+void ModuleController::ExtraOnload(physics::ModelPtr _parent, 
+    sdf::ElementPtr _sdf){} // ModuleController::ExtraOnload
 double ModuleController::RevolutionSpeedCal(physics::JointPtr joint, 
     const int axis_index)
 {
@@ -106,6 +108,8 @@ void ModuleController::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
   // Model plugin initialization, mainly for joints
   SystemInitialization(_parent);
+  // Extra initialization
+  ExtraOnload(_parent, _sdf);
   // Initialize the welcome information subscribers
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   node->Init();

@@ -29,6 +29,7 @@ void GripperController::CollisionReceivingCallback(GzStringPtr &msg)
       collison1 = collison2;
       collison2 = tmp;
     }
+    cout<<"Gripper: knocked the soda can"<<endl;
     physics::ModelPtr can_model = this->model->GetWorld()->GetModel(
         collison1.substr(0,collison1.find("::")));
     can_model->SetStatic(true);
@@ -101,7 +102,7 @@ void GripperController::CollisionReceivingCallback(GzStringPtr &msg)
 } // GripperController::CollisionReceivingCallback
 void GripperController::ExtraOnload(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
-  cout<<"Module: Gripper: This is a gripper"<<endl;
+  cout<<"Gripper: Gripper: This is a gripper"<<endl;
 } // GripperController::ExtraOnload
 GZ_REGISTER_MODEL_PLUGIN(GripperController)
 } // namespace gazebo

@@ -52,6 +52,13 @@ class ModuleController : public ModelPlugin
   /// Destructor
   ~ModuleController();
 
+  /// Extra stuff taht should be set on load
+  /*!
+    \param _parent Parent Model object
+    \param _sdf Model sdf object
+  */
+  virtual void ExtraOnload(physics::ModelPtr _parent, sdf::ElementPtr _sdf);
+
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+  Useful functions to get model status and other tool functions  +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -117,6 +124,11 @@ class ModuleController : public ModelPlugin
     \return Joint angle position in a math::Angle object
   */
   math::Angle GetJointAngle(physics::JointPtr current_joint, int rot_axis);
+  /// Callback that decode collision information and populate it to worldplugin
+  /*! Used by magnetic connection 
+    \param msg Reference of the pointer to the received GzString object
+  */
+  virtual void CollisionReceivingCallback(GzStringPtr &msg);
 
  private:
   /// Callback function when model plugin has been loaded
@@ -140,9 +152,6 @@ class ModuleController : public ModelPlugin
   /// Collision Topics Publisher and Subscriber initialization
   /*! Used by magnetic connection */
   void CollisionPubAndSubInitialization(void);
-  /// Callback that decode collision information and populate it to worldplugin
-  /*! Used by magnetic connection */
-  void CollisionReceivingCallback(GzStringPtr &msg);
   /// Callback that decodes commands from worldplugin
   /*!
     \param msg CommandMessagePtr object of the incoming message  
