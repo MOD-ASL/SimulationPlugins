@@ -325,10 +325,6 @@ if [ "$STATUS" = 1 ]; then
   fi
   make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
-  cd ~/.gazebo/models/SMORES8Jack/
-  match='<\/world>'
-  insert='<include>\n<uri>model:\/\/PaintShell<\/uri>\n<\/include>'
-  sed -i "s/$match/$insert\n$match/" World_sim.sdf
 
   echo "Setup finished!"
 fi
