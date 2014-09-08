@@ -219,6 +219,8 @@ class ModuleController : public ModelPlugin
  public:
   /// Current Model Pointer
   physics::ModelPtr model;
+  /// Publisher of the collision information
+  transport::PublisherPtr collisionInfoToServer;
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Model Pramaters                           +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -282,8 +284,6 @@ class ModuleController : public ModelPlugin
   transport::PublisherPtr  commandPub;
   /// Subscribers of 4 links
   transport::SubscriberPtr linkCollisonSub[4];
-  /// Publisher of the collision information
-  transport::PublisherPtr collisionInfoToServer;
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Useful Buffers                            +
