@@ -4,6 +4,7 @@
 import time
 from subprocess import call, Popen, PIPE
 import sys
+import os
 #--------------- GUI Modules -------------------------
 from Tkinter import *
 import ttk
@@ -1002,6 +1003,11 @@ class GaitRecorder(Frame):
     #   f = open(commandpath, 'w')
     # else:
     #   f = open(commandpath+"Commands", 'w')
+    if not os.path.isdir(self.savepath.get()):
+      os.system("mkdir "+self.savepath.get())
+    if os.path.isdir(self.savepath.get()):
+      self.savePath = self.savepath.get()
+    print "path is ",self.savePath
     command_file_opt = {}
     command_file_opt['filetypes'] = [('smart gait table', '.gait'),('text files', '.txt'),('all files', '*')]
     command_file_opt["defaultextension"] = ".gait"
