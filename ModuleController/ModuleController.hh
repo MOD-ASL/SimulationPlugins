@@ -224,14 +224,14 @@ class ModuleController : public ModelPlugin
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //+                       Model Pramaters                           +
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  // Default Joint Angle PID controller parameter
+  /// Default Joint Angle PID controller parameter
   /*!
     First digit is Kp, 
     Second digit is Ki and 
     Third digit is Kd
   */
   math::Vector3 jointAngleKPID; 
-  // Default Joint Angle PID controller parameter
+  /// Default Joint Angle PID controller parameter
   /*!
     First digit is Kp,
     Second digit is Ki and
