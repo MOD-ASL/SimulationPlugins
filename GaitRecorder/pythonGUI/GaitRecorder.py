@@ -392,6 +392,8 @@ class GaitRecorder(Frame):
     if filename:
       print "Filename is : ",filename
       # configFile = open(filename, 'r')
+      self.savePath = filename[0:filename.rfind("/")]
+      self.savepath.set(self.savePath)
       self.ReadInConfiguration(filename)
     self.OpenGait["state"] = NORMAL
   ## Parse the configuration file and build the configuration tree
