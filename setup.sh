@@ -295,7 +295,23 @@ if [ "$STATUS" = 1 ]; then
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
 
   cd "$DIR"
+  cd paintingPlugin/octomap
+  if [ ! -d build/ ]; then
+    mkdir build
+    cd build
+    cmake ../
+  else
+    cd build
+    if [ "$WIPEOUT" = 1 ]; then
+      rm -r *
+      cmake ../
+    fi
+  fi
+  make -j
+
+  cd "$DIR"
   cd paintingPlugin
+
   if [ ! -d build/ ]; then
     mkdir build
     cd build

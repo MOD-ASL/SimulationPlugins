@@ -24,11 +24,20 @@
 
 #include <cmath>
 
+#include <octomap/octomap.h>
+#include <octomap/OcTree.h>
+
+using namespace std;
+using namespace octomap;
 
 namespace gazebo
 {
 class PaintingPlugin : public VisualPlugin
 {
+public:
+  PaintingPlugin();
+  
+  virtual ~PaintingPlugin();
 private:
     void Load(rendering::VisualPtr _parent, sdf::ElementPtr /*_sdf*/);
     // Called by the world update start event
@@ -39,8 +48,12 @@ private:
     void poseCB(ConstPosesStampedPtr &_msg);
     
     void paintCB(ConstVector3dPtr &_msg);
+    
+    void print_query_info(octomap::point3d query, octomap::OcTreeNode* node);
 
 private:
+  
+    octomap::OcTree tree;
     // Pointer to the model
     rendering::VisualPtr model;
     // Pointer to the update event connection
@@ -66,7 +79,7 @@ private:
     
     int infoScore;
     
-    bool occupancy[2000][2000][1000];
+    //bool occupancy[2000][2000][1000];
 };
 }
 

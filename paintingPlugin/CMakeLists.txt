@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+set(octomap_DIR "./octomap/lib/cmake/octomap/")
+
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0003 NEW)
+endif(COMMAND cmake_policy)
+
+find_package(octomap REQUIRED)
+include_directories(${OCTOMAP_INCLUDE_DIRS})
+link_directories(${OCTOMAP_LIBRARY_DIRS})
+link_libraries(${OCTOMAP_LIBRARIES})
+
 include (FindPkgConfig)
 if (PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
