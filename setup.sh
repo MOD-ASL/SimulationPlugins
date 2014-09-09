@@ -274,6 +274,7 @@ if [ "$STATUS" = 1 ]; then
   cp MessageDefinition/*.so ~/.gazebo/models/SMORES8Jack/plugins/MessageDefinition/
   cd ~/.gazebo/models/SMORES8Jack/
   sed -e "s/libGaitRecorder.so/libSimulationController.so/" -e "s/ControlCenter/SimulationController/" World.sdf > World_sim.sdf
+  sed -e "s/libGaitRecorder.so/libSimulationController.so/" -e "s/ControlCenter/SimulationController/" WorldSensing.sdf > WorldSensing_sim.sdf
 
   # Below for gripper
   cd "$DIR"
@@ -325,10 +326,6 @@ if [ "$STATUS" = 1 ]; then
   fi
   make -j
   cp *.so ~/.gazebo/models/SMORES8Jack/plugins/
-  cd ~/.gazebo/models/SMORES8Jack/
-  match='<\/world>'
-  insert='<include>\n<uri>model:\/\/PaintShell<\/uri>\n<\/include>'
-  sed -i "s/$match/$insert\n$match/" World_sim.sdf
 
   echo "Setup finished!"
 fi
