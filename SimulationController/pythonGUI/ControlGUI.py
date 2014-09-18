@@ -29,38 +29,61 @@ class ControlGUI(Frame):
         self.__Button_importConfig = Button(self.__Frame1
             ,text='Import Configuration')
         self.__Button_importConfig.pack(side='top')
+        self.__Frame6 = Frame(self.__Frame10)
+        self.__Frame6.pack(side='top')
+        self.__Button_loadWorld = Button(self.__Frame6,text='Load World')
+        self.__Button_loadWorld.pack(side='left')
+        self.__Button_loadLibrary = Button(self.__Frame6,text='Load Library')
+        self.__Button_loadLibrary.pack(side='right')
         self.__Frame4 = Frame(self.__Frame3)
         self.__Frame4.pack(side='top')
+        self.__Frame11 = Frame(self.__Frame3)
+        self.__Frame11.pack(side='top')
         self.__Frame2 = Frame(self.__Frame3)
         self.__Frame2.pack(side='top')
-        self.__Button_executeGait = Button(self.__Frame2,text='Execute Gait')
-        self.__Button_executeGait.pack(side='left')
-        self.__Button_stopGait = Button(self.__Frame2,text='Stop Gait')
-        self.__Button_stopGait.pack(side='right')
         self.__Frame7 = Frame(self.__Frame4,width=10)
         self.__Frame7.pack(side='left')
+        self.__Label_scoreText = Label(self.__Frame7,text='Score')
+        self.__Label_scoreText.pack(side='top')
+        self.__Label_scoreNum = Label(self.__Frame7,width=20)
+        self.__Label_scoreNum.pack(side='top')
         self.__Frame8 = Frame(self.__Frame4)
         self.__Frame8.pack(side='left')
         self.__Listbox_gait = Listbox(self.__Frame8,height=20,width=35)
         self.__Listbox_gait.pack(fill='both',side='top')
+        self.__Frame12 = Frame(self.__Frame11)
+        self.__Frame12.pack(ipadx=20,padx=60,side='left')
+        self.__Frame13 = Frame(self.__Frame11)
+        self.__Frame13.pack(side='left')
+        self.__Button_executeGait = Button(self.__Frame13,text='Execute Gait')
+        self.__Button_executeGait.pack(side='top')
+        self.__Frame15 = Frame(self.__Frame2)
+        self.__Frame15.pack(ipadx=20,padx=60,side='left')
+        self.__Frame14 = Frame(self.__Frame2)
+        self.__Frame14.pack(side='left')
+        self.__Button_close = Button(self.__Frame14,text='Close')
+        self.__Button_close.pack(side='top')
+
         #
         #Your code here
         #
 
         # initialize variables
         self.smores_library = [] # a list of smores library entries
-        self.smores_library_path = 'SmoresLibrary' # the directory of the SMORES library
         self.communicator = None # the communicator to talk with gazebo
 
         # event binding
         self.__Listbox_configuration.bind('<<ListboxSelect>>', self.onSelectConfig)
-        self.__Button_importConfig.bind('<Button-1>', self.onClickImportConfig)
-        self.__Button_executeGait.bind('<Button-1>', self.onClickExecuteGait)
+        self.__Button_importConfig["command"] = self.onClickImportConfig
+        self.__Button_executeGait["command"] = self.onClickExecuteGait
+        self.__Button_loadWorld["command"] = self.onClickLoadWorld
+        self.__Button_loadLibrary["command"] = self.onClickLoadLibrary
+        self.__Button_close["command"] = self.onClickClose
 
-        # initialize
-        self.initialize()
-
-
+        # disable some buttons initially
+        self.__Button_importConfig["state"] = DISABLED
+        self.__Button_loadLibrary["state"] = DISABLED
+        self.__Button_executeGait["state"] = DISABLED
     #
     #Start of event handler methods
     #
@@ -68,11 +91,11 @@ class ControlGUI(Frame):
         """
         Event handler for when the GUI is closed
         """
-        self.communicator.Close()
-        self.rungzserver.terminate()
-        self.rungzclient.terminate()
-        call(["pkill", "gzserver"])
-        call(["pkill", "gzclient"])
+        if self.communicator:
+            self.communicator.Close()
+            self.rungazebo.terminate()
+            call(["pkill", "gzserver"])
+            call(["pkill", "gzclient"])
 
     def onSelectConfig(self, event):
         """
@@ -88,7 +111,7 @@ class ControlGUI(Frame):
         # populate the gait list for the selected configuration
         self.populateGaitList(value)
 
-    def onClickImportConfig(self, event):
+    def onClickImportConfig(self):
         """
         Event handler for when click the import configuration button
         Send the current selected configuration file name to gazebo
@@ -101,7 +124,7 @@ class ControlGUI(Frame):
         # send the file name
         self.sendConfiguration(value)
 
-    def onClickExecuteGait(self, event):
+    def onClickExecuteGait(self):
         """
         Event handler for when click the execute gait button
         Send the current selected gait file name to gazebo
@@ -113,6 +136,58 @@ class ControlGUI(Frame):
 
         # send the file name
         self.sendGait(value)
+
+    def onClickLoadWorld(self):
+        """
+        Event handler for when click the load world button
+        Run gazebo with selected world file
+        """
+        world_file_name = ''
+        options = {}
+        options['filetypes'] = [('sdf files', '.sdf')]
+        options['initialdir'] = '~/.gazebo/models/SMORES8Jack/'
+        options['title'] = 'Open World File'
+        world_file_name = tkFileDialog.askopenfilename(**options)
+        if world_file_name == '':
+            return
+
+        # disable the load world button
+        self.__Button_loadWorld["state"] = DISABLED
+        self.__Button_loadLibrary["state"] = NORMAL
+
+        # initialize
+        self.initialize(os.path.basename(world_file_name))
+
+    def onClickLoadLibrary(self):
+        """
+        Event handler for when click the load library button
+        Set the SMORES configuration and gait library path
+        """
+
+        smores_library_path = ''
+        options = {}
+        options['initialdir'] = '~/Research/SMORES/SimulationPlugins/SimulationController/pythonGUI/'
+        options['title'] = 'Open SMORES Library'
+        smores_library_path = tkFileDialog.askdirectory(**options)
+        if smores_library_path == '':
+            return
+
+        self.loadSMORESLibrary(smores_library_path)
+        self.populateConfigList()
+        self.__Button_loadLibrary["state"] = DISABLED
+        self.__Button_importConfig["state"] = NORMAL
+        self.__Button_executeGait["state"] = NORMAL
+
+        # tell gazebo where to load the smores library
+        self.writeLibraryPath(smores_library_path)
+
+    def onClickClose(self):
+        """
+        Event handler for when click the close button
+        Close and terminate everything
+        """
+        self.onClose()
+        self.quit()
 
     def populateConfigList(self):
         """
@@ -144,27 +219,24 @@ class ControlGUI(Frame):
     #Start of non-Rapyd user code
     #
 
-    def initialize(self):
+    def initialize(self, world_file_name):
         """
         Initialize everything we need
         """
-        self.loadSMORESLibrary()
-        self.populateConfigList()
-        self.rungzserver = Popen(['sh', 'RunSimulation.sh'])
-        self.rungzclient = Popen(['gzclient'], stdout=PIPE)
+        self.rungazebo = Popen(['sh', 'RunSimulation.sh', '-w', world_file_name])
         time.sleep(2)
         self.communicator = gztopic.GzCommunicator() # initialize and start the communicator
         self.communicator.start()
         self.sim_control_publisher = self.communicator.CreatePulisher("/gazebo/SimulationController/simControlSubscriber",'sim_control_message.msgs.SimControlMessage')
 
-    def loadSMORESLibrary(self):
+    def loadSMORESLibrary(self, smores_library_path):
         """
         Load the SMORES library
         """
         # walk down the library to load all data
-        for root, dirs, files in os.walk(self.smores_library_path):
+        for root, dirs, files in os.walk(smores_library_path):
             # ignore the top most directory
-            if root == self.smores_library_path: continue
+            if root == smores_library_path: continue
 
             # otherwise load the config and gait data
             # each configuration is stored in a folder which includes
@@ -204,6 +276,15 @@ class ControlGUI(Frame):
         msg.ConfigurationName = "" # since this field is required
         self.sim_control_publisher.Publish(msg)
 
+    def writeLibraryPath(self, path):
+        """
+        Write the location of SMORES library directory to ~/.gazebo/models/SMORES8Jack/SMORES_LIBRARY_PATH_FILE
+        """
+        home = expanduser("~")
+        f = open(os.path.join(home, '.gazebo/models/SMORES8Jack/SMORES_LIBRARY_PATH_FILE'), 'w')
+        f.write(path)
+        f.close()
+
 try:
     #--------------------------------------------------------------------------#
     # User code should go after this comment so it is inside the "try".        #
@@ -218,7 +299,9 @@ try:
     sys.path.append("../../Util/python_util")
     import gztopic_multithreading as gztopic
     import os
+    from os.path import expanduser
     import time
+    import tkFileDialog
     from subprocess import Popen, PIPE, call
     import SmoresLibraryEntry as SLE
     import sim_control_message_pb2 as sc_message
@@ -232,7 +315,7 @@ try:
         App = ControlGUI(Root)
         App.pack(expand='yes',fill='both')
 
-        Root.geometry('640x480+10+10')
+        Root.geometry('800x480+10+10')
         Root.title('ControlGUI')
         Root.mainloop()
     #--------------------------------------------------------------------------#

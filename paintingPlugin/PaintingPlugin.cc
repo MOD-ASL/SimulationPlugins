@@ -1,9 +1,23 @@
 #include "PaintingPlugin.hh"
 
+using namespace std;
+using namespace octomap;
 using namespace gazebo;
 
 // Register this plugin with the simulator
 GZ_REGISTER_VISUAL_PLUGIN(PaintingPlugin)
+
+PaintingPlugin::~PaintingPlugin()
+{
+  tree.writeBinary("LIDARMap.bt");
+  std::cout << "\nnooooo!!!\n";
+}
+
+PaintingPlugin::PaintingPlugin() : tree(0.01)
+{
+    std::cout << "yerp??\n";
+}
+
 
 void PaintingPlugin::lidarCB(ConstLaserScanStampedPtr& _msg)
 {
@@ -47,23 +61,30 @@ void PaintingPlugin::lidarCB(ConstLaserScanStampedPtr& _msg)
       
       if (!smoreHit)
       {
-	int i = (int) round(100*x + 500);
+	/*int i = (int) round(100*x + 500);
 	int j = (int) round(100*y + 500);
-	int k = (int) round(100*z + 500);
+	int k = (int) round(100*z + 500);*/
 	
-	if (!occupancy[i][j][k])
+	point3d endpoint ((float) x, (float) y, (float) z);
+	
+	if (tree.search(endpoint) == NULL)
 	{
 	  line->AddPoint(math::Vector3(x, y, z));
-	  occupancy[i][j][k] = true;
+	  //occupancy[i][j][k] = true;
 	  this->infoScore++;
 	  printf("Info Score: %d\n", this->infoScore);
 	  msgs::Int score;
 	  score.set_data(this->infoScore);
-	  this->scorePub->Publish(score);
+	  this->scorePub->Publish(score);	  
+	  tree.updateNode(endpoint, true);
 	}
 	else
 	{
-	  //std::cout << "It happens to be occupied already\n";
+	  /*std::cout << "It happens to be occupied already\n";
+	  if (tree.search(endpoint) != NULL)
+	  {
+	    std::cout << "Happens to be OCTOPIED as well!!\n";
+	  }*/
 	}
       }
       else
@@ -75,7 +96,7 @@ void PaintingPlugin::lidarCB(ConstLaserScanStampedPtr& _msg)
 }
 
 void PaintingPlugin::poseCB(ConstPosesStampedPtr& _msg)
-{ 
+{
   smoreIndex.clear();
   smorePose.clear();
   
@@ -111,9 +132,20 @@ void PaintingPlugin::paintCB(ConstVector3dPtr& _msg)
   this->line->AddPoint(targetPoint);
 }
 
+void PaintingPlugin::print_query_info(point3d query, OcTreeNode* node) {
+  if (node != NULL) {
+    cout << "occupancy probability at " << query << ":\t " << node->getOccupancy() << endl;
+  }
+  else 
+    cout << "occupancy probability at " << query << ":\t is unknown" << endl;    
+}
+
 
 void PaintingPlugin::Load(rendering::VisualPtr _parent, sdf::ElementPtr /*_sdf*/)
 {
+    cout << endl;
+    cout << "generating example map" << endl;
+
     std::cout << "yerp\n\n";
     
     this->infoScore = 0;
