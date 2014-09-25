@@ -1,6 +1,9 @@
 S.M.O.R.E.S. Simulator
 =================
 
+# This repo is no longer maintained !!!
+The code has been moved to [another repo](https://github.com/MOD-ASL/SimulationPlugins)
+
 Author: Yunkai (Edward) Cui, Modlab, University of Pennsylvania<br>
 Co-author: Adam Trofa, Cornell University<br>
 Co-author: Gangyuan (Jim) Jing, Cornell University<br>
