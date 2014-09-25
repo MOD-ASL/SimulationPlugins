@@ -89,7 +89,7 @@ class ConfigEditor(Frame):
     #------------ Run Simulation and GUI ---------------------
     if flag == 0: 
       self.rungzserver = Popen(['sh', 'RunSimulation.sh'], stdout=PIPE)
-      time.sleep(0.3)
+      time.sleep(1)
       self.rungzclient = Popen(['gzclient', '-g','libsystem_gui.so'], stdout=PIPE)
       time.sleep(2)
 
@@ -473,7 +473,8 @@ class ConfigEditor(Frame):
       print "Method is Connection"
       theOtherModule = self.findModule(self.connectedmodelvar.get())
       if theOtherModule:
-        module_jointangle = (degree2rad(self.Joint0.get()),degree2rad(self.Joint1.get()),degree2rad(self.Joint2.get()),degree2rad(self.Joint3.get()))
+        module_jointangle= (degree2rad(self.Joint0.get()),degree2rad(self.Joint1.get()),degree2rad(self.Joint2.get()),degree2rad(self.Joint3.get()))
+        print "Configuration generator joint angles: ",module_jointangle
         #-- Get module position and orientation.
         parent_face = self.Node2.get()
         new_module_face = self.Node1.get()
@@ -610,27 +611,23 @@ class ConfigEditor(Frame):
     modelname = self.modellist.get()
     modelobj = self.findModule(modelname)
     if modelobj.ModelName:
-      self.Joint_3.set(int(modelobj.JointAngle[3]/PI*180))
-      self.Joint_2.set(int(modelobj.JointAngle[2]/PI*180))
-      self.Joint_1.set(int(modelobj.JointAngle[1]/PI*180))
+      self.Joint_0["state"] = NORMAL
+      self.Joint_1["state"] = NORMAL
+      self.Joint_2["state"] = NORMAL
+      self.Joint_3["state"] = NORMAL
       self.Joint_0.set(int(modelobj.JointAngle[0]/PI*180))
+      self.Joint_1.set(int(modelobj.JointAngle[1]/PI*180))
+      self.Joint_2.set(int(modelobj.JointAngle[2]/PI*180))
+      self.Joint_3.set(int(modelobj.JointAngle[3]/PI*180))
     # Lock the connected joint
       if len(modelobj.nodes[0]) > 0:
         self.Joint_0["state"] = DISABLED
-      else:
-        self.Joint_0["state"] = NORMAL
       if len(modelobj.nodes[1]) > 0:
         self.Joint_1["state"] = DISABLED
-      else:
-        self.Joint_1["state"] = NORMAL
       if len(modelobj.nodes[2]) > 0:
         self.Joint_2["state"] = DISABLED
-      else:
-        self.Joint_2["state"] = NORMAL
       if len(modelobj.nodes[3]) > 0:
         self.Joint_3["state"] = DISABLED
-      else:
-        self.Joint_3["state"] = NORMAL
     self.FindConnectable()
     self.DeleteButtonEnable()
 

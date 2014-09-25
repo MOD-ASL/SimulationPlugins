@@ -34,8 +34,10 @@ void WorldServer::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
 
   // Create a publisher on the ~/SMORES_WorldStatus topic
   cout << "Initializing Publisher and Subscriber for WorldStatus message" << endl;
-  this->smoreWorldPub = node->Advertise<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldStatus");
-  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>("~/SMORES_WorldMessage", &WorldServer::WorldStatusMessageDecoding, this);
+  this->smoreWorldPub = node->Advertise<command_message::msgs::WorldStatusMessage>(
+      "~/SMORES_WorldStatus");
+  this->smoreWorldSub = node->Subscribe<command_message::msgs::WorldStatusMessage>(
+      "~/SMORES_WorldMessage", &WorldServer::WorldStatusMessageDecoding, this);
   cout << "publisher topic: " << smoreWorldPub->GetTopic() << endl;
   cout << "subscriber topic: " << smoreWorldSub->GetTopic() << endl;
 
@@ -273,6 +275,12 @@ void WorldServer::FeedBackMessageDecoding(CommandMessagePtr &msg)
               .substr(joint_values_string.find(" ")+1);
         }else {
           joint_angles[i] = atof(joint_values_string.substr(0).c_str());
+        }
+        if (abs(joint_angles[i]) > math::Angle::Pi.Radian()) {
+          double ratio = joint_angles[i]>0?
+              floor(joint_angles[i]>0/math::Angle::Pi.Radian())
+              :-floor(joint_angles[i]>0/math::Angle::Pi.Radian());
+          joint_angles[i] -= math::Angle::Pi.Radian()*ratio;
         }
       }
       currentWorld->GetModel(msg->stringmessage())
