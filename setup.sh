@@ -212,7 +212,7 @@ if [ "$STATUS" = 1 ]; then
     fi
   fi
   make -j
-  export GAZEBO_PLUGIN_PATH="$PWD":"$GAZEBO_PLUGIN_PATH"
+  echo 'export GAZEBO_PLUGIN_PATH="'$PWD'":"$GAZEBO_PLUGIN_PATH"' >> ~/.bashrc
   cd ../../worldplugin/
   if [ ! -d build/ ]; then
     mkdir build
