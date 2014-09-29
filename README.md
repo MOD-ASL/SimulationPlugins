@@ -62,11 +62,8 @@ You may find the APIs(documentation) for all the simulation plugins and python p
 
 Known problems of GAZEBO
 ----------------------------------------
-1. It doesn't provide a function to delete an entity, this feature probabily wull be supported in the future, which also means we likely cannot delete the dynamic joints cleanly. For more information, please see the link [here](http://answers.gazebosim.org/question/550/how-to-delete-links-from-a-model-gazebo-125/).
-2. In the world plugin, when add entity event called response function, the entity itself(The object) hasn't been created, ehich means we cannot get the pointer pointing to that object. In our case that entity is a model. So the temporary solution is to set the pointer somewhere else. Haven't searched for gazebo answer or post a question. Will do it later.
-3. One method from boost library GAZEBO 1.9 using now is no longer supported by the newest version of boost library. The known version of boost library that compatible with GAZEBO 1.9 is boost 1.46
+1. In the world plugin, when add entity event called response function, the entity itself(The object) hasn't been created, which means we cannot get the pointer pointing to that object. In our case that entity is a model. So the temporary solution is to set the pointer somewhere else. Haven't searched for gazebo answer or post a question. Will do it later.
 
 MEMO
 ----------------------------------------
-1. shared_ptr: make_shared function will not generate a pointer point to the input variable. Instead, this function will copy the input variable to a new address and makes a pointer point to the new address.
-2. For c++ compiler, it is OK that you define a method(function) in the class in the header file, but you don't specify it in the .cc file. However it is not ok in gazebo. It will show a symbol undefined error. 
+Note file has been moved to this [link]() on the github wiki.
