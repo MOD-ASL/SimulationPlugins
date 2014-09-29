@@ -66,4 +66,4 @@ Known problems of GAZEBO
 
 MEMO
 ----------------------------------------
-Note file has been moved to this [link]() on the github wiki.
+Note file has been moved to this [link](https://github.com/MOD-ASL/SimulationPlugins/wiki/Development-Note) on the github wiki.
