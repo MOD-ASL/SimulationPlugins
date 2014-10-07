@@ -1621,7 +1621,7 @@ class AddAssociate(Toplevel):
     self.correlationRatio.place(x = 270, y = 180)
 
     return moduleName
-  ## Add button callback, which will vreate an associate in parent object
+  ## Add button callback, which will create an associate in parent object
   # @param self Object pointer
   def Add(self):
     if len(self.moduleList.get()) > 0 and len(self.parent.modelname.get()) > 0:
