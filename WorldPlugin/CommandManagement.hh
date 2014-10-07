@@ -63,7 +63,7 @@ class CommandPro  // abbr for Command protocol
   /// Constructor
   CommandPro();
   /// Constructor
-  //! \param command A smart pointer of the CommandMessage object
+  /*! \param command A smart pointer of the CommandMessage object */
   CommandPro(CommandPtr command);
   /// Constructor
   /*!
@@ -74,16 +74,16 @@ class CommandPro  // abbr for Command protocol
   /// Destructor
   ~CommandPro();
   /// Set a timer for the current command
-  //! \param timer A timer, unit: msec
+  /*! \param timer A timer, unit: msec */
   void SetTimer(unsigned int timer);
   /// Set condition string of the current command
-  //! \param condition Condition string
+  /*! \param condition Condition string */
   void SetCondition(string condition);
   /// Set dependency string of the current command
-  //! \param dependency Dependency string
+  /*! \param dependency Dependency string */
   void SetDependency(string dependency);
   /// Make current command a special command
-  //! \param specialcommand A specialcommand object
+  /*! \param specialcommand A specialcommand object */
   void SetSpecialCommand(SpecialCommand specialcommand);
   /// A pointer of the CommandMessage object
   CommandPtr ActualCommandMessage;
@@ -110,7 +110,7 @@ class ModuleCommands
 {
  public:
   /// Constructor
-  //! \param which_module Pointer of the parent SmoresModule object
+  /*! \param which_module Pointer of the parent SmoresModule object */
   ModuleCommands(SmoresModulePtr which_module);
   /// Destructor
   ~ModuleCommands();
