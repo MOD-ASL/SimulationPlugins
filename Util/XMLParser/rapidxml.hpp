@@ -26,7 +26,7 @@
 #if defined(RAPIDXML_NO_EXCEPTIONS)
 
 #define RAPIDXML_PARSE_ERROR(what, where) { parse_error_handler(what, where); assert(0); }
-
+/// rapid xml name space
 namespace rapidxml
 {
     //! When exceptions are disabled by defining RAPIDXML_NO_EXCEPTIONS, 
