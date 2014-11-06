@@ -7,7 +7,7 @@ using std::string;
 
 namespace gazebo
 {
-/// A class that used to store collision information for two models
+/// A class used to store collision information for two models
 /*!
   This class is mainly used in magnetic connection of two contact faces
 */

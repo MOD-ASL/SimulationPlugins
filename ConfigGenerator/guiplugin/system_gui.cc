@@ -66,7 +66,9 @@ class JointUpdate
       this->jointAngle[i] = jointangle[i];
     }
   }
+  /// String name of a model entity
   string modelName;
+  /// Joint angle of that model, in radian
   double jointAngle[4];
 };
 /// This class is used for set the visual of model to the right position
