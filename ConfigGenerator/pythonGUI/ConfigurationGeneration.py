@@ -1,3 +1,5 @@
+## @package ConfigurationGeneration Configuration generator python GUI application
+
 #--------------- System related ----------------------
 import time
 from subprocess import call, Popen, PIPE

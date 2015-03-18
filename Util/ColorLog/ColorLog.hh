@@ -11,6 +11,7 @@
 /// Color namespace has functions can log colorful texts in terminal
 using std::cout;
 using std::endl;
+/// For colored log texts in terminal
 namespace Color {
 /// Color code definition
 enum Code {

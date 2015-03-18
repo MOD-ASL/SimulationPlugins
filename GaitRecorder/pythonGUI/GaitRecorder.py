@@ -864,87 +864,6 @@ class GaitRecorder(Frame):
       else:
         before_substr = after_substr
 
-  # def CommandRecModify(self):
-  #   self.recidx = int(self.CommandRec.curselection()[0])
-  #   gaitentryobj = self.CurrentFrameRec[self.recidx]
-  #   if gaitentryobj.ModuleName[0] == "-" or gaitentryobj.ModuleName[0] == "+" :
-  #     tmpstring = gaitentryobj.ModuleName[2:]
-  #     self.modelname.set(tmpstring[0:tmpstring.find(" ")])
-  #     tmpstring = gaitentryobj.ModuleName[tmpstring.find(" ")+1:]
-  #     self.othermodelname.set(tmpstring[0:tmpstring.find(" ")])
-  #   else:
-  #     self.Joint3.set(gaitentryobj.Joints[3]/PI*180)
-  #     # self.front_angle.set(gaitentryobj.Joints[0]/PI*180)
-  #     # self.left_angle.set(gaitentryobj.Joints[1]/PI*180)
-  #     # self.right_angle.set(gaitentryobj.Joints[2]/PI*180)
-  #     # self.group.set(gaitentryobj.Group)
-  #     self.elapstime.set(gaitentryobj.Timer/1000.0)
-  #     self.modelname.set(gaitentryobj.ModuleName)
-  #     if gaitentryobj.AngleFlags[0] == 0:
-  #       self.frontModA.select()
-  #       self.frontangle.set(gaitentryobj.Joints[0]/PI*180)
-  #       self.frontspeed.set(0)
-  #     else:
-  #       self.frontspeed.set(gaitentryobj.Joints[0])
-  #       self.frontangle.set(0)
-  #       self.frontModS.select()
-  #     if gaitentryobj.AngleFlags[1] == 0:
-  #       self.WheelModA.select()
-  #       self.left_angle.set(gaitentryobj.Joints[1]/PI*180)
-  #       self.right_angle.set(gaitentryobj.Joints[2]/PI*180)
-  #       self.leftspeed.set(0)
-  #       self.rightspeed.set(0)
-  #     else:
-  #       self.left_angle.set(0)
-  #       self.right_angle.set(0)
-  #       self.leftspeed.set(gaitentryobj.Joints[1])
-  #       self.rightspeed.set(gaitentryobj.Joints[2])
-  #       self.WheelModS.select()
-  #   self.saveButton["state"] = NORMAL
-  #   self.saveButton2["state"] = NORMAL
-
-  # def CommandRecSave(self):
-  #   gaitentryobj = self.CurrentFrameRec[self.recidx]
-  #   if gaitentryobj.ModuleName[0] == "-" or gaitentryobj.ModuleName[0] == "+" :
-  #     tmpstring = gaitentryobj.ModuleName[2:]
-  #     namestring1 = gaitentryobj.ModuleName[2:tmpstring.find(" ")]
-  #     tmpstring = gaitentryobj.ModuleName[tmpstring.find(" ")+1:]
-  #     tmpstring = gaitentryobj.ModuleName[tmpstring.find(" ")+1:]
-  #     gaitentryobj.ModuleName == gaitentryobj.ModuleName[0:2]+namestring1+" "+self.othermodelname.get()+" "+tmpstring
-  #   else:
-  #     gaitentryobj.Joints[3] = self.Joint3.get()/180.0*PI
-  #     if self.frontmode.get() == 0 :
-  #       gaitentryobj.AngleFlags[0] = 0
-  #       gaitentryobj.Joints[0] = self.frontangle.get()/180.0*PI
-  #     else:
-  #       gaitentryobj.AngleFlags[0] = 1
-  #       gaitentryobj.Joints[0] = self.frontspeed.get()
-  #     if self.wheelmode.get() == 0 :
-  #       gaitentryobj.AngleFlags[1] = 0
-  #       gaitentryobj.AngleFlags[2] = 0
-  #       gaitentryobj.Joints[1] = self.left_angle.get()/180.0*PI
-  #       gaitentryobj.Joints[2] = self.right_angle.get()/180.0*PI
-  #     else:
-  #       gaitentryobj.AngleFlags[1] = 1
-  #       gaitentryobj.AngleFlags[2] = 1
-  #       gaitentryobj.Joints[1] = self.leftspeed.get()
-  #       gaitentryobj.Joints[2] = self.rightspeed.get()
-  #     # gaitentryobj.GroupIncr = self.group.get() - gaitentryobj.Group + gaitentryobj.GroupIncr
-  #     # gaitentryobj.Group = self.group.get()
-  #     gaitentryobj.Timer = int(self.elapstime.get()*1000)
-  #   # self.RefreshGaitRecorder()
-
-  # def CommandRecDelete(self):
-  #   self.recidx = int(self.CommandRec.curselection()[0])
-  #   del self.CurrentFrameRec[self.recidx]
-  #   # self.RefreshGaitRecorder()
-  #   self.saveButton["state"] = NORMAL
-  #   self.saveButton2["state"] = NORMAL
-  #   if len(self.CurrentFrameRec)>0:
-  #     self.Addframe["state"] = NORMAL
-  #   else:
-  #     self.Addframe["state"] = DISABLED
-
   ## Publish common command message
   # Control joint position, speed or torque
   # @param self Object Pointer
@@ -1624,7 +1543,7 @@ class AddAssociate(Toplevel):
     self.correlationRatio.place(x = 270, y = 180)
 
     return moduleName
-  ## Add button callback, which will vreate an associate in parent object
+  ## Add button callback, which will create an associate in parent object
   # @param self Object pointer
   def Add(self):
     if len(self.moduleList.get()) > 0 and len(self.parent.modelname.get()) > 0:

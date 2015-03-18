@@ -6,16 +6,28 @@
 #define INTIALCONFIGURATION "InitialConfiguration"
 
 namespace gazebo{
+/// Acts as the controller for normal simulation
+//! Class which inherits WorldServer template
 class WorldController : public WorldServer
 {
  public:
+  /// Constructor
   WorldController();
+  /// Destructor
   ~WorldController();
   /// This function will perform extra initialization
-  /// Need to read in initial configuration here
+  /*! 
+    Need to read in initial configuration here
+    \param _parent WorldPtr object from parent class
+    \param _sdf ElementPtr object from parent class
+  */
   virtual void ExtraInitializationInLoad(physics::WorldPtr _parent, 
       sdf::ElementPtr _sdf);
-  /// Need to read in initial Gait table here
+  /// This function will be called after all the models inserted
+  /*! 
+    Need to read in initial Gait table here
+    \param msg A reference of the CommandMessagePtr object
+  */
   virtual void ExtraWorkWhenModelInserted(CommandMessagePtr &msg);
  private:
   // transport::SubscriberPtr configSub;

@@ -91,9 +91,15 @@ class WorldServer : public WorldPlugin
   /// Close the loaded libraries
   void CloseLoadedLibrary(void **lib_handle);
   virtual void OnSystemRunningExtra(const common::UpdateInfo & _info);
-  /// Insert a model to the current world, with joint angles specified
+  /// Insert a model to the current world
+  /*!
+    With joint angles specified
+  */
   virtual void InsertModel(string name, math::Pose position, string joint_angles);
-  /// Insert a model to the current world, with joint angles and model path specified
+  /// Insert a model to the current world
+  /*!
+    With joint angles and model path specified
+  */
   virtual void InsertModel(string name, math::Pose position, string joint_angles, 
       string model_path);
   /// Add a new position to set at the end of 'intialPosition' vector
@@ -112,11 +118,15 @@ class WorldServer : public WorldPlugin
   void DeleteModule(string module_name);
   /// Delete all models that already in the world
   void DeleteAllModules(void);
-  /// Get the current position in world of the inserted configuration by averaging the pose of all modules
+  /// Get the current position in world of the inserted configuration
+  /*!
+    Averaging the pose of all modules
+    return 
+  */
   math::Vector3 GetCurrentConfigurationPose(void);
-  /// This function is used to build a configuration at origin using a XML file
+  /// Build a configuration at origin using a XML file
   void BuildConfigurationFromXML(string file_name);
-  /// This function is used to build a configuration at given initial_pose using a XML file
+  /// Build a configuration at given initial_pose using a XML file
   void BuildConfigurationFromXML(string file_name, math::Vector3 initial_pose);
   /// This function is used to build connection using a XML file
   void BuildConnectionFromXML(string file_name);
@@ -424,7 +434,8 @@ class WorldServer : public WorldPlugin
   /// The function is used to physically connect different models 
   /// by generating dynamic joint
   void ConnectAndDynamicJointGeneration(SmoresModulePtr module_1, 
-      SmoresModulePtr module_2, int node1_ID, int node2_ID, SmoresEdgePtr an_edge);
+      SmoresModulePtr module_2, int node1_ID, int node2_ID, 
+      SmoresEdgePtr an_edge);
   /// Calculate the rotation matrix of cluster 2
   /// Used in 'ConnectAndDynamicJointGeneration'
   void RotationQuaternionCalculation(math::Vector3 normal_axis,
