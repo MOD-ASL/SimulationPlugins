@@ -76,13 +76,20 @@ if [ $# -eq 1 ]; then
     sudo apt-get install python-pip
     sudo pip install -U pip
     sudo pip install eventlet
-    sudo pip install pygazebo
+    if [ $DISTRIB_RELEASE = "14.04" ]; then
+      sudo easy_install pygazebo
+    else
+      sudo pip install pygazebo
+    fi
     sudo apt-get install python-imaging-tk
     sudo apt-get install python-numpy python-scipy
     echo "[Installing] boost library ..."
     sudo apt-get install libboost-all-dev
     echo "[Installing] google protobuf compiler ..."
     sudo apt-get install protobuf-compiler
+    if [ $DISTRIB_RELEASE = "14.04" ]; then
+      sudo apt-get install python-protobuf
+    fi
   fi
   if [ "$1" = "-u" ]; then
     STATUS=2
