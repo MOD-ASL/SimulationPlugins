@@ -22,7 +22,8 @@ sys.path.append("../../Util/python_util")
 from gait_recorder_message_pb2 import *
 # import eventlet  # need to install: $:sudo pip install eventlet
 # from pygazebo import *  #need to install: $: sudo pip install pygazebo
-from gztopic import *
+# from gztopic import *
+from gztopic_multithreading import *
 #--------------- Mathematic related ------------------
 import numpy as np
 #--------------- Debuggin Tools ----------------------
@@ -125,7 +126,9 @@ class GaitRecorder(Frame):
     #-------------- Establish Connection With Simulator -------
     if flag == 0 or flag == 2:
       self.communicator = GzCommunicator()
-      self.communicator.StartCommunicator("/gazebo/GaitRecorder/gaitSubscriber","gait_recorder_message.GaitRecMessage")
+      self.communicator.start()
+      self.gaitPub = self.communicator.CreatePulisher(
+          "/gazebo/GaitRecorder/gaitSubscriber",'gait_recorder_message.GaitRecMessage')
 
     self.initUI()
     # self.SaveCurrentPose()
@@ -355,7 +358,7 @@ class GaitRecorder(Frame):
   # @param self object pointer
   def CloseWindow(self):
     if self.initflag==0 or self.initflag==2:
-      self.communicator.stop()
+      self.communicator.Close()
     if self.initflag==0:
       self.rungzserver.terminate()
       try:
@@ -450,7 +453,7 @@ class GaitRecorder(Frame):
     newmessage.LoadConfiguration = True
     newmessage.ExtrInfo = configure_path
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
 
 #---------------- Module Selection ----------------------
   ## Callback of Select Model Combobox
@@ -614,7 +617,7 @@ class GaitRecorder(Frame):
       newmessage.ExtrInfo += " (" + self.dependency.get() +")"
     newmessage.ExtrInfo += " ;"
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
     newgaits = GaitEntry(self.modelname.get(),[0,0,0,0],self.elapstime.get(),self.dependency.get(),self.condition.get())
     newgaits.AddExtraInfo(newmessage.ExtrInfo)
     newgaits.SpecialEntry = True
@@ -643,7 +646,7 @@ class GaitRecorder(Frame):
         newmessage.ExtrInfo += " (" + self.dependency.get() +")"
       newmessage.ExtrInfo += " ;"
       if self.initflag==0 or self.initflag==2:
-        self.communicator.publish(newmessage)
+        self.gaitPub.Publish(newmessage)
       newgaits = GaitEntry(self.modelname.get(),[0,0,0,0],self.elapstime.get(),self.dependency.get(),self.condition.get())
       newgaits.AddExtraInfo(newmessage.ExtrInfo)
       newgaits.SpecialEntry = True
@@ -748,7 +751,7 @@ class GaitRecorder(Frame):
     newmessage.PlayStatus = True
     newmessage.ResetFlag = True
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
     self.Playframe["state"] = NORMAL
     # self.Resetframe["state"] = DISABLED
     if self.commandType.get() == 0:
@@ -793,7 +796,7 @@ class GaitRecorder(Frame):
     newmessage.NewFrame = True
     newmessage.PlayStatus = True
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
   ## Updates the panel window after selecting a section
   # @param self Object pointer
   # @param args Other variables
@@ -965,7 +968,7 @@ class GaitRecorder(Frame):
     # self.newconnection.sendData(newmessage)
     # self.publisher.publish(newmessage)
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
     # eventlet.sleep(1.0)
     print "Information published"
   ## Publish special command messgae
@@ -991,7 +994,7 @@ class GaitRecorder(Frame):
     # self.newconnection.sendData(newmessage)
     # self.publisher.publish(newmessage)
     if self.initflag==0 or self.initflag==2:
-      self.communicator.publish(newmessage)
+      self.gaitPub.Publish(newmessage)
     # eventlet.sleep(1.0)
     print "Information published"
 
@@ -1181,7 +1184,7 @@ class GaitRecorder(Frame):
             newmessage.JointAngles.append(the_module.JointAngle[i])
       if self.initflag==0 or self.initflag==2:
         for each_message in message_queue:
-          self.communicator.publish(each_message)
+          self.gaitPub.Publish(each_message)
       print "Angle Updating"
       self.Addcommand["state"] = NORMAL
       self.jointAngleDifferenceTracking[self.jointSelection.get()] += diff
@@ -1248,7 +1251,7 @@ class GaitRecorder(Frame):
             newmessage.JointAngles.append(the_module.JointAngle[i])
       if self.initflag==0 or self.initflag==2:
         for each_message in message_queue:
-          self.communicator.publish(each_message)
+          self.gaitPub.Publish(each_message)
       print "Angle Updating"
       self.Addcommand["state"] = NORMAL
       self.jointAngleDifferenceTracking[self.jointSelection.get()] += diff
